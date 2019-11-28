@@ -1,0 +1,38 @@
+#name {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+#job {
+  size: 15em;
+  color:grey;
+  margin-bottom: 0px;
+}
+
+#title {
+  display:inline-block;
+  margin-left: 10px;
+  position:relative;
+  top: -20px;
+}
+
+#intro {
+}
+
+#beach-container {
+}
+
+#initials {
+  display:inline-block;
+  width: 100px;
+  height: 100px;
+}
+
+#photo {
+  background-image: url('/images/me.JPG');
+  height:300px;
+  width: 300px;
+  margin-top: 15%;
+  #box-shadow: 0 0 4px 4px white inset;
+  background-size: cover;
+}
