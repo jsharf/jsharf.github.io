@@ -101,7 +101,7 @@ function drawWave(cvs, ctx, wave) {
   }
   ctx.lineTo(lastX, cvs.height);
   ctx.lineTo(firstX, cvs.height);
-  ctx.fillStyle = "rgba(0, 60, 200," + wave.opacity + ")";
+  ctx.fillStyle = "rgba(61,184,180," + wave.opacity + ")";
   ctx.fill();
 }
 
