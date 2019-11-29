@@ -17,7 +17,7 @@ html, body {
   display:inline-block;
   margin-left: 10px;
   position:relative;
-  top: -20px;
+  top: -25px;
 }
 
 #everything {
@@ -45,4 +45,8 @@ html, body {
   margin-top: 15%;
   #box-shadow: 0 0 4px 4px white inset;
   background-size: cover;
+}
+
+.projectpic {
+  width: 200px;
 }

@@ -31,14 +31,90 @@
 <body onload="">
 <div class="container">
   <div class="row" id="intro">
-    <div class="six columns" style="margin-top: 15%">
+    <div class="six columns" style="margin-top: 5%">
       <img src="images/favicon_large.png" id="initials" /><!--
       --><div id="title">
         <h4 id="name">Projects Page</h4>
+        <a class="button button-primary" href="index.html">Home</a>
       </div>
       <br>
-      <p>This placeholder is where I'll put my projects.</p>
-      <a class="button button-primary" href="index.html">Home</a>
+    </div>
+  </div>
+    <!-- First project -->
+    <div class="row" id="intro">
+      <h4>Lasertag PCB</h4>
+      <div class="six columns">
+        <img class="projectpic" src="projects/lasertag/during_soldering.jpg" />
+        <img class="projectpic" src="projects/lasertag/lasertagboard.jpg" />
+      </div>
+      <div class="six columns">
+        <p>I designed, built & coded a lasertag board.</p>
+      </div>
+    </div>
+    <!-- Second project -->
+    <div class="row" id="intro">
+      <h4>Automated Planter</h4>
+      <div class="six columns">
+        <img class="projectpic" src="projects/automated_planter/pipes.jpg" />
+        <img class="projectpic"
+        src="projects/automated_planter/showing_plants_and_fan.jpg" />
+      </div>
+      <div class="six columns">
+        <p>Me and some friends got together to build an automated planter. I
+        wrote the environment control firmware and researched circuits for pump
+        & valve control.</p>
+      </div>
+    </div>
+    <!-- Third project -->
+    <div class="row" id="intro">
+      <h4>Web-controlled RC Car</h4>
+      <div class="six columns">
+        <img class="projectpic" src="projects/web_controlled_car/solder_job.jpg" />
+      </div>
+      <div class="six columns">
+        <p>I made a web-controlled RC car. I soldered a microcontroller to the
+        car's remote to gain automated steering and then conntected the
+        microcontroller via websockets to an azure backend, allowing the car to
+        be controlled from anywhere. <a
+                                       href="projects/web_controlled_car/demo.mp4">
+          Demo video here.
+        </a></p>
+      </div>
+    </div>
+    <!-- Fourth project -->
+    <div class="row" id="intro">
+      <h4>Wireless Retro Apple Mouse</h4>
+      <div class="six columns">
+        <img class="projectpic" src="projects/retro_wireless_mouse/before.jpg" />
+        <img class="projectpic" src="projects/retro_wireless_mouse/insides.jpg" />
+        <img class="projectpic" src="projects/retro_wireless_mouse/mouse_outside.jpg" />
+      </div>
+      <div class="six columns">
+        <p>I took the insides of an old retro apple mouse and replaced them with
+        the guts of a modern wireless mouse. I 3D-printed a custom
+        housing so that the electronics would fit together.<a
+                                                             href="projects/rero_wireless_mouse/demo.mp4"> Demo
+        here.</a></p>
+      </div>
+    </div>
+    <!-- Fifth project -->
+    <div class="row" id="intro">
+      <h4>Digital Nishika Remake</h4>
+      <div class="six columns">
+        <img class="projectpic" src="projects/perspective_camera/camera_rig.jpg" />
+      </div>
+      <div class="six columns">
+        <p>The <a
+          href="https://en.wikipedia.org/wiki/Nimslo#Nishika">Nishika</a> is an old film camera from the 80's. The camera was
+        unique in its ability to capture the same image simultaneously from
+        several different lenses. This allowed the film, when developed, to give
+        you a "3D" perspective effect by cycling left and right between the
+        images from the lenses quickly. Me and a friend got together to build a
+        digital equivalent. We connected two cameras to a raspberry pi and fixed
+        them to a rigid acrylic harness. We wrote a simple python script to
+        combine images from the two cameras into a gif which cycles back and
+        forth rapidly, giving the same digital effect.</p>
+      </div>
     </div>
   </div>
 
