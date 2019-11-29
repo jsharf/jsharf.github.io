@@ -50,3 +50,8 @@ html, body {
 .projectpic {
   width: 200px;
 }
+
+a.button.button-primary {
+ border-color: #69EAE6; 
+ background-color: #69EAE6; 
+}
