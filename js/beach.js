@@ -4,7 +4,32 @@ var height = 0;
 var state = {
   resolution: 1000,
   lastWaveCreationTime: 0,
-  waves: []
+  waves: [
+    {
+      x:Math.random() * 500 + 400,
+      dx: Math.random() * 0.8 - 0.6,
+      h: 0,
+      momentum: Math.random() * 15 + 20,
+      spread: Math.random() * 15 + 5,
+      opacity: 0.5,
+    },
+    {
+      x:Math.random() * 500 + 400,
+      dx: Math.random() * 0.8 - 0.6,
+      h: 0,
+      momentum: Math.random() * 15 + 20,
+      spread: Math.random() * 15 + 5,
+      opacity: 0.4,
+    },
+    {
+      x:Math.random() * 500 + 400,
+      dx: Math.random() * 0.8 - 0.6,
+      h: 0,
+      momentum: Math.random() * 15 + 20,
+      spread: Math.random() * 15 + 5,
+      opacity: 0.6,
+    },
+  ]
 };
 
 function poisson(mean) {
@@ -48,7 +73,7 @@ function physics() {
   var d = new Date();
   var time = d.getTime();
   if (time - state.lastWaveCreationTime > 10000) {
-    var wavesToCreate = poisson(5);
+    var wavesToCreate = poisson(7);
     var wavePeriod = 10000 / wavesToCreate;
     for (var i = 0; i < wavesToCreate; ++i) {
       var waveCreationTime = wavePeriod * i;
