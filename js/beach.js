@@ -46,8 +46,11 @@ function poisson(mean) {
 }
 
 function addWave() {
+  var cvs = document.getElementById('beach');
+  var center = cvs.width/2
+  var spread = cvs.width*0.8
   state.waves.push({
-    x:Math.random() * 500 + 400,
+    x:Math.random() * spread + center - spread/2,
     dx: Math.random() * 0.8 - 0.6,
     h: 0,
     momentum: Math.random() * 15 + 20,
