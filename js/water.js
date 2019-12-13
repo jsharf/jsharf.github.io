@@ -70,47 +70,19 @@ function initializeState(cvs) {
   drawDrop(state.density, width / 2, height / 2, 5, 10);
 }
 
-// function set_bnd(b, x, width, height) {
-//  // Constraint Y bounds
-//  for (var i = 1; i < width - 1; i++) {
-//    x[i][0] = b == 2 ? -x[i][1] : x[i][1];
-//    x[i][height - 1] =
-//        b == 2 ? -x[i][height - 2] : x[i][height - 2];
-//  }
-//  // Constrain X bounds
-//  for (var j = 1; j < height - 1; j++) {
-//    x[0, j] = b == 1 ? -x[1, j] : x[1, j];
-//    x[width - 1, j] = b == 1 ? -x[width - 2, j] : x[width - 2, j];
-//  }
-//
-//  x[0][0] = 0.5 * (x[1][0] + x[0][1]);
-//  x[width - 1][height - 1] =
-//      0.5 * (x[width - 2][height - 1] + x[width - 1][height - 2]);
-//  x[0][height - 1] = 0.5 * (x[0][height - 2] + x[1][height - 1]);
-//  x[width - 1][0] = 0.5 * (x[width - 2][0] + x[width - 1][1]);
-//}
-
-var set_bnd_y_kernel;
-function set_bnd_y_parallel(b, x, width, height) {
-  if (typeof set_bnd_y_kernel == 'undefined') {
-    set_bnd_y_kernel =
-        gpu.createKernel(function set_bnd_y(b, x, width, height) {
-             const i = this.thread.x + 1;
-             const lower = b == 2 ? -x[i][1] : x[i][1];
-             const higher = b == 2 ? -x[i][height - 2] : x[i][height - 2];
-             return [lower, higher];
-           })
-            .setGraphical(false)
-            .setOutput([width - 2]);
+function set_bnd(b, x, width, height) {
+  // Constraint Y bounds
+  for (var i = 1; i < width - 1; i++) {
+    x[i][0] = b == 2 ? -x[i][1] : x[i][1];
+    x[i][height - 1] =
+        b == 2 ? -x[i][height - 2] : x[i][height - 2];
   }
-  var boundaries = set_bnd_y_kernel(b, x, width, height);
-  for (var i = 1; i < width - 1; ++i) {
-    x[i][0] = boundaries[i - 1][0];
-    x[i][height - 1] = boundaries[i - 1][1];
+  // Constrain X bounds
+  for (var j = 1; j < height - 1; j++) {
+    x[0][j] = b == 1 ? -x[1][j] : x[1][j];
+    x[width - 1][j] = b == 1 ? -x[width - 2][j] : x[width - 2][j];
   }
-}
 
-function set_bnd_corners(b, x, width, height) {
   x[0][0] = 0.5 * (x[1][0] + x[0][1]);
   x[width - 1][height - 1] =
       0.5 * (x[width - 2][height - 1] + x[width - 1][height - 2]);
@@ -118,46 +90,59 @@ function set_bnd_corners(b, x, width, height) {
   x[width - 1][0] = 0.5 * (x[width - 2][0] + x[width - 1][1]);
 }
 
-var set_bnd_x_kernel;
-function set_bnd_x_parallel(b, x, width, height) {
-  if (typeof set_bnd_x_kernel == 'undefined') {
-    set_bnd_x_kernel =
-        gpu.createKernel(function set_bnd_x(b, x, width, height) {
-             const j = this.thread.x + 1;
-             // const lower = b == 1 ? -x[1][j] : x[1][j];
-             // const higher = b == 1 ? -x[width - 2][j] : x[width - 2][j];
-             return [x[1][j], x[height - 2][j]];
-           })
-            .setGraphical(false)
-            .setOutput([height - 2]);
-  }
-  var boundaries = set_bnd_x_kernel(b, x, width, height);
-  for (var j = 1; j < height - 1; ++j) {
-    x[0][j] = boundaries[j - 1][0];
-    x[width - 1][j] = boundaries[j - 1][1];
-  }
-}
-
-function set_bnd_parallel(b, x, width, height) {
-  set_bnd_x_parallel(b, x, width, height);
-  set_bnd_y_parallel(b, x, width, height);
-  set_bnd_corners(b, x, width, height);
-}
-
-function lin_solve(b, x, x0, a, c, iter, width, height) {
-  var cRecip = 1.0 / c;
-  for (var k = 0; k < iter; k++) {
-    for (var j = 1; j < height - 1; j++) {
-      for (var i = 1; i < width - 1; i++) {
-        x[i][j] =
-            (x0[i][j] +
-             a * (x[i + 1][j] + x[i - 1][j] + x[i][j + 1] + x[i][j - 1])) *
-            cRecip;
-      }
-    }
-    set_bnd(b, x, width, height);
-  }
-}
+//var set_bnd_y_kernel;
+//function set_bnd_y_parallel(b, x, width, height) {
+//  if (typeof set_bnd_y_kernel == 'undefined') {
+//    set_bnd_y_kernel =
+//        gpu.createKernel(function set_bnd_y(b, x, width, height) {
+//             const i = this.thread.x + 1;
+//             const lower = x[i][1] : x[i][1];
+//             const higher =x[i][height - 2] : x[i][height - 2];
+//             return [lower, higher];
+//           })
+//            .setGraphical(false)
+//            .setTactic('speed')
+//            .setOutput([width - 2]);
+//  }
+//  var boundaries = set_bnd_y_kernel(b, x, width, height);
+//  for (var i = 1; i < width - 1; ++i) {
+//    x[i][0] = (b == 2) ? -boundaries[i - 1][0] : boundaries[i-1][0];
+//    x[i][height - 1] = (b == 2) ? -boundaries[i - 1][1] : boundaries[i-1][0];
+//  }
+//}
+//
+//function set_bnd_corners(b, x, width, height) {
+//  x[0][0] = 0.5 * (x[1][0] + x[0][1]);
+//  x[width - 1][height - 1] =
+//      0.5 * (x[width - 2][height - 1] + x[width - 1][height - 2]);
+//  x[0][height - 1] = 0.5 * (x[0][height - 2] + x[1][height - 1]);
+//  x[width - 1][0] = 0.5 * (x[width - 2][0] + x[width - 1][1]);
+//}
+//
+//var set_bnd_x_kernel;
+//function set_bnd_x_parallel(b, x, width, height) {
+//  if (typeof set_bnd_x_kernel == 'undefined') {
+//    set_bnd_x_kernel =
+//        gpu.createKernel(function set_bnd_x(b, x, width, height) {
+//             const j = this.thread.x + 1;
+//             return [x[1][j], x[height - 2][j]];
+//           })
+//            .setGraphical(false)
+//            .setTactic('speed')
+//            .setOutput([height - 2]);
+//  }
+//  var boundaries = set_bnd_x_kernel(b, x, width, height);
+//  for (var j = 1; j < height - 1; ++j) {
+//    x[0][j] = (b == 1) ? -boundaries[j - 1][0] : boundaries[j - 1][0];
+//    x[width - 1][j] = (b == 1) ? -boundaries[j - 1][1] : boundaries[j - 1][1];
+//  }
+//}
+//
+//function set_bnd_parallel(b, x, width, height) {
+//  set_bnd_x_parallel(b, x, width, height);
+//  set_bnd_y_parallel(b, x, width, height);
+//  set_bnd_corners(b, x, width, height);
+//}
 
 function diffuse(b, x, x0, diff, dt, iter, width, height) {
   // theory
@@ -173,10 +158,10 @@ function diffuse(b, x, x0, diff, dt, iter, width, height) {
   lin_solve(b, x, x0, a, 1 + 4 * a, iter, width, height);
 }
 
-function lin_solve_parallel_iter(b, x, x0, a, c, iter, width, height) {
-  var i = this.thread.y + 1;
-  var j = this.thread.x + 1;
-  var cRecip = 1.0 / c;
+function lin_solve_parallel_iter(x, x0, a, c) {
+  const i = this.thread.y + 1;
+  const j = this.thread.x + 1;
+  const cRecip = 1.0 / c;
   return (x0[i][j] +
           a * (x[i + 1][j] + x[i - 1][j] + x[i][j + 1] + x[i][j - 1])) *
       cRecip;
@@ -187,11 +172,12 @@ function lin_solve_parallel(b, x, x0, a, c, iter, width, height) {
   if (typeof lin_solve_parallel_kernel == 'undefined') {
     lin_solve_parallel_kernel = gpu.createKernel(lin_solve_parallel_iter)
                                     .setOutput([height, width])
+                                    .setTactic('speed')
                                     .setGraphical(false);
   }
   for (var i = 0; i < iter; ++i) {
-    next_x = lin_solve_parallel_kernel(b, x, x0, a, c, iter, width, height);
-    set_bnd_parallel(b, next_x, width, height);
+    next_x = lin_solve_parallel_kernel(x, x0, a, c);
+    set_bnd(b, next_x, width, height);
     x = next_x;
   }
   return x;
@@ -216,7 +202,7 @@ var project_b_kernel;
 function project_parallel(velocX, velocY, p, div, iter, width, height) {
   if (typeof project_a_kernel == 'undefined') {
     project_a_kernel =
-        gpu.createKernel(function(velocX, velocY, p, div, iter, width, height) {
+        gpu.createKernel(function(velocX, velocY, width, height) {
              const i = this.thread.y;
              const j = this.thread.z;
              const divorp = this.thread.x;
@@ -231,21 +217,22 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
              }
            })
             .setOutput([height, width, 2])
+            .setTactic('speed')
             .setGraphical(false);
   }
 
-  var divandp = project_a_kernel(velocX, velocY, p, div, iter, width, height);
+  var divandp = project_a_kernel(velocX, velocY, width, height);
   div = divandp[0];
   p = divandp[1];
-  set_bnd_parallel(0, div, width, height);
+  set_bnd(0, div, width, height);
   // theory I don't think this does anything, p is all zero?:
-  // set_bnd_parallel(0, p, width, height);
+  // set_bnd(0, p, width, height);
   // theory 6-> 4 for 3D -> 2D lin_solve(0, p, div, 1, 6, iter, N);
   p = lin_solve_parallel(0, p, div, 1, 4, iter, width, height);
 
   if (typeof project_b_kernel == 'undefined') {
     project_b_kernel =
-        gpu.createKernel(function(velocX, velocY, p, div, iter, width, height) {
+        gpu.createKernel(function(velocX, velocY, p, width, height) {
              const i = this.thread.y;
              const j = this.thread.z;
              const velocXorY = this.thread.x;
@@ -267,14 +254,15 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
              }
            })
             .setOutput([height, width, 2])
+            .setTactic('speed')
             .setGraphical(false);
   }
   var velocXandY =
-      project_b_kernel(velocX, velocY, p, div, iter, width, height);
+      project_b_kernel(velocX, velocY, p, width, height);
   velocX = velocXandY[0];
   velocY = velocXandY[1];
-  set_bnd_parallel(1, velocX, width, height);
-  set_bnd_parallel(2, velocY, width, height);
+  set_bnd(1, velocX, width, height);
+  set_bnd(2, velocY, width, height);
   return [velocX, velocY, p, div];
 }
 
@@ -282,7 +270,7 @@ var advectKernel;
 function advect_parallel(b, d, d0, velocX, velocY, dt, width, height) {
   if (typeof advectKernel == 'undefined') {
     advectKernel =
-        gpu.createKernel(function(b, d, d0, velocX, velocY, dt, width, height) {
+        gpu.createKernel(function(d0, velocX, velocY, dt, width, height) {
              const i = this.thread.y;
              const j = this.thread.x;
              // theory: what is going on here? units of time*space?
@@ -320,10 +308,11 @@ function advect_parallel(b, d, d0, velocX, velocY, dt, width, height) {
                  s1 * (t0 * (d0[i1i][j0i]) + (t1 * (d0[i1i][j1i])))
            })
             .setOutput([height, width])
+            .setTactic('speed')
             .setGraphical(false);
   }
-  d = advectKernel(b, d, d0, velocX, velocY, dt, width, height);
-  set_bnd_parallel(b, d, width, height);
+  d = advectKernel(d0, velocX, velocY, dt, width, height);
+  set_bnd(b, d, width, height);
   return d;
 }
 
@@ -392,7 +381,6 @@ function render() {
   }
 
   renderKernel(r, g, b, state.density);
-  console.log(renderKernel.getPixels());
 }
 
 window.onload = init;
@@ -417,6 +405,8 @@ function init() {
   initializeState(canvas);
 
   gpu = new GPU();
+  console.log("Is GPU supported? " + GPU.isGPUSupported);
+  console.log("Is WebGl2 supported? " + GPU.isGPUSupported);
   const renderSettings =
       {canvas: canvas, context: ctx, graphical: true, output: [width, height]};
 
@@ -430,7 +420,7 @@ function init() {
     const pr = (r[lowIndex] * mix + r[highIndex] * (1 - mix)) * 0.5;
     const pg = (g[lowIndex] * mix + g[highIndex] * (1 - mix)) * 0.5;
     const pb = (b[lowIndex] * mix + b[highIndex] * (1 - mix)) * 0.5;
-    this.color(pr/255, pg/255, pb/255);
+    this.color(pr / 255, pg / 255, pb / 255);
   }, renderSettings);
   lastLoopDate = new Date();
   window.requestAnimationFrame(loop);

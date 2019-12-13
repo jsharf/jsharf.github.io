@@ -144,6 +144,7 @@ function render() {
   }
 }
 
+window.onload = init;
 function init() {
   /// get computed style for image
   var container = document.getElementById('beach-container');
@@ -167,3 +168,4 @@ function loop() {
   render();
   window.requestAnimationFrame(loop);
 }
+
