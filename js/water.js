@@ -57,6 +57,15 @@ function drawDrop(frame, x, y, radius, value) {
   }
 }
 
+function addWind(state, x, y, dirX, dirY) {
+  for (var i = x - 10; i < x + 10; ++x) {
+    for (var j = y - 10; j < y + 10; ++j) {
+      state.vx0[i][j] = dirX;
+      state.vy0[i][j] = dirY;
+    }
+  }
+}
+
 function initializeState(cvs) {
   const width = cvs.width;
   const height = cvs.height;
@@ -68,7 +77,9 @@ function initializeState(cvs) {
   state.vy = Create2DArray(width, height);
   state.vx0 = Create2DArray(width, height);
   state.vy0 = Create2DArray(width, height);
-  drawDrop(state.density, width/2, 180, 20, 0.9);
+  drawDrop(state.s, width/2, 180, 20, 0.9);
+  drawDrop(state.s, width/2, 140, 20, 0.9);
+  addWind(state, width/2, 150, -10, 0);
 }
 
 function set_bnd(b, x, width, height) {
@@ -91,60 +102,6 @@ function set_bnd(b, x, width, height) {
   x[width - 1][0] = 0.5 * (x[width - 2][0] + x[width - 1][1]);
 }
 
-//var set_bnd_y_kernel;
-//function set_bnd_y_parallel(b, x, width, height) {
-//  if (typeof set_bnd_y_kernel == 'undefined') {
-//    set_bnd_y_kernel =
-//        gpu.createKernel(function set_bnd_y(b, x, width, height) {
-//             const i = this.thread.x + 1;
-//             const lower = x[i][1] : x[i][1];
-//             const higher =x[i][height - 2] : x[i][height - 2];
-//             return [lower, higher];
-//           })
-//            .setGraphical(false)
-//            .setTactic('speed')
-//            .setOutput([width - 2]);
-//  }
-//  var boundaries = set_bnd_y_kernel(b, x, width, height);
-//  for (var i = 1; i < width - 1; ++i) {
-//    x[i][0] = (b == 2) ? -boundaries[i - 1][0] : boundaries[i-1][0];
-//    x[i][height - 1] = (b == 2) ? -boundaries[i - 1][1] : boundaries[i-1][0];
-//  }
-//}
-//
-//function set_bnd_corners(b, x, width, height) {
-//  x[0][0] = 0.5 * (x[1][0] + x[0][1]);
-//  x[width - 1][height - 1] =
-//      0.5 * (x[width - 2][height - 1] + x[width - 1][height - 2]);
-//  x[0][height - 1] = 0.5 * (x[0][height - 2] + x[1][height - 1]);
-//  x[width - 1][0] = 0.5 * (x[width - 2][0] + x[width - 1][1]);
-//}
-//
-//var set_bnd_x_kernel;
-//function set_bnd_x_parallel(b, x, width, height) {
-//  if (typeof set_bnd_x_kernel == 'undefined') {
-//    set_bnd_x_kernel =
-//        gpu.createKernel(function set_bnd_x(b, x, width, height) {
-//             const j = this.thread.x + 1;
-//             return [x[1][j], x[height - 2][j]];
-//           })
-//            .setGraphical(false)
-//            .setTactic('speed')
-//            .setOutput([height - 2]);
-//  }
-//  var boundaries = set_bnd_x_kernel(b, x, width, height);
-//  for (var j = 1; j < height - 1; ++j) {
-//    x[0][j] = (b == 1) ? -boundaries[j - 1][0] : boundaries[j - 1][0];
-//    x[width - 1][j] = (b == 1) ? -boundaries[j - 1][1] : boundaries[j - 1][1];
-//  }
-//}
-//
-//function set_bnd_parallel(b, x, width, height) {
-//  set_bnd_x_parallel(b, x, width, height);
-//  set_bnd_y_parallel(b, x, width, height);
-//  set_bnd_corners(b, x, width, height);
-//}
-
 function lin_solve_parallel_iter(x, x0, a, c, width, height) {
   const i = this.thread.y;
   const j = this.thread.x;
@@ -165,20 +122,10 @@ function lin_solve_parallel(b, x, x0, a, c, iter, width, height) {
                                     .setOutput([height, width])
                                     .setTactic('precision');
   }
-  console.log("lsp: " + x0[width/2][180]);
   for (var i = 0; i < iter; ++i) {
     next_x = lin_solve_parallel_kernel(x, x0, a, c, width, height);
-    console.log("plsp: " + next_x[width/2][180]);
     const cRecip = 1.0 / c;
-    // Is an overflow happening here?
-    //var i = width/2;
-    //var j = 180;
-    //const r =  (x0[i][j] +
-    //        a * (x[i + 1][j] + x[i - 1][j] + x[i][j + 1] + x[i][j - 1])) *
-    //    cRecip;
-    //console.log("Expected: " + r);
     set_bnd(b, next_x, width, height);
-    console.log("set_bnd: " + next_x[width/2][180]);
     x = next_x;
   }
   return x;
@@ -192,8 +139,6 @@ function diffuse_parallel(b, x, x0, diff, dt, iter, width, height) {
   // volume. In 3D (commented out above), this was (N-2)^2. In 2D this is
   // (width + height) * 2
   var a = dt * diff * (2 * width + 2 * height);
-  //console.log(x0[width/2][180]);
-  console.log("a params: " + dt + " " + diff + " " + width + " " + height);
   // theory
   // Might need to change 6 * a to 4 * a due to 3D -> 2D change.
   // lin_solve(b, x, x0, a, 1 + 6 * a, iter, width, height);
@@ -358,11 +303,9 @@ function physics() {
   state.s = diffuse_parallel(
       0, state.s, state.density, state.diff, state.dt, state.iterations, state.width,
       state.height);
-  console.log("diffused s: " + state.s[state.width/2][180]);
   state.density = advect_parallel(
       0, state.density, state.s, state.vx, state.vy, state.dt, state.width,
       state.height);
-  console.log("advected d: " + state.density[state.width/2][180]);
 }
 
 // create and fill polygon
@@ -449,7 +392,6 @@ function loop() {
     state.dt = 100;
   }
   lastLoopDate = date;
-  console.log("dt: " + state.dt);
 
   physics();
   render();
