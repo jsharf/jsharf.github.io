@@ -8,7 +8,8 @@ var state = {
   height: 0,
   dt: 0.0,
   diff: 5.0,
-  visc: 5.0,
+  visc: 1,
+  iterations: 1,
 
   s: [],
   density: [],
@@ -51,7 +52,7 @@ function drawDrop(frame, x, y, radius, value) {
     for (var j = bottom; j < top; ++j) {
       var indexI = Math.floor(i);
       var indexJ = Math.floor(j);
-      frame[indexI][indexJ] += value;
+      frame[indexI][indexJ] = value;
     }
   }
 }
@@ -67,7 +68,7 @@ function initializeState(cvs) {
   state.vy = Create2DArray(width, height);
   state.vx0 = Create2DArray(width, height);
   state.vy0 = Create2DArray(width, height);
-  drawDrop(state.density, width / 2, height / 2, 5, 10);
+  drawDrop(state.density, width/2, 180, 20, 0.9);
 }
 
 function set_bnd(b, x, width, height) {
@@ -144,23 +145,12 @@ function set_bnd(b, x, width, height) {
 //  set_bnd_corners(b, x, width, height);
 //}
 
-function diffuse(b, x, x0, diff, dt, iter, width, height) {
-  // theory
-  // Might need to remove one (N - 2) due to 3D -> 2D change.
-  // var a = dt * diff * (N - 2) * (N - 2);
-  // Jacob's theory is that this needs to be the boundary of the finite
-  // volume. In 3D (commented out above), this was (N-2)^2. In 2D this is
-  // (width + height) * 2
-  var a = dt * diff * (2 * width + 2 * height);
-  // theory
-  // Might need to change 6 * a to 4 * a due to 3D -> 2D change.
-  // lin_solve(b, x, x0, a, 1 + 6 * a, iter, width, height);
-  lin_solve(b, x, x0, a, 1 + 4 * a, iter, width, height);
-}
-
-function lin_solve_parallel_iter(x, x0, a, c) {
-  const i = this.thread.y + 1;
-  const j = this.thread.x + 1;
+function lin_solve_parallel_iter(x, x0, a, c, width, height) {
+  const i = this.thread.y;
+  const j = this.thread.x;
+  if ((i == 0) || (j == 0) || (i == width - 1) || (j == height - 1)) {
+    return x[i][j];
+  }
   const cRecip = 1.0 / c;
   return (x0[i][j] +
           a * (x[i + 1][j] + x[i - 1][j] + x[i][j + 1] + x[i][j - 1])) *
@@ -171,13 +161,24 @@ var lin_solve_parallel_kernel;
 function lin_solve_parallel(b, x, x0, a, c, iter, width, height) {
   if (typeof lin_solve_parallel_kernel == 'undefined') {
     lin_solve_parallel_kernel = gpu.createKernel(lin_solve_parallel_iter)
+                                    .setGraphical(false)
                                     .setOutput([height, width])
-                                    .setTactic('speed')
-                                    .setGraphical(false);
+                                    .setTactic('precision');
   }
+  console.log("lsp: " + x0[width/2][180]);
   for (var i = 0; i < iter; ++i) {
-    next_x = lin_solve_parallel_kernel(x, x0, a, c);
+    next_x = lin_solve_parallel_kernel(x, x0, a, c, width, height);
+    console.log("plsp: " + next_x[width/2][180]);
+    const cRecip = 1.0 / c;
+    // Is an overflow happening here?
+    //var i = width/2;
+    //var j = 180;
+    //const r =  (x0[i][j] +
+    //        a * (x[i + 1][j] + x[i - 1][j] + x[i][j + 1] + x[i][j - 1])) *
+    //    cRecip;
+    //console.log("Expected: " + r);
     set_bnd(b, next_x, width, height);
+    console.log("set_bnd: " + next_x[width/2][180]);
     x = next_x;
   }
   return x;
@@ -191,6 +192,8 @@ function diffuse_parallel(b, x, x0, diff, dt, iter, width, height) {
   // volume. In 3D (commented out above), this was (N-2)^2. In 2D this is
   // (width + height) * 2
   var a = dt * diff * (2 * width + 2 * height);
+  //console.log(x0[width/2][180]);
+  console.log("a params: " + dt + " " + diff + " " + width + " " + height);
   // theory
   // Might need to change 6 * a to 4 * a due to 3D -> 2D change.
   // lin_solve(b, x, x0, a, 1 + 6 * a, iter, width, height);
@@ -206,9 +209,12 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
              const i = this.thread.y;
              const j = this.thread.z;
              const divorp = this.thread.x;
+             if ((i == 0) || (j == 0) || (i == width - 1) || (j == height - 1)) {
+               return 0;
+             }
              const div_component =
-                 -0.5 * ((velocX[i + 1][j] - velocX[i - 1][j]) / width +
-                         (velocY[i][j + 1] - velocY[i][j - 1]) / height);
+                 -0.5 * ((velocX[i + 1][j] - velocX[i - 1][j]) * width +
+                         (velocY[i][j + 1] - velocY[i][j - 1]) * height);
              const p_component = 0;
              if (divorp == 0) {
                return div_component;
@@ -216,19 +222,18 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
                return p_component;
              }
            })
-            .setOutput([height, width, 2])
             .setTactic('speed')
-            .setGraphical(false);
+            .setGraphical(false)
+            .setOutput([height, width, 2]);
   }
 
   var divandp = project_a_kernel(velocX, velocY, width, height);
   div = divandp[0];
   p = divandp[1];
   set_bnd(0, div, width, height);
-  // theory I don't think this does anything, p is all zero?:
-  // set_bnd(0, p, width, height);
   // theory 6-> 4 for 3D -> 2D lin_solve(0, p, div, 1, 6, iter, N);
   p = lin_solve_parallel(0, p, div, 1, 4, iter, width, height);
+  set_bnd(0, p, width, height);
 
   if (typeof project_b_kernel == 'undefined') {
     project_b_kernel =
@@ -236,6 +241,9 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
              const i = this.thread.y;
              const j = this.thread.z;
              const velocXorY = this.thread.x;
+             if ((i == 0) || (j == 0) || (i == width - 1) || (j == height - 1)) {
+               return 0;
+             }
              // theory. These used to be * N. Changed velocX to * width and
              // velocY to
              // * height. Alternatively, maybe X should be height and Y
@@ -253,9 +261,9 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
                return velocY[i][j] - 0.5 * (p[i][j + 1] - p[i][j - 1]) * height;
              }
            })
-            .setOutput([height, width, 2])
             .setTactic('speed')
-            .setGraphical(false);
+            .setGraphical(false)
+            .setOutput([height, width, 2]);
   }
   var velocXandY =
       project_b_kernel(velocX, velocY, p, width, height);
@@ -307,9 +315,9 @@ function advect_parallel(b, d, d0, velocX, velocY, dt, width, height) {
              return s0 * (t0 * d0[i0i][j0i]) + (t1 * d0[i0i][j1i]) +
                  s1 * (t0 * (d0[i1i][j0i]) + (t1 * (d0[i1i][j1i])))
            })
+            .setGraphical(false)
             .setOutput([height, width])
-            .setTactic('speed')
-            .setGraphical(false);
+            .setTactic('precision');
   }
   d = advectKernel(d0, velocX, velocY, dt, width, height);
   set_bnd(b, d, width, height);
@@ -319,18 +327,18 @@ function advect_parallel(b, d, d0, velocX, velocY, dt, width, height) {
 function physics() {
   console.log("Physics loop");
   state.vx0 = diffuse_parallel(
-      1, state.vx0, state.vx, state.visc, state.dt, 4, state.width,
+      1, state.vx0, state.vx, state.visc, state.dt, state.iterations, state.width,
       state.height);
   state.vy0 = diffuse_parallel(
-      2, state.vy0, state.vy, state.visc, state.dt, 4, state.width,
+      2, state.vy0, state.vy, state.visc, state.dt, state.iterations, state.width,
       state.height);
 
   var dpxy = project_parallel(
-      state.vx0, state.vy0, state.vx, state.vy, 4, state.width, state.height);
-  state.vx = dpxy[2];
-  state.vy = dpxy[3];
+      state.vx0, state.vy0, state.vx, state.vy, state.iterations, state.width, state.height);
   state.vx0 = dpxy[0];
   state.vy0 = dpxy[1];
+  state.vx = dpxy[2];
+  state.vy = dpxy[3];
 
 
   state.vx = advect_parallel(
@@ -341,18 +349,20 @@ function physics() {
       state.height);
 
   dpxy = project_parallel(
-      state.vx, state.vy, state.vx0, state.vy0, 4, state.width, state.height);
+      state.vx, state.vy, state.vx0, state.vy0, state.iterations, state.width, state.height);
   state.vx = dpxy[0];
   state.vy = dpxy[1];
   state.vx0 = dpxy[2];
   state.vy0 = dpxy[3];
 
   state.s = diffuse_parallel(
-      0, state.s, state.density, state.diff, state.dt, 4, state.width,
+      0, state.s, state.density, state.diff, state.dt, state.iterations, state.width,
       state.height);
+  console.log("diffused s: " + state.s[state.width/2][180]);
   state.density = advect_parallel(
       0, state.density, state.s, state.vx, state.vy, state.dt, state.width,
       state.height);
+  console.log("advected d: " + state.density[state.width/2][180]);
 }
 
 // create and fill polygon
@@ -374,13 +384,34 @@ CanvasRenderingContext2D.prototype.fillPolygon =
 
 var renderKernel;
 function render() {
-  var canvas = document.getElementById('beach');
   if (typeof renderKernel == 'undefined') {
-    console.log("renderKernel undefined!");
-    return;
+    /// now use this as width and height for your canvas element:
+    var canvas = document.getElementById('beach');
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('webgl2', {premultipliedAlpha: false});
+    const renderSettings =
+        {canvas: canvas, context: ctx, graphical: true, output: [width, height]};
+
+    renderKernel = gpu.createKernel(function(r, g, b, densities, velocities) {
+      const density = densities[this.thread.x][this.thread.y];
+      const indexFloat = density * (8);
+      if (indexFloat > 8) {
+        indexFloat = 8;
+      }
+      const lowIndex = Math.floor(indexFloat);
+      const highIndex = Math.ceil(indexFloat);
+      const mix = indexFloat - lowIndex;
+
+      const pr = (r[lowIndex] * mix + r[highIndex] * (1 - mix)) * 0.5;
+      const pg = (g[lowIndex] * mix + g[highIndex] * (1 - mix)) * 0.5;
+      const pb = (b[lowIndex] * mix + b[highIndex] * (1 - mix)) * 0.5;
+
+      this.color(pr / 255, pg / 255, pb / 255);
+    }, renderSettings);
   }
 
-  renderKernel(r, g, b, state.density);
+  renderKernel(r, g, b, state.density, state.vx);
 }
 
 window.onload = init;
@@ -396,8 +427,6 @@ function init() {
 
   /// now use this as width and height for your canvas element:
   var canvas = document.getElementById('beach');
-  const ctx = canvas.getContext('webgl2', {premultipliedAlpha: false});
-
 
   canvas.width = width;
   canvas.height = height;
@@ -407,21 +436,6 @@ function init() {
   gpu = new GPU();
   console.log("Is GPU supported? " + GPU.isGPUSupported);
   console.log("Is WebGl2 supported? " + GPU.isGPUSupported);
-  const renderSettings =
-      {canvas: canvas, context: ctx, graphical: true, output: [width, height]};
-
-  renderKernel = gpu.createKernel(function(r, g, b, densities) {
-    const density = densities[this.thread.x][this.thread.y];
-    const indexFloat = density * (8);
-    const lowIndex = Math.floor(indexFloat);
-    const highIndex = Math.ceil(indexFloat);
-    const mix = indexFloat - lowIndex;
-
-    const pr = (r[lowIndex] * mix + r[highIndex] * (1 - mix)) * 0.5;
-    const pg = (g[lowIndex] * mix + g[highIndex] * (1 - mix)) * 0.5;
-    const pb = (b[lowIndex] * mix + b[highIndex] * (1 - mix)) * 0.5;
-    this.color(pr / 255, pg / 255, pb / 255);
-  }, renderSettings);
   lastLoopDate = new Date();
   window.requestAnimationFrame(loop);
 }
@@ -430,8 +444,12 @@ var lastLoopDate;
 function loop() {
   // Calculate dt.
   var date = new Date();
-  state.dt = (date.getTime() - lastLoopDate.getTime()) / 1000;
+  state.dt = (date.getTime() - lastLoopDate.getTime())/1000;
+  if (state.dt == 0) {
+    state.dt = 100;
+  }
   lastLoopDate = date;
+  console.log("dt: " + state.dt);
 
   physics();
   render();
