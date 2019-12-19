@@ -7,9 +7,9 @@ var state = {
   width: 0,
   height: 0,
   dt: 0.0,
-  diff: 5.0,
-  visc: 1,
-  iterations: 1,
+  diff: 0.01,
+  visc: 0.1,
+  iterations: 4,
 
   s: [],
   density: [],
@@ -43,7 +43,7 @@ function Create2DArray(width, height) {
   return arr;
 }
 
-function drawDrop(frame, x, y, radius, value) {
+function addDrop(frame, x, y, radius, value) {
   for (var i = x - radius; i < x + radius; ++i) {
     var x_circle = (i - x);
     var y_circle = Math.sqrt(radius * radius - x_circle * x_circle);
@@ -52,16 +52,35 @@ function drawDrop(frame, x, y, radius, value) {
     for (var j = bottom; j < top; ++j) {
       var indexI = Math.floor(i);
       var indexJ = Math.floor(j);
-      frame[indexI][indexJ] = value;
+      if ((indexI in frame) && (indexJ in frame[indexI])) {
+        frame[indexI][indexJ] = value;
+      }
     }
   }
 }
 
 function addWind(state, x, y, dirX, dirY) {
-  for (var i = x - 10; i < x + 10; ++x) {
+  for (var i = x - 10; i < x + 10; ++i) {
     for (var j = y - 10; j < y + 10; ++j) {
-      state.vx0[i][j] = dirX;
-      state.vy0[i][j] = dirY;
+      state.vx[i][j] = dirX;
+      state.vy[i][j] = dirY;
+    }
+  }
+}
+
+function addVortex(state, x, y, size, magnitude) {
+  for (var i = x - size; i < x + size; ++i) {
+    for (var j = y - size; j < y + size; ++j) {
+      if (i > x) {
+        state.vx[i][j] += magnitude;
+      } else if (i < x) {
+        state.vx[i][j] -= magnitude;
+      }
+      if (j > y) {
+        state.vy[i][j] += magnitude;
+      } else if (j < y) {
+        state.vy[i][j] -= magnitude;
+      }
     }
   }
 }
@@ -77,17 +96,20 @@ function initializeState(cvs) {
   state.vy = Create2DArray(width, height);
   state.vx0 = Create2DArray(width, height);
   state.vy0 = Create2DArray(width, height);
-  drawDrop(state.s, width/2, 180, 20, 0.9);
-  drawDrop(state.s, width/2, 140, 20, 0.9);
-  addWind(state, width/2, 150, -10, 0);
+  for (var i = 0; i < 100; ++i) {
+    const radius = Math.random() * 75;
+    const value = Math.random();
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    addDrop(state.s, x, y, radius, value);   
+  }
 }
 
 function set_bnd(b, x, width, height) {
   // Constraint Y bounds
   for (var i = 1; i < width - 1; i++) {
     x[i][0] = b == 2 ? -x[i][1] : x[i][1];
-    x[i][height - 1] =
-        b == 2 ? -x[i][height - 2] : x[i][height - 2];
+    x[i][height - 1] = b == 2 ? -x[i][height - 2] : x[i][height - 2];
   }
   // Constrain X bounds
   for (var j = 1; j < height - 1; j++) {
@@ -119,8 +141,7 @@ function lin_solve_parallel(b, x, x0, a, c, iter, width, height) {
   if (typeof lin_solve_parallel_kernel == 'undefined') {
     lin_solve_parallel_kernel = gpu.createKernel(lin_solve_parallel_iter)
                                     .setGraphical(false)
-                                    .setOutput([height, width])
-                                    .setTactic('precision');
+                                    .setOutput([height, width]);
   }
   for (var i = 0; i < iter; ++i) {
     next_x = lin_solve_parallel_kernel(x, x0, a, c, width, height);
@@ -152,14 +173,15 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
     project_a_kernel =
         gpu.createKernel(function(velocX, velocY, width, height) {
              const i = this.thread.y;
-             const j = this.thread.z;
-             const divorp = this.thread.x;
-             if ((i == 0) || (j == 0) || (i == width - 1) || (j == height - 1)) {
+             const j = this.thread.x;
+             const divorp = this.thread.z;
+             if ((i == 0) || (j == 0) || (i == width - 1) ||
+                 (j == height - 1)) {
                return 0;
              }
              const div_component =
-                 -0.5 * ((velocX[i + 1][j] - velocX[i - 1][j]) * width +
-                         (velocY[i][j + 1] - velocY[i][j - 1]) * height);
+                 -0.5 * ((velocX[i + 1][j] - velocX[i - 1][j]) / width +
+                         (velocY[i][j + 1] - velocY[i][j - 1]) / height);
              const p_component = 0;
              if (divorp == 0) {
                return div_component;
@@ -167,7 +189,6 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
                return p_component;
              }
            })
-            .setTactic('speed')
             .setGraphical(false)
             .setOutput([height, width, 2]);
   }
@@ -177,16 +198,17 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
   p = divandp[1];
   set_bnd(0, div, width, height);
   // theory 6-> 4 for 3D -> 2D lin_solve(0, p, div, 1, 6, iter, N);
-  p = lin_solve_parallel(0, p, div, 1, 4, iter, width, height);
+  p = lin_solve_parallel(0, p, div, 1, 6, iter, width, height);
   set_bnd(0, p, width, height);
 
   if (typeof project_b_kernel == 'undefined') {
     project_b_kernel =
         gpu.createKernel(function(velocX, velocY, p, width, height) {
              const i = this.thread.y;
-             const j = this.thread.z;
-             const velocXorY = this.thread.x;
-             if ((i == 0) || (j == 0) || (i == width - 1) || (j == height - 1)) {
+             const j = this.thread.x;
+             const velocXorY = this.thread.z;
+             if ((i == 0) || (j == 0) || (i == width - 1) ||
+                 (j == height - 1)) {
                return 0;
              }
              // theory. These used to be * N. Changed velocX to * width and
@@ -206,12 +228,10 @@ function project_parallel(velocX, velocY, p, div, iter, width, height) {
                return velocY[i][j] - 0.5 * (p[i][j + 1] - p[i][j - 1]) * height;
              }
            })
-            .setTactic('speed')
             .setGraphical(false)
             .setOutput([height, width, 2]);
   }
-  var velocXandY =
-      project_b_kernel(velocX, velocY, p, width, height);
+  var velocXandY = project_b_kernel(velocX, velocY, p, width, height);
   velocX = velocXandY[0];
   velocY = velocXandY[1];
   set_bnd(1, velocX, width, height);
@@ -235,15 +255,15 @@ function advect_parallel(b, d, d0, velocX, velocY, dt, width, height) {
 
              const offsetX = dtx * velocX[i][j];
              const offsetY = dty * velocY[i][j];
-             const x = i - offsetX;
-             const y = j - offsetY;
+             let x = i - offsetX;
+             let y = j - offsetY;
 
              if (x < 0.5) x = 0.5;
-             if (x > width + 0.5) x = width + 0.5;
+             if (x > width - 1.5) x = width - 1.5;
              const i0 = Math.floor(x);
              const i1 = i0 + 1.0;
              if (y < 0.5) y = 0.5;
-             if (y > height + 0.5) y = height + 0.5;
+             if (y > height - 1.5) y = height - 1.5;
              const j0 = Math.floor(y);
              const j1 = j0 + 1.0;
 
@@ -252,17 +272,11 @@ function advect_parallel(b, d, d0, velocX, velocY, dt, width, height) {
              const t1 = y - j0;
              const t0 = 1.0 - t1;
 
-             const i0i = i0;
-             const i1i = i1;
-             const j0i = j0;
-             const j1i = j1;
-
-             return s0 * (t0 * d0[i0i][j0i]) + (t1 * d0[i0i][j1i]) +
-                 s1 * (t0 * (d0[i1i][j0i]) + (t1 * (d0[i1i][j1i])))
+             return s0 * (t0 * d0[i0][j0]) + (t1 * d0[i0][j1]) +
+                 s1 * (t0 * (d0[i1][j0]) + (t1 * (d0[i1][j1])))
            })
             .setGraphical(false)
-            .setOutput([height, width])
-            .setTactic('precision');
+            .setOutput([height, width]);
   }
   d = advectKernel(d0, velocX, velocY, dt, width, height);
   set_bnd(b, d, width, height);
@@ -272,14 +286,15 @@ function advect_parallel(b, d, d0, velocX, velocY, dt, width, height) {
 function physics() {
   console.log("Physics loop");
   state.vx0 = diffuse_parallel(
-      1, state.vx0, state.vx, state.visc, state.dt, state.iterations, state.width,
-      state.height);
+      1, state.vx0, state.vx, state.visc, state.dt, state.iterations,
+      state.width, state.height);
   state.vy0 = diffuse_parallel(
-      2, state.vy0, state.vy, state.visc, state.dt, state.iterations, state.width,
-      state.height);
+      2, state.vy0, state.vy, state.visc, state.dt, state.iterations,
+      state.width, state.height);
 
   var dpxy = project_parallel(
-      state.vx0, state.vy0, state.vx, state.vy, state.iterations, state.width, state.height);
+      state.vx0, state.vy0, state.vx, state.vy, state.iterations, state.width,
+      state.height);
   state.vx0 = dpxy[0];
   state.vy0 = dpxy[1];
   state.vx = dpxy[2];
@@ -294,15 +309,16 @@ function physics() {
       state.height);
 
   dpxy = project_parallel(
-      state.vx, state.vy, state.vx0, state.vy0, state.iterations, state.width, state.height);
+      state.vx, state.vy, state.vx0, state.vy0, state.iterations, state.width,
+      state.height);
   state.vx = dpxy[0];
   state.vy = dpxy[1];
   state.vx0 = dpxy[2];
   state.vy0 = dpxy[3];
 
   state.s = diffuse_parallel(
-      0, state.s, state.density, state.diff, state.dt, state.iterations, state.width,
-      state.height);
+      0, state.s, state.density, state.diff, state.dt, state.iterations,
+      state.width, state.height);
   state.density = advect_parallel(
       0, state.density, state.s, state.vx, state.vy, state.dt, state.width,
       state.height);
@@ -333,10 +349,14 @@ function render() {
     const width = canvas.width;
     const height = canvas.height;
     const ctx = canvas.getContext('webgl2', {premultipliedAlpha: false});
-    const renderSettings =
-        {canvas: canvas, context: ctx, graphical: true, output: [width, height]};
+    const renderSettings = {
+      canvas: canvas,
+      context: ctx,
+      graphical: true,
+      output: [width, height]
+    };
 
-    renderKernel = gpu.createKernel(function(r, g, b, densities, velocities) {
+    renderKernel = gpu.createKernel(function(r, g, b, densities) {
       const density = densities[this.thread.x][this.thread.y];
       const indexFloat = density * (8);
       if (indexFloat > 8) {
@@ -354,7 +374,14 @@ function render() {
     }, renderSettings);
   }
 
-  renderKernel(r, g, b, state.density, state.vx);
+  renderKernel(r, g, b, state.density);
+}
+
+function getCursorPosition(canvas, event) {
+    const rect = canvas.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    return [x, y];
 }
 
 window.onload = init;
@@ -376,22 +403,30 @@ function init() {
 
   initializeState(canvas);
 
-  gpu = new GPU();
+  // Register onclick handler.
+  canvas.addEventListener('mousedown', function(e) {
+    const [x, y] = getCursorPosition(canvas, e);
+    addVortex(state, x, height-y, 10, 100);
+  })
+
+
+  gpu = new GPU({mode: 'gpu'});
   console.log("Is GPU supported? " + GPU.isGPUSupported);
   console.log("Is WebGl2 supported? " + GPU.isGPUSupported);
-  lastLoopDate = new Date();
   window.requestAnimationFrame(loop);
 }
 
 var lastLoopDate;
 function loop() {
   // Calculate dt.
-  var date = new Date();
-  state.dt = (date.getTime() - lastLoopDate.getTime())/1000;
-  if (state.dt == 0) {
+  if (typeof lastLoopDate == 'undefined') {
     state.dt = 100;
+    lastLoopDate = new Date();
+  } else {
+    var date = new Date();
+    state.dt = (date.getTime() - lastLoopDate.getTime()) / 1000;
+    lastLoopDate = date;
   }
-  lastLoopDate = date;
 
   physics();
   render();
