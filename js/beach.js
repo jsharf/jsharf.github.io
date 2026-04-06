@@ -1,6 +1,3 @@
-var width = 0;
-var height = 0;
-
 var state = {
   resolution: 1000,
   lastWaveCreationTime: 0,
@@ -47,8 +44,8 @@ function poisson(mean) {
 
 function addWave() {
   var cvs = document.getElementById('beach');
-  var center = cvs.width/2
-  var spread = cvs.width*0.8
+  var center = cvs.clientWidth/2
+  var spread = cvs.clientWidth*0.8
   state.waves.push({
     x:Math.random() * spread + center - spread/2,
     dx: Math.random() * 0.8 - 0.6,
@@ -72,6 +69,10 @@ function physics() {
       wave.momentum -= 0.1;
     }
   }
+  // Drop dead waves so the array doesn't grow forever.
+  state.waves = state.waves.filter(function (w) {
+    return w.h > 0 || w.momentum > 0;
+  });
   // How many waves should be created in the next 10 seconds?
   var d = new Date();
   var time = d.getTime();
@@ -111,24 +112,26 @@ CanvasRenderingContext2D.prototype.fillPolygon =
 }
 
 function drawWave(cvs, ctx, wave) {
+  var w = cvs.clientWidth;
+  var h = cvs.clientHeight;
   var firstX = 0;
-  var firstY = cvs.height -
-      gaussianPlot(0, wave.x, wave.spread) * wave.h / 100 * cvs.height - 10;
+  var firstY = h -
+      gaussianPlot(0, wave.x, wave.spread) * wave.h / 100 * h - 10;
   var lastX = 0;
   var lastY = 0;
   ctx.beginPath();
   ctx.strokeStyle = 'rgba(0, 153, 255, 0.4)';
   ctx.moveTo(firstX, firstY);
   for (var point = 1; point <= state.resolution; ++point) {
-    var x = (point / state.resolution) * cvs.width;
-    var y = cvs.height -
-        (gaussianPlot(x, wave.x, wave.spread)) * wave.h / 100 * cvs.height - 10;
+    var x = (point / state.resolution) * w;
+    var y = h -
+        (gaussianPlot(x, wave.x, wave.spread)) * wave.h / 100 * h - 10;
     ctx.lineTo(x, y);
     lastX = x;
     lastY = y;
   }
-  ctx.lineTo(lastX, cvs.height);
-  ctx.lineTo(firstX, cvs.height);
+  ctx.lineTo(lastX, h);
+  ctx.lineTo(firstX, h);
   ctx.fillStyle = "rgba(61,184,180," + wave.opacity + ")";
   ctx.fill();
 }
@@ -136,7 +139,7 @@ function drawWave(cvs, ctx, wave) {
 function render() {
   var canvas = document.getElementById('beach');
   var ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
   // Draw waves.
   for (var idx = 0; idx < state.waves.length; ++idx) {
@@ -144,22 +147,19 @@ function render() {
   }
 }
 
+function resize() {
+  var canvas = document.getElementById('beach');
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
 window.onload = init;
 function init() {
-  /// get computed style for image
-  var container = document.getElementById('beach-container');
-  var cs = getComputedStyle(container);
-
-  /// these will return dimensions in *pixel* regardless of what
-  /// you originally specified for image:
-  width = parseInt(cs.getPropertyValue('width'), 10);
-  height = parseInt(cs.getPropertyValue('height'), 10);
-
-  /// now use this as width and height for your canvas element:
-  var canvas = document.getElementById('beach');
-
-  canvas.width = width;
-  canvas.height = height;
+  resize();
+  window.addEventListener('resize', resize);
   window.requestAnimationFrame(loop);
 }
 
@@ -168,4 +168,3 @@ function loop() {
   render();
   window.requestAnimationFrame(loop);
 }
-
