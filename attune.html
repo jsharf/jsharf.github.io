@@ -77,6 +77,49 @@ input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 2px 12px rgba(138,180
 .profile-bar button:active{transform:scale(.97)}
 /* Calibration overlay */
 .cal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,5,12,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s}
+.history-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,5,12,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:100;display:flex;flex-direction:column;align-items:center;opacity:0;pointer-events:none;transition:opacity .5s;padding:20px;box-sizing:border-box;overflow-y:auto}
+.history-overlay.active{opacity:1;pointer-events:all}
+.history-wrap{max-width:700px;width:100%;margin:0 auto}
+.history-title{font-size:20px;font-weight:600;color:#ddd;margin:20px 0 6px;text-align:center}
+.history-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:0 0 20px}
+.history-stat{background:rgba(255,255,255,.04);border:1px solid rgba(100,100,150,.2);border-radius:8px;padding:10px;text-align:center}
+.history-stat-val{font-size:22px;font-weight:600;color:#e0e0e0}
+.history-stat-label{font-size:10px;color:#6a6a8a;text-transform:uppercase;margin-top:2px;letter-spacing:.5px}
+.history-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+.history-table th{text-align:left;color:#6a6a8a;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:6px 8px;border-bottom:1px solid rgba(100,100,150,.2)}
+.history-table td{padding:6px 8px;color:#bbb;border-bottom:1px solid rgba(100,100,150,.08)}
+.history-table tr:hover td{background:rgba(255,255,255,.03)}
+.history-table .mode-tag{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;color:#fff;margin-left:4px}
+.mode-tag.jhana{background:rgba(112,184,208,.3)}.mode-tag.shamanic{background:rgba(208,160,80,.3)}.mode-tag.bedtime{background:rgba(138,127,208,.3)}
+.history-export-btn{background:none;border:1px solid rgba(100,100,150,.3);color:#8a8aaa;font-size:10px;padding:2px 8px;border-radius:4px;cursor:pointer}
+.history-export-btn:hover{border-color:rgba(100,100,150,.6);color:#bbb}
+.history-close{background:none;border:1px solid rgba(100,100,150,.3);color:#aaa;padding:6px 24px;border-radius:6px;cursor:pointer;font-size:13px;margin:10px 0 20px}
+.history-close:hover{border-color:rgba(100,100,150,.6);color:#ddd}
+.history-toolbar{display:flex;gap:8px;margin:0 0 16px;align-items:center;flex-wrap:wrap}
+.history-toolbar button{background:none;border:1px solid rgba(100,100,150,.3);color:#8a8aaa;font-size:11px;padding:4px 12px;border-radius:5px;cursor:pointer}
+.history-toolbar button:hover{border-color:rgba(100,100,150,.6);color:#bbb}
+.song-rate-btn{background:none;border:1px solid rgba(100,100,150,.2);border-radius:8px;font-size:20px;padding:8px 12px;cursor:pointer;opacity:.5;transition:all .2s;vertical-align:middle}
+.song-rate-btn:hover{opacity:.8;transform:scale(1.1)}
+.song-rate-btn.active{opacity:1;transform:scale(1.15)}
+.song-rate-btn.like.active{border-color:rgba(100,200,100,.5);box-shadow:0 0 10px rgba(100,200,100,.2)}
+.song-rate-btn.dislike.active{border-color:rgba(200,100,100,.5);box-shadow:0 0 10px rgba(200,100,100,.2)}
+.pca-canvas{width:100%;height:300px;background:rgba(255,255,255,.02);border:1px solid rgba(100,100,150,.15);border-radius:8px;cursor:crosshair}
+.pca-selected{margin:8px 0;font-size:12px;color:#8a8aaa;min-height:20px}
+.pca-load-btn,.pca-action-btn{background:none;border:1px solid rgba(100,200,100,.3);color:rgba(100,200,100,.8);font-size:12px;padding:4px 14px;border-radius:5px;cursor:pointer;display:none}
+.pca-load-btn:hover,.pca-action-btn:hover{border-color:rgba(100,200,100,.6);color:#8f8}
+.pca-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.pca-rate-btn{background:none;border:1px solid rgba(100,100,150,.3);color:#888;font-size:16px;padding:2px 10px;border-radius:5px;cursor:pointer;display:none}
+.pca-rate-btn:hover{border-color:rgba(100,100,150,.6)}
+.pca-rate-btn.active-like{border-color:rgba(100,200,100,.5);color:#6d6;background:rgba(100,200,100,.1)}
+.pca-rate-btn.active-dislike{border-color:rgba(200,100,100,.5);color:#d66;background:rgba(200,100,100,.1)}
+.song-history-list{max-height:300px;overflow-y:auto;margin-top:12px}
+.song-history-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid rgba(100,100,150,.1);font-size:12px;color:#8a8aaa}
+.song-history-row:hover{background:rgba(100,100,150,.05)}
+.song-history-row .sh-info{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.song-history-row button{background:none;border:1px solid rgba(100,100,150,.2);color:#888;font-size:13px;padding:2px 8px;border-radius:4px;cursor:pointer;flex-shrink:0}
+.song-history-row button:hover{border-color:rgba(100,100,150,.5)}
+.song-history-row button.sh-active-like{color:#6d6;border-color:rgba(100,200,100,.4)}
+.song-history-row button.sh-active-dislike{color:#d66;border-color:rgba(200,100,100,.4)}
 .cal-overlay.active{opacity:1;pointer-events:all}
 .guided-menu{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,5,12,.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px}
 .guided-menu.active{display:flex}
@@ -214,6 +257,42 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="guided-close" id="guidedClose">CLOSE</div>
 </div>
 <!-- Calibration overlay -->
+<div class="history-overlay" id="historyOverlay">
+<div class="history-wrap">
+<div class="history-title" id="historyTitle">Session History</div>
+<div class="history-stats" id="historyStats"></div>
+<div class="history-toolbar">
+<button id="historyExportAll">Export All</button>
+<span style="flex:1"></span>
+<button class="history-close" id="historyClose">Close</button>
+</div>
+<div class="history-title" style="font-size:16px;margin-top:24px">Music Taste Map</div>
+<div style="font-size:11px;color:#6a6a8a;margin-bottom:8px">Songs projected by similarity. <span style="color:#6d6">&#9679;</span> liked <span style="color:#d66">&#9679;</span> disliked <span style="color:#666">&#9679;</span> neutral. Click a dot to select.</div>
+<canvas class="pca-canvas" id="pcaCanvas" width="700" height="300"></canvas>
+<div class="pca-selected" id="pcaSelected"></div>
+<div class="pca-actions">
+<button class="pca-load-btn" id="pcaLoadBtn">▶ Play</button>
+<button class="pca-rate-btn" id="pcaLikeBtn">&#x1F44D;</button>
+<button class="pca-rate-btn" id="pcaDislikeBtn">&#x1F44E;</button>
+<button class="pca-action-btn" id="pcaExportSongBtn">Export song</button>
+</div>
+
+<div class="history-title" style="font-size:16px;margin-top:24px">Song History</div>
+<div style="font-size:11px;color:#6a6a8a;margin-bottom:8px">Recent songs with ratings. Click to select on map.</div>
+<div class="song-history-list" id="songHistoryList"></div>
+
+<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+<button class="history-export-btn" id="historyExportMusic">Export All Music Data</button>
+<button class="history-export-btn" id="importSongParamsBtn">Import Song Params</button>
+<input type="file" id="importSongParamsFile" accept=".json" style="display:none">
+</div>
+
+<div class="history-title" style="font-size:16px;margin-top:24px">Session History</div>
+<table class="history-table"><thead><tr>
+<th>Date</th><th>Duration</th><th>Mode</th><th>Avg RMSSD</th><th>Focus</th><th>Interventions</th><th></th>
+</tr></thead><tbody id="historyBody"></tbody></table>
+</div>
+</div>
 <div class="cal-overlay" id="calOverlay">
 <div class="breath-circle" id="calCircle"><span class="breath-circle-text" id="calCircleText"></span></div>
 <div class="cal-title" id="calTitle">Calibration</div>
@@ -253,7 +332,10 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 
 <button class="main-btn" id="playBtn"><span id="playLabel">START</span><div class="pulse-ring"></div></button>
 <div id="breakWrap" style="text-align:center;margin:4px 0 10px;display:none;position:relative">
+<button class="song-rate-btn dislike" id="dislikeBtn" title="Dislike — skip this song">&#x1F44E;</button>
+<button class="ble-btn" id="prevSongBtn" style="font-size:17px;padding:12px 16px;margin-right:4px" title="Go back to the previous song">⏮</button>
 <button class="ble-btn" id="nextSongBtn" style="font-size:17px;padding:12px 20px;margin-right:8px" title="Skip to the next song with an ending cadence">Next song ⏭</button>
+<button class="song-rate-btn like" id="likeBtn" title="Like this song">&#x1F44D;</button>
 <button class="ble-btn" id="breakBtn" style="font-size:17px;padding:12px 28px">Take a Break ▾</button>
 <div class="break-menu hidden" id="breakMenu">
 <div class="break-lang-row"><span>Language</span><button class="break-lang-btn active" data-lang="en">EN</button><button class="break-lang-btn" data-lang="zh">中文</button></div>
@@ -360,9 +442,11 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="toggle-row" style="display:none"><input type="checkbox" id="bioControl"><label for="bioControl">Closed-loop control</label></div>
 <div class="toggle-row" style="margin-top:4px">
 <button class="ble-btn" id="exportBtn" style="font-size:10px;padding:3px 10px">Export Session</button>
+<button class="ble-btn" id="historyBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">History</button>
 </div>
 </div>
 <div class="status" id="status">Click START to begin</div>
+<div id="sessionTimer" style="text-align:center;font-size:13px;color:#7a8fa8;margin-top:2px;display:none">0:00</div>
 </div>
 
 <script>
@@ -555,6 +639,420 @@ $('importFileInput').addEventListener('change', async (e) => {
     $('status').textContent = 'Import failed: ' + err.message;
   }
   e.target.value = '';
+});
+
+// =====================================================
+// SESSION HISTORY & METRICS OVERLAY
+// =====================================================
+
+function openHistoryOverlay() {
+  if (!currentProfile) { $('status').textContent = 'Select a profile first'; return; }
+  const lt = currentProfile.lifetime || {};
+  const sessions = (currentProfile.recentSessions || []).slice().reverse(); // newest first
+
+  // Title
+  $('historyTitle').textContent = `${currentProfile.name} - Session History`;
+
+  // Lifetime stats cards
+  const hours = ((lt.durationMin || 0) / 60).toFixed(1);
+  const avgRmssd = lt.rmssdCount ? (lt.rmssdSum / lt.rmssdCount).toFixed(0) : '--';
+  const recent10 = sessions.slice(0, 10).map(s => s.avgRmssd).filter(v => v != null);
+  const recentAvg = recent10.length ? (recent10.reduce((a,b) => a+b) / recent10.length).toFixed(0) : '--';
+  const avgDuration = sessions.length ? (sessions.reduce((s, x) => s + (x.durationMin || 0), 0) / sessions.length).toFixed(0) : '--';
+  const jhanaSessions = sessions.filter(s => s.jhana).length;
+  const longestSession = sessions.length ? Math.max(...sessions.map(s => s.durationMin || 0)).toFixed(0) : '--';
+
+  $('historyStats').innerHTML = `
+    <div class="history-stat"><div class="history-stat-val">${lt.sessions || 0}</div><div class="history-stat-label">Sessions</div></div>
+    <div class="history-stat"><div class="history-stat-val">${hours}h</div><div class="history-stat-label">Total Time</div></div>
+    <div class="history-stat"><div class="history-stat-val">${avgDuration}m</div><div class="history-stat-label">Avg Session</div></div>
+    <div class="history-stat"><div class="history-stat-val">${longestSession}m</div><div class="history-stat-label">Longest</div></div>
+    <div class="history-stat"><div class="history-stat-val">${avgRmssd}</div><div class="history-stat-label">Avg RMSSD</div></div>
+    <div class="history-stat"><div class="history-stat-val">${recentAvg}</div><div class="history-stat-label">RMSSD (Last 10)</div></div>
+    <div class="history-stat"><div class="history-stat-val">${lt.interventions || 0}</div><div class="history-stat-label">Interventions</div></div>
+    <div class="history-stat"><div class="history-stat-val">${jhanaSessions}</div><div class="history-stat-label">Jhana Sessions</div></div>
+  `;
+
+  // Session table
+  const tbody = $('historyBody');
+  tbody.innerHTML = '';
+  if (sessions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#6a6a8a;padding:20px">No sessions yet</td></tr>';
+  } else {
+    sessions.forEach((s, idx) => {
+      const tr = document.createElement('tr');
+      const d = new Date(s.date);
+      const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const timeStr = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      let modeTag = '';
+      if (s.jhana) modeTag = '<span class="mode-tag jhana">Jhana</span>';
+      else if (s.shamanic) modeTag = '<span class="mode-tag shamanic">Shamanic</span>';
+      else if (s.bedtime) modeTag = '<span class="mode-tag bedtime">Bedtime</span>';
+
+      tr.innerHTML = `
+        <td>${dateStr}<br><span style="color:#6a6a8a;font-size:10px">${timeStr}</span></td>
+        <td>${(s.durationMin || 0).toFixed(0)}m</td>
+        <td>${modeTag || '<span style="color:#6a6a8a">Focus</span>'}</td>
+        <td>${s.avgRmssd != null ? s.avgRmssd.toFixed(0) : '--'}</td>
+        <td>${s.focusSpans || 0} spans</td>
+        <td>${s.interventions || 0}</td>
+        <td><button class="history-export-btn" data-idx="${idx}">Export</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Render PCA and song history
+  renderPCA();
+  renderSongHistoryList();
+  clearSongSelection();
+
+  $('historyOverlay').classList.add('active');
+}
+
+let pcaData = null; // cached for click interaction
+
+function renderPCA() {
+  const canvas = $('pcaCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  ensureSongData();
+  const history = currentProfile.songHistory || [];
+  if (history.length < 2) {
+    ctx.fillStyle = '#6a6a8a';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Need at least 2 songs to visualize', W/2, H/2);
+    pcaData = null;
+    return;
+  }
+
+  // Build vectors and project
+  const vectors = history.map(h => songToVector(h.params));
+  const projected = computePCA(vectors);
+
+  // Find bounds for scaling
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  projected.forEach(([x, y]) => {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  });
+  const rangeX = (maxX - minX) || 1;
+  const rangeY = (maxY - minY) || 1;
+  const pad = 30;
+
+  function toScreen(x, y) {
+    return [
+      pad + ((x - minX) / rangeX) * (W - pad * 2),
+      pad + ((y - minY) / rangeY) * (H - pad * 2),
+    ];
+  }
+
+  // Draw dots
+  pcaData = { history, projected, toScreen, minX, minY, rangeX, rangeY, pad, W, H };
+
+  projected.forEach(([x, y], i) => {
+    const [sx, sy] = toScreen(x, y);
+    const rating = history[i].rating || 0;
+    ctx.beginPath();
+    ctx.arc(sx, sy, rating !== 0 ? 5 : 3.5, 0, Math.PI * 2);
+    if (rating === 1) {
+      ctx.fillStyle = 'rgba(100, 220, 100, 0.7)';
+      ctx.strokeStyle = 'rgba(100, 220, 100, 0.9)';
+    } else if (rating === -1) {
+      ctx.fillStyle = 'rgba(220, 100, 100, 0.7)';
+      ctx.strokeStyle = 'rgba(220, 100, 100, 0.9)';
+    } else {
+      ctx.fillStyle = 'rgba(100, 100, 120, 0.4)';
+      ctx.strokeStyle = 'rgba(100, 100, 120, 0.6)';
+    }
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+}
+
+// Click on PCA canvas to select a song
+$('pcaCanvas').addEventListener('click', (e) => {
+  if (!pcaData) return;
+  const canvas = $('pcaCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+
+  // Find closest dot
+  let bestIdx = -1, bestDist = Infinity;
+  pcaData.projected.forEach(([x, y], i) => {
+    const [sx, sy] = pcaData.toScreen(x, y);
+    const dist = Math.hypot(mx - sx, my - sy);
+    if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+  });
+
+  if (bestIdx >= 0 && bestDist < 20) {
+    selectSongInMap(bestIdx);
+  } else {
+    clearSongSelection();
+  }
+});
+
+let pcaSelectedIdx = -1; // index into pcaData.history
+
+function selectSongInMap(idx) {
+  if (!pcaData || idx < 0 || idx >= pcaData.history.length) return;
+  pcaSelectedIdx = idx;
+  const song = pcaData.history[idx];
+  const p = song.params;
+  const dateStr = new Date(song.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const ratingStr = song.rating === 1 ? ' · 👍' : song.rating === -1 ? ' · 👎' : '';
+  $('pcaSelected').textContent = `${p.style} · ${p.bpm} BPM · brightness ${p.brightness} · reverb ${p.reverb}${ratingStr} · ${dateStr}`;
+
+  // Show action buttons
+  $('pcaLoadBtn').style.display = 'inline-block';
+  $('pcaLikeBtn').style.display = 'inline-block';
+  $('pcaDislikeBtn').style.display = 'inline-block';
+  $('pcaExportSongBtn').style.display = 'inline-block';
+  updatePcaRatingButtons(song.rating || 0);
+
+  $('pcaLoadBtn').onclick = () => {
+    applySongParams(song.params);
+    $('historyOverlay').classList.remove('active');
+  };
+
+  // Highlight dot
+  renderPCA();
+  const ctx = $('pcaCanvas').getContext('2d');
+  const [sx, sy] = pcaData.toScreen(pcaData.projected[idx][0], pcaData.projected[idx][1]);
+  ctx.beginPath();
+  ctx.arc(sx, sy, 9, 0, Math.PI * 2);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Highlight in song history list
+  document.querySelectorAll('.song-history-row').forEach((row, i) => {
+    row.style.background = i === idx ? 'rgba(100,100,150,.1)' : '';
+  });
+}
+
+function clearSongSelection() {
+  pcaSelectedIdx = -1;
+  $('pcaSelected').textContent = '';
+  $('pcaLoadBtn').style.display = 'none';
+  $('pcaLikeBtn').style.display = 'none';
+  $('pcaDislikeBtn').style.display = 'none';
+  $('pcaExportSongBtn').style.display = 'none';
+  document.querySelectorAll('.song-history-row').forEach(row => { row.style.background = ''; });
+}
+
+function updatePcaRatingButtons(rating) {
+  $('pcaLikeBtn').className = 'pca-rate-btn' + (rating === 1 ? ' active-like' : '');
+  $('pcaDislikeBtn').className = 'pca-rate-btn' + (rating === -1 ? ' active-dislike' : '');
+}
+
+function rateSongInHistory(idx, rating) {
+  if (!currentProfile || !currentProfile.songHistory || idx < 0) return;
+  const song = currentProfile.songHistory[idx];
+  if (!song) return;
+  // Toggle: if already this rating, clear it
+  const newRating = song.rating === rating ? 0 : rating;
+  song.rating = newRating;
+  // Also update songRatings
+  if (!currentProfile.songRatings) currentProfile.songRatings = [];
+  currentProfile.songRatings.push({ date: new Date().toISOString(), params: song.params, rating: newRating });
+  saveProfile(currentProfile);
+  // Update UI
+  if (pcaData && pcaSelectedIdx === idx) updatePcaRatingButtons(newRating);
+  renderPCA();
+  renderSongHistoryList();
+  if (pcaSelectedIdx >= 0) selectSongInMap(pcaSelectedIdx); // re-highlight
+}
+
+// Like/dislike buttons in PCA selection
+$('pcaLikeBtn').addEventListener('click', () => {
+  if (!pcaData || pcaSelectedIdx < 0) return;
+  // Map pcaData index to songHistory index
+  const histLen = currentProfile.songHistory.length;
+  const pcaLen = pcaData.history.length;
+  const histIdx = histLen - pcaLen + pcaSelectedIdx;
+  rateSongInHistory(histIdx, 1);
+});
+$('pcaDislikeBtn').addEventListener('click', () => {
+  if (!pcaData || pcaSelectedIdx < 0) return;
+  const histLen = currentProfile.songHistory.length;
+  const pcaLen = pcaData.history.length;
+  const histIdx = histLen - pcaLen + pcaSelectedIdx;
+  rateSongInHistory(histIdx, -1);
+});
+
+// Export single song params
+$('pcaExportSongBtn').addEventListener('click', () => {
+  if (!pcaData || pcaSelectedIdx < 0) return;
+  const song = pcaData.history[pcaSelectedIdx];
+  const blob = new Blob([JSON.stringify(song, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `attune-song-${song.params.style}-${song.params.bpm}bpm.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Import song params
+$('importSongParamsBtn').addEventListener('click', () => $('importSongParamsFile').click());
+$('importSongParamsFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      // Support both single song {params:{...}} and array [{params:{...}},...]
+      const songs = Array.isArray(data) ? data : [data];
+      for (const song of songs) {
+        const params = song.params || song;
+        if (params.style || params.bpm) {
+          applySongParams(params);
+          break; // apply first valid one
+        }
+      }
+    } catch (err) {
+      alert('Could not parse song params file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// Song history list
+function renderSongHistoryList() {
+  const list = $('songHistoryList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!currentProfile || !currentProfile.songHistory || currentProfile.songHistory.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:#666;padding:8px">No songs yet</div>';
+    return;
+  }
+  // Show most recent 100, newest first
+  const history = currentProfile.songHistory;
+  const start = Math.max(0, history.length - 100);
+  for (let i = history.length - 1; i >= start; i--) {
+    const song = history[i];
+    const p = song.params || {};
+    const row = document.createElement('div');
+    row.className = 'song-history-row';
+    const dateStr = new Date(song.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const rating = song.rating || 0;
+
+    const info = document.createElement('span');
+    info.className = 'sh-info';
+    info.textContent = `${p.style || '?'} · ${p.bpm || '?'} BPM · ${dateStr}`;
+    info.style.cursor = 'pointer';
+    info.title = 'Select on map';
+    const histIdx = i;
+    info.onclick = () => {
+      // Find corresponding pcaData index
+      if (pcaData) {
+        const pcaLen = pcaData.history.length;
+        const pcaIdx = histIdx - (history.length - pcaLen);
+        if (pcaIdx >= 0 && pcaIdx < pcaLen) selectSongInMap(pcaIdx);
+      }
+    };
+
+    const likeBtn = document.createElement('button');
+    likeBtn.textContent = '\u{1F44D}';
+    likeBtn.className = rating === 1 ? 'sh-active-like' : '';
+    likeBtn.onclick = () => rateSongInHistory(histIdx, 1);
+
+    const dislikeBtn = document.createElement('button');
+    dislikeBtn.textContent = '\u{1F44E}';
+    dislikeBtn.className = rating === -1 ? 'sh-active-dislike' : '';
+    dislikeBtn.onclick = () => rateSongInHistory(histIdx, -1);
+
+    const loadBtn = document.createElement('button');
+    loadBtn.textContent = '▶';
+    loadBtn.title = 'Load these params';
+    loadBtn.onclick = () => {
+      applySongParams(p);
+      $('historyOverlay').classList.remove('active');
+    };
+
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = '↓';
+    exportBtn.title = 'Export song params';
+    exportBtn.onclick = () => {
+      const blob = new Blob([JSON.stringify(song, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attune-song-${p.style}-${p.bpm}bpm.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    row.appendChild(info);
+    row.appendChild(likeBtn);
+    row.appendChild(dislikeBtn);
+    row.appendChild(loadBtn);
+    row.appendChild(exportBtn);
+    list.appendChild(row);
+  }
+}
+
+$('historyBtn').addEventListener('click', openHistoryOverlay);
+$('historyClose').addEventListener('click', () => $('historyOverlay').classList.remove('active'));
+
+// Export individual session from history
+$('historyBody').addEventListener('click', (e) => {
+  if (!e.target.classList.contains('history-export-btn')) return;
+  const idx = parseInt(e.target.dataset.idx);
+  const sessions = (currentProfile.recentSessions || []).slice().reverse();
+  const s = sessions[idx];
+  if (!s) return;
+  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date(s.date).toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const modeTag = s.jhana ? 'jhana-' : s.shamanic ? 'shaman-' : s.bedtime ? 'bedtime-' : '';
+  a.download = `attune-${modeTag}session-${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Export all sessions as a single JSON array
+$('historyExportAll').addEventListener('click', () => {
+  if (!currentProfile) return;
+  const blob = new Blob([JSON.stringify(currentProfile, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `attune-${currentProfile.name}-full.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Export music preferences (ratings + history)
+$('historyExportMusic').addEventListener('click', () => {
+  if (!currentProfile) return;
+  const data = {
+    profile: currentProfile.name,
+    songRatings: currentProfile.songRatings || [],
+    songHistory: currentProfile.songHistory || [],
+    liked: (currentProfile.songRatings || []).filter(r => r.rating === 1).length,
+    disliked: (currentProfile.songRatings || []).filter(r => r.rating === -1).length,
+    totalSongsHeard: (currentProfile.songHistory || []).length,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `attune-${currentProfile.name}-music.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 });
 
 // =====================================================
@@ -990,16 +1488,70 @@ function voiceLead(currentMidi, targetPCs) {
 // =====================================================
 
 // A "song" is a sequence of sections, each with its own character
-const SECTION_TYPES = {
-  verse1:  { bars: 8,  energy: 0.5, instruments: ['drums','bass','keys'] },
-  build1:  { bars: 4,  energy: 0.65,instruments: ['drums','bass','keys','guitar'] },
-  chorus1: { bars: 8,  energy: 0.8, instruments: ['drums','bass','keys','guitar','vibes','strings','synth'] },
-  verse2:  { bars: 8,  energy: 0.55,instruments: ['drums','bass','keys','vibes'] },
-  build2:  { bars: 4,  energy: 0.7, instruments: ['drums','bass','keys','guitar','vibes'] },
-  chorus2: { bars: 8,  energy: 0.85,instruments: ['drums','bass','keys','guitar','strings','vibes','synth'] },
-  bridge:  { bars: 8,  energy: 0.45,instruments: ['drums','bass','keys','strings'] },
-  chorus3: { bars: 8,  energy: 0.9, instruments: ['drums','bass','keys','guitar','strings','vibes','synth'] },
+// Base section templates — energy and bars are randomized per song via rollSongEnergy()
+// Section templates list *candidate* color instruments (guitar, vibes, strings, synth).
+// At song start, rollSongPalette() picks 2-3 of these for the whole song,
+// and rollSongEnergy() filters each section's instruments through the palette.
+// This prevents every song from having all instruments at once.
+const SECTION_TEMPLATES = {
+  verse1:  { baseBars: 8,  baseEnergy: 0.5,  instruments: ['drums','bass','keys'], colors: ['guitar'] },
+  verse2:  { baseBars: 8,  baseEnergy: 0.55, instruments: ['drums','bass','keys'], colors: ['guitar','vibes'] },
+  build1:  { baseBars: 4,  baseEnergy: 0.65, instruments: ['drums','bass','keys'], colors: ['guitar'] },
+  build2:  { baseBars: 4,  baseEnergy: 0.7,  instruments: ['drums','bass','keys'], colors: ['guitar','vibes'] },
+  chorus1: { baseBars: 8,  baseEnergy: 0.8,  instruments: ['drums','bass','keys'], colors: ['guitar','vibes','strings'] },
+  chorus2: { baseBars: 8,  baseEnergy: 0.85, instruments: ['drums','bass','keys'], colors: ['guitar','strings','vibes','synth'] },
+  chorus3: { baseBars: 8,  baseEnergy: 0.9,  instruments: ['drums','bass','keys'], colors: ['guitar','strings','vibes','synth'] },
+  bridge:  { baseBars: 8,  baseEnergy: 0.45, instruments: ['drums','bass','keys'], colors: ['guitar','strings'] },
+  intro:   { baseBars: 4,  baseEnergy: 0.35, instruments: ['drums','keys'],        colors: [] },
+  outro:   { baseBars: 4,  baseEnergy: 0.4,  instruments: ['drums','bass','keys'], colors: ['strings'] },
+  drop:    { baseBars: 4,  baseEnergy: 0.3,  instruments: ['bass','keys'],          colors: [] },
 };
+
+// Per-song palette: a subset of color instruments this song uses.
+// Rolled once per song so the arrangement stays cohesive but distinct from other songs.
+let songPalette = new Set();
+
+function rollSongPalette() {
+  const allColors = ['guitar','vibes','strings','synth'];
+  // Pick 2 or 3 color instruments (never all 4)
+  const count = Math.random() < 0.4 ? 2 : 3;
+  // Shuffle and take first N
+  const shuffled = allColors.sort(() => Math.random() - 0.5);
+  songPalette = new Set(shuffled.slice(0, count));
+}
+
+// Active section types for this song — rebuilt each song with randomized energy/bars
+let SECTION_TYPES = {};
+
+function rollSongEnergy() {
+  // Each song gets a random energy personality:
+  // energyScale shifts the whole curve (0.8 = chill song, 1.2 = intense)
+  // energySpread controls contrast between sections (0.7 = flat, 1.3 = dramatic)
+  const energyScale = 0.85 + Math.random() * 0.3;   // 0.85–1.15
+  const energySpread = 0.75 + Math.random() * 0.5;   // 0.75–1.25
+  const midpoint = 0.6;
+
+  SECTION_TYPES = {};
+  for (const [name, tmpl] of Object.entries(SECTION_TEMPLATES)) {
+    // Scale energy around midpoint
+    let e = midpoint + (tmpl.baseEnergy - midpoint) * energySpread;
+    e *= energyScale;
+    e = Math.max(0.15, Math.min(0.95, e));
+    // Randomize section length: ±50% chance of ±4 bars (clamped to 4–16)
+    let bars = tmpl.baseBars;
+    if (Math.random() < 0.35) {
+      bars += (Math.random() < 0.5 ? 4 : -4);
+    }
+    bars = Math.max(4, Math.min(16, bars));
+    // Filter color instruments through the song palette
+    const colors = (tmpl.colors || []).filter(c => songPalette.has(c));
+    SECTION_TYPES[name] = { bars, energy: +e.toFixed(2), instruments: [...tmpl.instruments, ...colors] };
+  }
+}
+
+// Initialize on load
+rollSongPalette();
+rollSongEnergy();
 
 const SONG_FORMS = [
   ['verse1','build1','chorus1','verse2','build2','chorus2','bridge','chorus3'],
@@ -1008,6 +1560,16 @@ const SONG_FORMS = [
   ['build1','chorus1','verse1','chorus1','verse2','bridge','chorus2'],
   ['verse1','chorus1','bridge','chorus2','verse2','chorus3'],
   ['chorus1','verse1','build1','chorus2','bridge','verse2','chorus3'],
+  // New forms — varied structures
+  ['intro','verse1','verse2','chorus1','bridge','chorus2'],
+  ['intro','build1','chorus1','verse1','chorus2','outro'],
+  ['verse1','chorus1','verse2','chorus1','verse2','chorus2','chorus3'],
+  ['verse1','build1','drop','chorus1','verse2','build2','drop','chorus2'],
+  ['intro','verse1','chorus1','bridge','chorus2','outro'],
+  ['chorus1','verse1','bridge','verse2','build1','chorus2','chorus3'],
+  ['verse1','verse2','build1','chorus1','bridge','build2','chorus2'],
+  ['intro','verse1','build1','chorus1','chorus2','outro'],
+  ['verse1','chorus1','drop','chorus1','verse2','chorus2','bridge','chorus3'],
 ];
 
 // Chord progressions — each is an array of [root, type, beats]
@@ -1508,56 +2070,75 @@ let jhanaStableChecks = 0; // consecutive stable CV checks for access concentrat
 const JHANA_JOURNEY = [
   // Phase 0: Breath cue intro (0-15s) — just breath sound, no bowls yet
   { at: 2, say: "Close your eyes. Listen to the wave sound. That's your breath guide." },
-  { at: 8, say: "Breathe with it. In as it rises. Out as it falls." },
+  { at: 8, say: "Breathe with it. Short breath in. Long, slow breath out." },
 
-  // Phase 1: Settling & immersion (15s-3 min)
-  // Dense singing bowls join after the breath intro
+  // Phase 1: Settling (15s-1 min)
   { at: 20, say: "Find a comfortable position. Let your body settle." },
   { at: 45, say: "Keep breathing with the wave. Let it carry you." },
-  { at: 75, say: "Let the sound wash over you. You don't need to do anything." },
-  { at: 90, say: "Scan your body. Wherever you find tension, let it soften." },
-  { at: 120, say: "There's nowhere to go. Nothing to figure out. Just relax into the sound." },
-  { at: 160, say: "How might you relax even more? Reduce your effort by half. Then half again." },
 
-  // Phase 2: Scaffolding — finding a pleasant feeling (3-6 min)
-  { at: 200, say: "Now, gently smile. Just a slight smile. Notice how it feels." },
-  { at: 240, say: "Think of someone you care about. Wish them well. May they be happy." },
-  { at: 280, say: "Notice any warmth or pleasant feeling that arises. It might be very subtle." },
-  { at: 310, say: "Notice if the bowls give you any tingling, any goosebumps. That feeling is the spark." },
-  { at: 340, say: "You're not trying to create a big feeling. Just find something small and pleasant." },
-  { at: 370, say: "Where in your body do you feel it most? Rest your attention there, gently." },
+  // Phase 1.5: Progressive Muscle Relaxation (1 min - 4:30)
+  // Tense each group ~5-7s, release, notice the contrast
+  { at: 65, say: "We'll release tension from your body now. Starting with your hands." },
+  { at: 80, say: "Make fists. Squeeze them tight. Feel the tension." },
+  { at: 88, say: "And let go. Open your fingers. Feel the difference — that warmth spreading." },
+  { at: 110, say: "Now your arms and shoulders. Shrug your shoulders up toward your ears. Squeeze." },
+  { at: 118, say: "And drop them. Let your arms go completely heavy. Sinking." },
+  { at: 145, say: "Your face. Scrunch everything — forehead, eyes, jaw. Hold it." },
+  { at: 153, say: "And smooth it all out. Jaw loose. Tongue soft. Forehead wide." },
+  { at: 180, say: "Your belly. Tighten your core. Pull in." },
+  { at: 188, say: "And release. Let your belly be soft. Breathe into the space you just created." },
+  { at: 215, say: "Your legs. Press your heels down, tighten your thighs. Hold." },
+  { at: 223, say: "And let go. Feel your whole body now — heavy, warm, open." },
+  { at: 250, say: "Notice how different your body feels from a few minutes ago. This is what releasing tension feels like." },
+  { at: 270, say: "This same skill — noticing tension and letting it go — is the whole game of meditation. Physical tension first. Then subtler tension." },
 
-  // Phase 3: Attending & pulsing (6-10 min)
-  { at: 410, say: "Gently rest your attention on this pleasant feeling. Like warming your hands by a fire." },
-  { at: 450, say: "Is your smile still there? Even a tiny one. Let it feed the warmth." },
-  { at: 500, say: "If the feeling fades, pulse it again. Smile, or repeat your wish. Then rest." },
-  { at: 550, say: "Don't chase the feeling. Don't try to make it bigger. Just enjoy it as it is." },
-  { at: 590, say: "Any tingling, any pleasant buzz — that's piti. Rest your attention right there." },
-  { at: 630, say: "The feeling may grow on its own. Let it. Sink into it." },
+  // Phase 2: Scaffolding — finding a pleasant feeling (4:30-8 min)
+  { at: 300, say: "Now, gently smile. Just a slight smile. Notice how it feels." },
+  { at: 340, say: "Think of someone you care about. Wish them well. May they be happy." },
+  { at: 380, say: "Notice any warmth or pleasant feeling that arises. It might be very subtle." },
+  { at: 410, say: "Notice if the bowls give you any tingling, any goosebumps. That feeling is the spark." },
+  { at: 440, say: "You're not trying to create a big feeling. Just find something small and pleasant." },
+  { at: 470, say: "Where in your body do you feel it most? Rest your attention there, gently." },
 
-  // Phase 4: Deepening — relaxation, enjoyment, curiosity (10-15 min)
-  { at: 690, say: "If your mind wanders, that's fine. Welcome the distraction with kindness. Then gently return." },
-  { at: 750, say: "How might you enjoy this even more? Get curious about the feeling." },
-  { at: 810, say: "Is the smile still there? Let it soften. Let it be effortless." },
-  { at: 860, say: "How might you relax even further? What subtle effort are you still making?" },
-  { at: 910, say: "Let the feeling fill more of your awareness. Don't push. Just allow." },
+  // Phase 3: Attending & pulsing with explicit cadence (8-13 min)
+  { at: 510, say: "Gently rest your attention on this pleasant feeling. Like warming your hands by a fire." },
+  { at: 550, say: "Is your smile still there? Even a tiny one. Let it feed the warmth." },
+  { at: 590, say: "If the feeling faded, smile gently. Hold it for one breath. Then release the smile and just rest. Let the feeling come back on its own." },
+  { at: 640, say: "Don't chase the feeling. Don't try to make it bigger. Just enjoy it as it is." },
+  { at: 680, say: "Pulse again if needed. Smile or repeat your wish — just for a moment. Then let go and watch." },
+  { at: 720, say: "Any tingling, any pleasant buzz — that's piti. Rest your attention right there." },
+  { at: 760, say: "Think of it like swimming. Each pulse is a stroke. But the glide between strokes — that's where the magic is. Enjoy the glide." },
+  { at: 800, say: "The feeling may grow on its own. Let it. Sink into it." },
 
-  // Phase 5: Surrender — approaching jhana (15-20 min)
-  { at: 960, say: "If the pleasant feeling starts pulling you in, let it. Surrender to it." },
-  { at: 1020, say: "You don't do the jhana. The jhana does you. Just keep relaxing into the feeling." },
-  { at: 1080, say: "Notice: are you still efforting? Can you let go even more?" },
-  { at: 1140, say: "The feeling may feel self-sustaining now. Like a wave carrying you. Let it." },
-  { at: 1200, say: "Rest here. There's nothing more to do. Just be with what's here." },
+  // Phase 4: Deepening — relaxation, enjoyment, curiosity (13-21 min)
+  { at: 850, say: "If your mind wanders, that's fine. Welcome the distraction with kindness. Then gently return." },
+  { at: 900, say: "Here's the secret: you're not building the feeling bigger. You're noticing tiny braces you didn't know you had. What are you holding onto? Let it go." },
+  { at: 960, say: "How might you enjoy this even more? Get curious about the feeling." },
+  { at: 1020, say: "Your smile can be much softer now. Almost invisible. The feeling knows what to do." },
+  { at: 1080, say: "How might you relax even further? What subtle effort are you still making? Can you cut it in half?" },
+  { at: 1140, say: "Let the feeling fill more of your awareness. Don't push. Just allow." },
+  { at: 1200, say: "Are you bracing against anything? Even something subtle — an expectation, a hope, a plan? See if you can soften around it." },
+  { at: 1260, say: "The feeling doesn't need your help to grow. It just needs you to stop getting in its way." },
 
-  // Phase 6: Abiding (20-30 min) — very sparse cues
-  { at: 1350, say: "You're safe. You're welcome here. Stay as long as you like." },
-  { at: 1500, say: "If you notice the feeling changing, just let it change. Follow it with curiosity." },
-  { at: 1680, say: "Whatever you're experiencing right now is perfect. Trust it." },
+  // Phase 5: Surrender — approaching jhana (21-31 min)
+  { at: 1320, say: "If the pleasant feeling starts pulling you in, let it. Surrender to it.", bowlPause: true },
+  { at: 1400, say: "You don't do the jhana. The jhana does you. Just keep relaxing into the feeling." },
+  { at: 1480, say: "Notice: are you still efforting? Can you let go even more? Cut your effort in half. Then half again." },
+  { at: 1560, say: "Whatever you're experiencing — whether it feels big or subtle, dramatic or quiet — trust it. There's no wrong experience here." },
+  { at: 1640, say: "The feeling may feel self-sustaining now. Like a wave carrying you. Let it." },
+  { at: 1720, say: "This may already be closer to jhana than you think. Don't look for something different. Rest in what's here." },
+  { at: 1800, say: "Rest here. Just be with what's here. We'll keep going for a while longer." },
 
-  // Phase 7: Closing (30+ min)
-  { at: 1800, say: "Whenever you're ready, begin to notice the room around you." },
-  { at: 1830, say: "Take a few easy breaths. Feel your body." },
-  { at: 1860, say: "Open your eyes gently. Take a moment before moving." },
+  // Phase 6: Abiding (31-43 min) — very sparse cues
+  { at: 1920, say: "You're doing beautifully. About twelve more minutes of deepening." },
+  { at: 2100, say: "If you notice the feeling changing, just let it change. Follow it with curiosity." },
+  { at: 2340, say: "Whatever you're experiencing right now is perfect. Trust it." },
+
+  // Phase 7: Closing (43-45 min)
+  { at: 2520, say: "We're approaching the end of the session. Begin to notice the room around you." },
+  { at: 2550, say: "Take a few easy breaths. Feel your body." },
+  { at: 2580, say: "Gently open your eyes. Take a moment before moving." },
+  { at: 2610, say: "The session is complete, but your nervous system is still integrating this. Go slow for the next hour. The deepening continues.", end: true },
 ];
 
 // Bedtime meditation — very soft, sleep-oriented, designed to fade out
@@ -1641,7 +2222,228 @@ let progBeatPos = 0;
 let activeInstruments = new Set();
 let sectionEnergy = 0.5;
 
-// Drum patterns organized by energy
+// Style-specific drum pattern pools — each style has low/mid/high patterns
+// that capture its rhythmic feel. Fallback to generic if style not listed.
+const STYLE_DRUM_PATTERNS = {
+  // Jazz: swung ride, brush snare, syncopated kicks
+  jazz: {
+    low: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1],rim:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]},
+      {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1],rim:[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],hat:[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1]},
+      {kick:[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1],rim:[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0]},
+      // Cross-stick comping
+      {kick:[1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1],rim:[0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0]},
+    ],
+    high: [
+      {kick:[1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,1,0,0,1,0,1,1,0,0,1,0,1,1],rim:[0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0]},
+      {kick:[1,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]},
+    ],
+  },
+  // Bossa nova: signature bass-drum pattern, minimal hi-hat
+  bossa: {
+    low: [
+      {kick:[1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+      {kick:[1,0,0,0,0,0,1,0,0,1,0,0,0,0,1,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],rim:[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0]},
+    ],
+    high: [
+      {kick:[1,0,0,0,0,0,1,0,0,1,0,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]},
+    ],
+  },
+  // Funk: syncopated, off-beat kicks, tight hat work
+  funk: {
+    low: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+      // Clyde Stubblefield-ish: ghost notes on snare, syncopated kick
+      {kick:[1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0],snare:[0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1]},
+    ],
+    high: [
+      {kick:[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],snare:[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],hat:[1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]},
+      {kick:[1,0,1,0,0,0,0,1,0,0,1,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1],rim:[0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0]},
+    ],
+  },
+  // House/techno: four-on-the-floor, offbeat hats
+  house: {
+    low: [
+      {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]},
+      {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+    ],
+    high: [
+      {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]},
+      {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],hat:[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]},
+    ],
+  },
+  // Lo-fi: lazy, behind-the-beat feel, sparse
+  lofi: {
+    low: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],rim:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]},
+      {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+      // Boom-bap lofi
+      {kick:[1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,1],rim:[0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0]},
+    ],
+    high: [
+      {kick:[1,0,0,0,0,0,1,0,1,0,0,1,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0]},
+    ],
+  },
+  // Soul/R&B: deep pocket, ghost notes
+  soul: {
+    low: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],rim:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]},
+      {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0]},
+    ],
+    high: [
+      {kick:[1,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1],rim:[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0]},
+    ],
+  },
+  // DnB: breakbeat-derived, fast syncopation
+  dnb: {
+    low: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1],rim:[0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0]},
+      // Amen break-ish
+      {kick:[1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0]},
+    ],
+    high: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],hat:[1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1],rim:[0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,1]},
+      {kick:[1,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0],rim:[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0]},
+    ],
+  },
+  // Tango: marcato rhythm, strong accents
+  tango: {
+    low: [
+      {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+      // Habanera rhythm
+      {kick:[1,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+    ],
+    high: [
+      {kick:[1,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1]},
+    ],
+  },
+  // Waltz: 3/4 feel mapped to 16-step grid (groups of ~5.3)
+  waltz: {
+    low: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0]},
+    ],
+    high: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0]},
+    ],
+  },
+  // Ambient/chillwave: barely there, textural
+  ambient: {
+    low: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]},
+      {kick:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]},
+    ],
+    mid: [
+      {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],rim:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]},
+    ],
+    high: [
+      {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+    ],
+  },
+};
+// Techno: relentless, mechanical, driving — different from house's groove
+STYLE_DRUM_PATTERNS.techno = {
+  low: [
+    {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]},
+  ],
+  mid: [
+    {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+    // Offbeat clap techno
+    {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+  ],
+  high: [
+    // Hypnotic fast hats
+    {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]},
+    // Industrial techno — rim-heavy
+    {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hat:[1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1],rim:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+  ],
+};
+
+// Dubstep: half-time feel, emphasis on beats 1 and 3, sparse but heavy
+STYLE_DRUM_PATTERNS.dubstep = {
+  low: [
+    {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+  ],
+  mid: [
+    // Classic dubstep half-time
+    {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+    {kick:[1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]},
+  ],
+  high: [
+    {kick:[1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hat:[0,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0]},
+    // Riddim-style
+    {kick:[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]},
+  ],
+};
+
+// Synthwave: more open, less rigid than pure house
+STYLE_DRUM_PATTERNS.synthwave = {
+  low: [
+    {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+  ],
+  mid: [
+    {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+    // Tom-heavy 80s
+    {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]},
+  ],
+  high: [
+    {kick:[1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0]},
+  ],
+};
+
+// Chiptune: 8-bit precision, tight and bouncy
+STYLE_DRUM_PATTERNS.chiptune = {
+  low: [
+    {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]},
+  ],
+  mid: [
+    {kick:[1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+    // Megaman-ish
+    {kick:[1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0]},
+  ],
+  high: [
+    {kick:[1,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]},
+  ],
+};
+
+// Remaining aliases for truly similar styles
+STYLE_DRUM_PATTERNS.rnb = STYLE_DRUM_PATTERNS.soul;
+STYLE_DRUM_PATTERNS.chillwave = STYLE_DRUM_PATTERNS.ambient;
+STYLE_DRUM_PATTERNS.darkambient = STYLE_DRUM_PATTERNS.ambient;
+STYLE_DRUM_PATTERNS.classical = STYLE_DRUM_PATTERNS.waltz;
+STYLE_DRUM_PATTERNS.romantic = STYLE_DRUM_PATTERNS.waltz;
+STYLE_DRUM_PATTERNS.impressionist = STYLE_DRUM_PATTERNS.ambient;
+STYLE_DRUM_PATTERNS.cinematic = STYLE_DRUM_PATTERNS.ambient;
+STYLE_DRUM_PATTERNS.futurebass = STYLE_DRUM_PATTERNS.house;
+STYLE_DRUM_PATTERNS.complextro = STYLE_DRUM_PATTERNS.dnb;
+
+// Generic fallback patterns (used if style not in STYLE_DRUM_PATTERNS)
 const DRUM_PATTERNS_LOW = [
   {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],rim:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]},
   {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]},
@@ -1652,23 +2454,17 @@ const DRUM_PATTERNS_MID = [
   {kick:[1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0]},
   {kick:[1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]},
   {kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0]},
-  // Off-one kicks — downbeat implied by snare, kick syncopates
   {kick:[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0]},
   {kick:[1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,1],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],rim:[0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0]},
-  // Half-time feel
   {kick:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hat:[1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1],rim:[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0]},
-  // Boom-bap
   {kick:[1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],rim:[0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0]},
-  // Four-on-floor (house-ish)
   {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]},
 ];
 const DRUM_PATTERNS_HIGH = [
   {kick:[1,0,0,0,0,0,1,0,1,0,0,1,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],hat:[1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0]},
   {kick:[1,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,1,1,0,1,0,1,1,1,0,1,0,1,0,1,1],rim:[0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0]},
   {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],rim:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1]},
-  // DnB-ish
   {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,1],rim:[0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0]},
-  // Broken beat
   {kick:[1,0,1,0,0,0,1,0,0,1,0,0,1,0,1,0],snare:[0,0,0,0,1,0,0,0,0,0,0,1,1,0,0,0],hat:[1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],rim:[0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0]},
 ];
 
@@ -1694,6 +2490,17 @@ const GUITAR_PATTERNS = [
   [0,-1,-1,1,-1,-1,2,-1,-1,3,-1,-1,1,-1,-1,2],
   [-1,-1,0,-1,-1,2,-1,-1,1,-1,-1,3,-1,-1,0,-1],
   [0,-1,1,-1,2,-1,-1,3,-1,2,-1,1,-1,0,-1,-1],
+  // Sparse fingerpick — just roots and thirds
+  [0,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,-1,-1],
+  [-1,-1,-1,-1,0,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1],
+  // Travis-picking style — alternating bass and melody
+  [0,-1,2,-1,1,-1,2,-1,0,-1,3,-1,1,-1,2,-1],
+  // Strumming — multiple notes close together
+  [0,1,-1,-1,-1,-1,-1,-1,0,1,-1,-1,-1,-1,-1,-1],
+  [0,1,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,1,2,-1],
+  // Syncopated — off-beat emphasis
+  [-1,0,-1,-1,2,-1,1,-1,-1,0,-1,-1,3,-1,-1,1],
+  [-1,-1,0,-1,-1,1,-1,-1,-1,-1,2,-1,-1,3,-1,-1],
 ];
 
 const KEYS_PATTERNS_SPARSE = [
@@ -1732,14 +2539,16 @@ function pickPatternsForEnergy(energy) {
     curVibesPat = null;
     return;
   }
+  // Use style-specific drum patterns if available, else generic
+  const stylePats = STYLE_DRUM_PATTERNS[currentSongStyle];
   if (energy < 0.4) {
-    curDrumPat = pick(DRUM_PATTERNS_LOW);
+    curDrumPat = pick(stylePats ? stylePats.low : DRUM_PATTERNS_LOW);
     curKeysPat = pick(KEYS_PATTERNS_SPARSE);
   } else if (energy < 0.7) {
-    curDrumPat = pick(DRUM_PATTERNS_MID);
+    curDrumPat = pick(stylePats ? stylePats.mid : DRUM_PATTERNS_MID);
     curKeysPat = pick(KEYS_PATTERNS_SPARSE.concat(KEYS_PATTERNS_BUSY));
   } else {
-    curDrumPat = pick(DRUM_PATTERNS_HIGH);
+    curDrumPat = pick(stylePats ? stylePats.high : DRUM_PATTERNS_HIGH);
     curKeysPat = pick(KEYS_PATTERNS_BUSY);
   }
   curBassPat = pick(BASS_PATTERNS);
@@ -1750,14 +2559,18 @@ function pickPatternsForEnergy(energy) {
 function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 
 function startNewSong() {
+  // Pick which color instruments this song uses (2-3 of guitar/vibes/strings/synth)
+  rollSongPalette();
+  // Randomize energy curve and section lengths for this song
+  rollSongEnergy();
   // Shuffle: pick a random style for this song
   if (shuffleMode) {
     currentSongStyle = pick(STYLE_KEYS);
     logEvent('song_change', { style: currentSongStyle });
     const style = SONG_STYLES[currentSongStyle];
     currentSwing = style.swing;
-    const midBpm = Math.round((style.tempoRange[0]+style.tempoRange[1])/2);
-    $('bpm').value = midBpm;
+    const [lo, hi] = style.tempoRange;
+    $('bpm').value = Math.round(lo + Math.random() * (hi - lo));
     // Highlight the active style button
     document.querySelectorAll('.song-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.song === 'shuffle');
@@ -1766,6 +2579,8 @@ function startNewSong() {
   }
   if (typeof rollTimbres === 'function') rollTimbres();
   songStartedAt = Date.now();
+  // Record this song in history after timbres are rolled
+  setTimeout(() => recordSongInHistory(), 50);
   currentSongForm = pick(SONG_FORMS);
   currentSectionIdx = 0;
   barInSection = 0;
@@ -1905,13 +2720,65 @@ let isFillBar = false;    // true on bar 8 of each phrase (once per ~16s at 120b
 let barMutation = null;   // per-bar mutation object (extra hits, drops)
 
 function mutateBarForVariety() {
-  // Sparing per-bar mutation — most bars play the base pattern cleanly
+  const section = SECTION_TYPES[currentSongForm[currentSectionIdx]];
+  const isLastBar = section && (barInSection === section.bars - 1);
+  const isSecondToLast = section && (barInSection === section.bars - 2);
+
+  // Per-bar micro-mutations: randomly flip 1-2 steps in the current pattern
+  // so no two bars sound exactly the same even with the same base pattern
+  const patMut = curDrumPat ? {
+    flipKick:  Math.random() < 0.18 ? Math.floor(Math.random()*16) : -1,
+    flipSnare: Math.random() < 0.12 ? Math.floor(Math.random()*16) : -1,
+    flipHat:   Math.random() < 0.20 ? Math.floor(Math.random()*16) : -1,
+    swapKickSnare: Math.random() < 0.06, // swap a kick hit to snare for surprise
+  } : {};
+
   barMutation = {
-    kickDropZero: Math.random() < 0.04,  // very rare
-    extraKickAt:  Math.random() < 0.08 ? (10 + Math.floor(Math.random()*5)) : -1,
-    extraSnareAt: Math.random() < 0.06 ? (6 + Math.floor(Math.random()*7)) : -1,
-    ghostHatProb: 0.03 + Math.random()*0.05,
+    kickDropZero: Math.random() < 0.07,
+    extraKickAt:  Math.random() < 0.14 ? (10 + Math.floor(Math.random()*5)) : -1,
+    extraSnareAt: Math.random() < 0.12 ? (6 + Math.floor(Math.random()*7)) : -1,
+    extraKickAt2: Math.random() < 0.06 ? (2 + Math.floor(Math.random()*12)) : -1,
+    ghostHatProb: 0.04 + Math.random()*0.08,
+    // Drum fill on last bar of section (50% chance) — busier hat + extra snare hits
+    fill: isLastBar && Math.random() < 0.5,
+    // Half-bar drop: strip drums for first 8 steps of a bar (15% on 2nd-to-last)
+    halfDrop: isSecondToLast && Math.random() < 0.15,
+    // Instrument thin-out: randomly mute one non-essential instrument for this bar (8%)
+    thinInstrument: Math.random() < 0.08 ? pick(['guitar','vibes','strings','synth']) : null,
+    // Per-step pattern mutations
+    patMut,
   };
+
+  // Apply pattern step flips to create micro-variation
+  if (curDrumPat && !shamanicMode) {
+    // Deep-copy the current pattern for this bar so mutations don't persist
+    curDrumPat = {
+      kick:  [...curDrumPat.kick],
+      snare: [...curDrumPat.snare],
+      hat:   [...curDrumPat.hat],
+      rim:   [...curDrumPat.rim],
+    };
+    if (patMut.flipKick >= 0) curDrumPat.kick[patMut.flipKick] ^= 1;
+    if (patMut.flipSnare >= 0) curDrumPat.snare[patMut.flipSnare] ^= 1;
+    if (patMut.flipHat >= 0) curDrumPat.hat[patMut.flipHat] ^= 1;
+    if (patMut.swapKickSnare) {
+      // Find a kick hit and move it to snare
+      const kickSteps = [];
+      for (let i = 0; i < 16; i++) if (curDrumPat.kick[i] && !curDrumPat.snare[i]) kickSteps.push(i);
+      if (kickSteps.length > 1) {
+        const s = kickSteps[Math.floor(Math.random()*kickSteps.length)];
+        if (s !== 0) { curDrumPat.kick[s] = 0; curDrumPat.snare[s] = 1; }
+      }
+    }
+  }
+
+  // Fill: override pattern to be busier
+  if (barMutation.fill) {
+    barMutation.extraSnareAt = 6 + Math.floor(Math.random()*4);
+    barMutation.ghostHatProb = 0.35;
+    // Extra kicks in fill bars
+    barMutation.extraKickAt = 10 + Math.floor(Math.random()*4);
+  }
 }
 
 function advanceBar() {
@@ -1925,7 +2792,7 @@ function advanceBar() {
     return;
   }
   // Re-pick drum/bass patterns within a section for variation — rare
-  if (Math.random() < 0.10 && !shamanicMode) {
+  if (Math.random() < 0.25 && !shamanicMode) {
     pickPatternsForEnergy(sectionEnergy);
   }
   mutateBarForVariety();
@@ -2390,25 +3257,135 @@ function playBass(midi, time, dur) {
   });
 }
 
-// ---- GUITAR (Karplus-Strong) ----
+// ---- GUITAR PRESETS (Karplus-Strong variations) ----
+const GUITAR_PRESETS = {
+  'steel': (midi, time, dur) => {
+    // Bright steel-string acoustic — crisp attack, rich harmonics
+    const f=midiToFreq(midi), sr=ac.sampleRate;
+    const period=Math.round(sr/f);
+    const bufLen=Math.max(sr*(dur+1),period*2);
+    const buf=ac.createBuffer(1,bufLen,sr);
+    const d=buf.getChannelData(0);
+    // Bright excitation: mix of noise + impulse for pick attack
+    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.55;
+    // Minimal pre-smoothing — keeps brightness
+    for(let i=period;i<bufLen;i++) d[i]=0.997*(0.5*d[i-period]+0.5*d[i-period+1]);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const vel = 0.85 + Math.random()*0.3;
+    const amp=ac.createGain();
+    amp.gain.setValueAtTime(0.19 * vel, time);
+    amp.gain.setTargetAtTime(0.001,time+dur*0.8,dur*0.15);
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
+    lpf.frequency.value=hitJit(5000, 0.2); lpf.Q.value=hitJit(0.5, 0.2);
+    src.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
+    src.start(time); src.stop(time+dur+1);
+  },
+  'nylon': (midi, time, dur) => {
+    // Warm nylon classical guitar — rounder, softer attack, darker tone
+    const f=midiToFreq(midi), sr=ac.sampleRate;
+    const period=Math.round(sr/f);
+    const bufLen=Math.max(sr*(dur+1),period*2);
+    const buf=ac.createBuffer(1,bufLen,sr);
+    const d=buf.getChannelData(0);
+    // Softer excitation
+    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.4;
+    // More pre-smoothing for warmer tone
+    for(let i=1;i<period;i++) d[i]=d[i]*0.4+d[i-1]*0.6;
+    for(let i=period;i<bufLen;i++) d[i]=0.998*(0.45*d[i-period]+0.55*d[i-period+1]);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const vel = 0.82 + Math.random()*0.3;
+    const amp=ac.createGain();
+    amp.gain.setValueAtTime(0.20 * vel, time);
+    amp.gain.setTargetAtTime(0.001,time+dur*0.85,dur*0.18);
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
+    lpf.frequency.value=hitJit(2400, 0.2); lpf.Q.value=hitJit(0.7, 0.15);
+    src.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
+    src.start(time); src.stop(time+dur+1);
+  },
+  'muted': (midi, time, dur) => {
+    // Palm-muted guitar — short, percussive, funky
+    const f=midiToFreq(midi), sr=ac.sampleRate;
+    const period=Math.round(sr/f);
+    const shortDur = Math.min(dur, 0.25); // very short sustain
+    const bufLen=Math.max(sr*(shortDur+0.5),period*2);
+    const buf=ac.createBuffer(1,bufLen,sr);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.45;
+    for(let i=1;i<period;i++) d[i]=d[i]*0.35+d[i-1]*0.65;
+    // Faster decay from damping — lower feedback coefficient
+    for(let i=period;i<bufLen;i++) d[i]=0.985*(0.5*d[i-period]+0.5*d[i-period+1]);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const vel = 0.88 + Math.random()*0.25;
+    const amp=ac.createGain();
+    amp.gain.setValueAtTime(0.22 * vel, time);
+    amp.gain.exponentialRampToValueAtTime(0.001, time+shortDur+0.15);
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
+    lpf.frequency.value=hitJit(1800, 0.2); lpf.Q.value=hitJit(0.8, 0.15);
+    src.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
+    src.start(time); src.stop(time+shortDur+0.5);
+  },
+  'fingerpick': (midi, time, dur) => {
+    // Fingerpicked acoustic — gentler attack, longer sustain, body resonance
+    const f=midiToFreq(midi), sr=ac.sampleRate;
+    const period=Math.round(sr/f);
+    const bufLen=Math.max(sr*(dur+1.5),period*2);
+    const buf=ac.createBuffer(1,bufLen,sr);
+    const d=buf.getChannelData(0);
+    // Soft finger excitation with less high-frequency noise
+    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.35;
+    for(let i=1;i<period;i++) d[i]=d[i]*0.45+d[i-1]*0.55;
+    // Longer sustain
+    for(let i=period;i<bufLen;i++) d[i]=0.9985*(0.48*d[i-period]+0.52*d[i-period+1]);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const vel = 0.80 + Math.random()*0.3;
+    const amp=ac.createGain();
+    amp.gain.setValueAtTime(0.17 * vel, time);
+    amp.gain.setTargetAtTime(0.001,time+dur*0.9,dur*0.2);
+    // Body resonance — gentle boost around 200Hz
+    const body=ac.createBiquadFilter(); body.type='peaking';
+    body.frequency.value=hitJit(220, 0.15); body.Q.value=1.5; body.gain.value=3;
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
+    lpf.frequency.value=hitJit(3800, 0.2); lpf.Q.value=hitJit(0.5, 0.15);
+    src.connect(body); body.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
+    src.start(time); src.stop(time+dur+1.5);
+  },
+  'electric-clean': (midi, time, dur) => {
+    // Clean electric guitar — bright with subtle chorus-like detuning
+    const f=midiToFreq(midi), sr=ac.sampleRate;
+    const period=Math.round(sr/f);
+    const bufLen=Math.max(sr*(dur+1),period*2);
+    // Two slightly detuned strings for chorus effect
+    const buf1=ac.createBuffer(1,bufLen,sr);
+    const buf2=ac.createBuffer(1,bufLen,sr);
+    const d1=buf1.getChannelData(0);
+    const d2=buf2.getChannelData(0);
+    for(let i=0;i<period;i++) { d1[i]=(Math.random()*2-1)*0.4; d2[i]=(Math.random()*2-1)*0.4; }
+    const period2=Math.round(sr/(f*Math.pow(2,5/1200))); // +5 cents
+    for(let i=period;i<bufLen;i++) d1[i]=0.997*(0.5*d1[i-period]+0.5*d1[i-period+1]);
+    for(let i=period2;i<bufLen;i++) d2[i]=0.997*(0.5*d2[i-period2]+0.5*d2[i-period2+1]);
+    const src1=ac.createBufferSource(); src1.buffer=buf1;
+    const src2=ac.createBufferSource(); src2.buffer=buf2;
+    const vel = 0.85 + Math.random()*0.3;
+    const mix=ac.createGain(); mix.gain.value=0.5;
+    src1.connect(mix); src2.connect(mix);
+    const amp=ac.createGain();
+    amp.gain.setValueAtTime(0.16 * vel, time);
+    amp.gain.setTargetAtTime(0.001,time+dur*0.8,dur*0.15);
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
+    lpf.frequency.value=hitJit(6000, 0.15); lpf.Q.value=0.5;
+    mix.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
+    src1.start(time); src2.start(time);
+    src1.stop(time+dur+1); src2.stop(time+dur+1);
+  },
+};
+
 function playGuitar(midi, time, dur) {
   if (!$('muteGuitar').checked || !activeInstruments.has('guitar')) return;
-  const f=midiToFreq(midi), sr=ac.sampleRate;
-  const period=Math.round(sr/f);
-  const bufLen=Math.max(sr*(dur+1),period*2);
-  const buf=ac.createBuffer(1,bufLen,sr);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.5;
-  for(let i=1;i<period;i++) d[i]=d[i]*0.5+d[i-1]*0.5;
-  for(let i=period;i<bufLen;i++) d[i]=0.996*(0.5*d[i-period]+0.5*d[i-period+1]);
-  const src=ac.createBufferSource(); src.buffer=buf;
-  const amp=ac.createGain();
-  const vel = 0.85 + Math.random()*0.3; // ±15% per pluck
-  amp.gain.setValueAtTime(0.18 * vel, time);
-  amp.gain.setTargetAtTime(0.001,time+dur*0.8,dur*0.15);
-  const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=3500; lpf.Q.value=0.5;
-  src.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
-  src.start(time); src.stop(time+dur+1);
+  const v = 0.85 + Math.random()*0.3;
+  _playWithVel('guitar', v, () => {
+    const p = GUITAR_PRESETS[currentTimbre.guitar] || GUITAR_PRESETS['steel'];
+    p(midi, time, dur);
+  });
 }
 
 // ---- STRINGS (slow-attack filtered saws) ----
@@ -2422,11 +3399,12 @@ function playStrings(notes, time, dur) {
     const o2=ac.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f*Math.pow(2,3/1200);
     const mix=ac.createGain(); mix.gain.value=0.3;
     o1.connect(mix); o2.connect(mix);
-    const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=2200; lpf.Q.value=0.5;
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=hitJit(2200, 0.25); lpf.Q.value=hitJit(0.5, 0.3);
     mix.connect(lpf);
     const amp=ac.createGain();
+    const atkTime = hitJit(0.8, 0.35); // vary attack per note (0.52-1.08s)
     amp.gain.setValueAtTime(0,t);
-    amp.gain.linearRampToValueAtTime(peak,t+0.8); // slow attack
+    amp.gain.linearRampToValueAtTime(peak,t+atkTime); // slow attack with variation
     amp.gain.setValueAtTime(peak,t+dur-0.5);
     amp.gain.linearRampToValueAtTime(0.001,t+dur);
     lpf.connect(amp); amp.connect(instruments.strings.gain);
@@ -2440,14 +3418,17 @@ function playVibes(midi, time, dur) {
   if (!$('muteVibes').checked || !activeInstruments.has('vibes')) return;
   const f=midiToFreq(midi), t=time;
   const vel = 0.82 + Math.random()*0.3; // ±15% per strike — mallets vary
+  const fmRatio = hitJit(3.99, 0.03); // very subtle ratio variation — keeps tone clean
   const car=ac.createOscillator(); car.type='sine'; car.frequency.value=f;
-  const mod=ac.createOscillator(); mod.type='sine'; mod.frequency.value=f*3.99;
+  const mod=ac.createOscillator(); mod.type='sine'; mod.frequency.value=f*fmRatio;
+  const fmPeak = hitJit(1.5, 0.2); // vary FM brightness per strike
   const mG=ac.createGain();
-  mG.gain.setValueAtTime(f*1.5*vel,t); // harder strike = more FM brightness
-  mG.gain.exponentialRampToValueAtTime(f*0.02,t+dur*0.8);
+  mG.gain.setValueAtTime(f*fmPeak*vel,t);
+  mG.gain.exponentialRampToValueAtTime(f*hitJit(0.02, 0.3),t+dur*0.8);
   mod.connect(mG); mG.connect(car.frequency);
-  // Tremolo
-  const trem=ac.createOscillator(); trem.type='sine'; trem.frequency.value=5.5;
+  // Tremolo with varied rate
+  const tremRate = hitJit(5.5, 0.3); // 3.85-7.15 Hz — different shimmer per note
+  const trem=ac.createOscillator(); trem.type='sine'; trem.frequency.value=tremRate;
   const tremG=ac.createGain(); tremG.gain.value=0.015;
   trem.connect(tremG);
   const amp=ac.createGain();
@@ -2482,18 +3463,22 @@ function playSynth(midi, time, dur, waveName) {
   mix.gain.value = 0.3;
   osc1.connect(mix); osc2.connect(mix);
 
-  // Filter with envelope
+  // Filter with envelope — per-note variation
   const lpf = ac.createBiquadFilter();
   lpf.type = 'lowpass';
-  lpf.frequency.setValueAtTime(f * 8, t);
-  lpf.frequency.exponentialRampToValueAtTime(f * 3, t + 0.15);
-  lpf.frequency.exponentialRampToValueAtTime(f * 1.5, t + dur * 0.7);
-  lpf.Q.value = 2;
+  const filtPeak = hitJit(8, 0.3);
+  const filtMid = hitJit(3, 0.25);
+  const filtSus = hitJit(1.5, 0.25);
+  lpf.frequency.setValueAtTime(f * filtPeak, t);
+  lpf.frequency.exponentialRampToValueAtTime(f * filtMid, t + hitJit(0.15, 0.3));
+  lpf.frequency.exponentialRampToValueAtTime(f * filtSus, t + dur * 0.7);
+  lpf.Q.value = hitJit(2, 0.15);
 
+  const synthAtk = hitJit(0.01, 0.4);
   const amp = ac.createGain();
   amp.gain.setValueAtTime(0, t);
-  amp.gain.linearRampToValueAtTime(0.12, t + 0.01);
-  amp.gain.exponentialRampToValueAtTime(0.06, t + 0.15);
+  amp.gain.linearRampToValueAtTime(hitJit(0.12, 0.15), t + synthAtk);
+  amp.gain.exponentialRampToValueAtTime(hitJit(0.06, 0.2), t + 0.15);
   amp.gain.setTargetAtTime(0.001, t + dur - 0.05, 0.12);
 
   mix.connect(lpf); lpf.connect(amp); amp.connect(instruments.synth.gain);
@@ -2620,7 +3605,7 @@ function playJhanaBowl(t, bowlIdx, destGain) {
 function playPulsingBowl(t) {
   if (!ac) return;
   const f = 130 + Math.random() * 15; // low C area, slight variation
-  const dur = 6;
+  const dur = 9 + Math.random() * 6; // 9-15s (was fixed 6s)
   const vol = 0.12;
 
   // Fundamental with slow swell envelope
@@ -2785,7 +3770,10 @@ function stopJhanaDrone() {
   jhanaDroneNodes.forEach(n => {
     n.gL.gain.linearRampToValueAtTime(0, now + 5);
     n.gR.gain.linearRampToValueAtTime(0, now + 5);
-    setTimeout(() => { try { n.oL.stop(); n.oR.stop(); } catch(e){} }, 6000);
+    setTimeout(() => {
+      try { n.oL.stop(); n.oR.stop(); } catch(e){}
+      try { if (n._lfoL) n._lfoL.stop(); if (n._lfoR) n._lfoR.stop(); } catch(e){}
+    }, 6000);
   });
   jhanaDroneNodes = null;
 }
@@ -2837,21 +3825,23 @@ function playAsmrShimmer(t, pan) {
   // High crystalline shimmer — very close, like a tiny bell by your ear
   if (!ac) return;
   const f = 4000 + Math.random() * 2000;
+  const dur = 4 + Math.random() * 3; // 4-7s (was ~2.5s)
   const o = ac.createOscillator(); o.type = 'sine';
   o.frequency.setValueAtTime(f, t);
-  o.frequency.exponentialRampToValueAtTime(f * 0.995, t + 2);
+  o.frequency.exponentialRampToValueAtTime(f * 0.993, t + dur);
   const g = ac.createGain();
   g.gain.setValueAtTime(0.015, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 2.5);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur + 0.3);
   const p = ac.createStereoPanner(); p.pan.value = pan;
   o.connect(g); g.connect(p); p.connect(masterGain);
-  o.start(t); o.stop(t + 3);
+  o.start(t); o.stop(t + dur + 0.5);
 }
 
 function playAsmrBreathTexture(t, pan) {
   // Whisper-like breath texture — filtered noise with formants, very quiet
   if (!ac) return;
-  const sz = Math.floor(ac.sampleRate * 0.8);
+  const dur = 1.2 + Math.random() * 1.0; // 1.2-2.2s (was 0.6s)
+  const sz = Math.floor(ac.sampleRate * (dur + 0.3));
   const nb = ac.createBuffer(1, sz, ac.sampleRate);
   const nd = nb.getChannelData(0);
   for (let i = 0; i < sz; i++) nd[i] = Math.random() * 2 - 1;
@@ -2862,10 +3852,10 @@ function playAsmrBreathTexture(t, pan) {
   const g = ac.createGain();
   g.gain.setValueAtTime(0.001, t);
   g.gain.linearRampToValueAtTime(0.02, t + 0.15);
-  g.gain.linearRampToValueAtTime(0.001, t + 0.6);
+  g.gain.linearRampToValueAtTime(0.001, t + dur);
   const p = ac.createStereoPanner(); p.pan.value = pan;
   n.connect(bp); bp.connect(g); g.connect(p); p.connect(masterGain);
-  n.start(t); n.stop(t + 0.7);
+  n.start(t); n.stop(t + dur + 0.2);
 }
 
 // Fire ASMR based on current round — more layers each time
@@ -2980,16 +3970,17 @@ function startJhanaBowlLoop() {
       const next = minGap + Math.random() * (maxGap - minGap);
       jhanaBowlTimer = setTimeout(ringBowl, next);
     } else {
-      // Normal phase: meditative, with pulsing bowls and breath-synced tingshas
+      // Normal phase: meditative, all sounds synced to exhale onset
+      const exhaleTime = nextBreathPhaseTime(0.5); // start of exhale
       if (jhanaBowlCount % 4 === 0) {
-        // Pulsing low bowl — deep wave
-        playPulsingBowl(t);
+        // Pulsing low bowl — deep wave, at exhale
+        playPulsingBowl(exhaleTime);
       } else if (jhanaBowlCount % 5 === 0) {
-        // Chord: two harmonious bowls together
-        playJhanaBowl(t, 0);
-        playJhanaBowl(t + 0.3, 4);
+        // Chord: two harmonious bowls together, at exhale
+        playJhanaBowl(exhaleTime, 0);
+        playJhanaBowl(exhaleTime + 0.3, 4);
       } else if (jhanaBowlCount % 3 === 0) {
-        // Tingsha synced to exhale-to-inhale transition (phase ~0.75 = empty lungs)
+        // Tingsha synced to mid-exhale (phase ~0.75 = empty lungs)
         const tingshaTime = nextBreathPhaseTime(0.75);
         playTingsha(tingshaTime);
       } else {
@@ -2997,10 +3988,23 @@ function startJhanaBowlLoop() {
         const total = weights.reduce((a,b)=>a+b);
         let r = Math.random() * total, idx = 0;
         for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r <= 0) { idx = i; break; } }
-        playJhanaBowl(t, idx);
+        playJhanaBowl(exhaleTime, idx);
       }
-      // Moderate spacing: 18-35 seconds
-      const next = 18000 + Math.random() * 17000;
+      // Spacing depends on meditation phase — wider during surrender (21-31 min)
+      const jhanaElapsed = jhanaMode ? (Date.now() - jhanaStartTime) / 1000 : 0;
+      const inSurrender = jhanaElapsed >= 1260 && jhanaElapsed < 1860;
+      const inAbiding = jhanaElapsed >= 1860;
+      let next;
+      if (inSurrender) {
+        // Surrender: sparse bowls, 40-70 seconds — make sonic space
+        next = 40000 + Math.random() * 30000;
+      } else if (inAbiding) {
+        // Abiding: moderate-sparse, 30-50 seconds
+        next = 30000 + Math.random() * 20000;
+      } else {
+        // Normal: 18-35 seconds
+        next = 18000 + Math.random() * 17000;
+      }
       jhanaBowlTimer = setTimeout(ringBowl, next);
     }
   }
@@ -3023,163 +4027,178 @@ function makeNoise(sec) {
   return nb;
 }
 
+// Per-hit micro-jitter helper: returns a value centered on `base` with ±pct variation
+function hitJit(base, pct) { return base * (1 - pct + Math.random() * pct * 2); }
+
 // ---- KICK PRESETS ----
 const KICK_PRESETS = {
   '909': (t,j) => {
+    const decay = hitJit(0.3, 0.25); // 0.225-0.375s — each hit decays differently
+    const startF = hitJit(160, 0.15) * j.kickPitch;
+    const endF = hitJit(40, 0.12) * j.kickPitch;
+    const sweep = hitJit(0.08, 0.3);
     const o=ac.createOscillator(); o.type='sine';
-    o.frequency.setValueAtTime(160*j.kickPitch,t);
-    o.frequency.exponentialRampToValueAtTime(40*j.kickPitch,t+0.08);
+    o.frequency.setValueAtTime(startF,t);
+    o.frequency.exponentialRampToValueAtTime(endF,t+sweep);
     const a=ac.createGain();
-    a.gain.setValueAtTime(0.30,t); a.gain.exponentialRampToValueAtTime(0.001,t+0.3);
-    const cl=ac.createOscillator(); cl.type='square'; cl.frequency.value=800;
+    a.gain.setValueAtTime(0.30,t); a.gain.exponentialRampToValueAtTime(0.001,t+decay);
+    const clickF = hitJit(800, 0.3);
+    const cl=ac.createOscillator(); cl.type='square'; cl.frequency.value=clickF;
     const ca=ac.createGain();
-    ca.gain.setValueAtTime(0.035,t); ca.gain.exponentialRampToValueAtTime(0.001,t+0.015);
+    ca.gain.setValueAtTime(hitJit(0.035, 0.3),t); ca.gain.exponentialRampToValueAtTime(0.001,t+0.015);
     cl.connect(ca); ca.connect(instruments.drums.gain);
     o.connect(a); a.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+0.4); cl.start(t); cl.stop(t+0.05);
+    o.start(t); o.stop(t+decay+0.1); cl.start(t); cl.stop(t+0.05);
   },
   '808': (t,j) => {
-    // Long subby 808 — low start, slow decay, no click
+    const decay = hitJit(0.7, 0.25);
+    const startF = hitJit(120, 0.15) * j.kickPitch;
     const o=ac.createOscillator(); o.type='sine';
-    o.frequency.setValueAtTime(120*j.kickPitch,t);
-    o.frequency.exponentialRampToValueAtTime(32*j.kickPitch,t+0.12);
+    o.frequency.setValueAtTime(startF,t);
+    o.frequency.exponentialRampToValueAtTime(hitJit(32, 0.15)*j.kickPitch,t+hitJit(0.12, 0.3));
     const a=ac.createGain();
-    a.gain.setValueAtTime(0.38,t); a.gain.exponentialRampToValueAtTime(0.001,t+0.7);
+    a.gain.setValueAtTime(0.38,t); a.gain.exponentialRampToValueAtTime(0.001,t+decay);
     o.connect(a); a.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+0.8);
+    o.start(t); o.stop(t+decay+0.1);
   },
   'acoustic': (t,j) => {
-    // Woodier acoustic kick — softer attack + bandpass body thump
+    const decay = hitJit(0.18, 0.3);
     const o=ac.createOscillator(); o.type='sine';
-    o.frequency.setValueAtTime(90*j.kickPitch,t);
-    o.frequency.exponentialRampToValueAtTime(55*j.kickPitch,t+0.05);
+    o.frequency.setValueAtTime(hitJit(90, 0.15)*j.kickPitch,t);
+    o.frequency.exponentialRampToValueAtTime(hitJit(55, 0.12)*j.kickPitch,t+0.05);
     const a=ac.createGain();
-    a.gain.setValueAtTime(0.33,t); a.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+    a.gain.setValueAtTime(0.33,t); a.gain.exponentialRampToValueAtTime(0.001,t+decay);
     const n=ac.createBufferSource(); n.buffer=makeNoise(0.04);
-    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=160; bp.Q.value=3;
-    const na=ac.createGain(); na.gain.setValueAtTime(0.13,t); na.gain.exponentialRampToValueAtTime(0.001,t+0.06);
+    const bpF = hitJit(160, 0.3);
+    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=bpF; bp.Q.value=hitJit(3, 0.3);
+    const na=ac.createGain(); na.gain.setValueAtTime(hitJit(0.13, 0.2),t); na.gain.exponentialRampToValueAtTime(0.001,t+0.06);
     n.connect(bp); bp.connect(na); na.connect(instruments.drums.gain);
     o.connect(a); a.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+0.25); n.start(t); n.stop(t+0.08);
+    o.start(t); o.stop(t+decay+0.07); n.start(t); n.stop(t+0.08);
   },
   'lofi': (t,j) => {
-    // Muffled, tape-saturated feeling kick
+    const decay = hitJit(0.38, 0.25);
     const o=ac.createOscillator(); o.type='sine';
-    o.frequency.setValueAtTime(140*j.kickPitch,t);
-    o.frequency.exponentialRampToValueAtTime(42*j.kickPitch,t+0.09);
-    const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=450; lpf.Q.value=0.8;
+    o.frequency.setValueAtTime(hitJit(140, 0.15)*j.kickPitch,t);
+    o.frequency.exponentialRampToValueAtTime(hitJit(42, 0.12)*j.kickPitch,t+hitJit(0.09, 0.3));
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=hitJit(450, 0.25); lpf.Q.value=0.8;
     const a=ac.createGain();
-    a.gain.setValueAtTime(0.34,t); a.gain.exponentialRampToValueAtTime(0.001,t+0.38);
+    a.gain.setValueAtTime(0.34,t); a.gain.exponentialRampToValueAtTime(0.001,t+decay);
     o.connect(lpf); lpf.connect(a); a.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+0.45);
+    o.start(t); o.stop(t+decay+0.07);
   },
   'punch': (t,j) => {
-    // Tight punchy EDM kick — hard click + fast body
+    const decay = hitJit(0.18, 0.25);
+    const startF = hitJit(200, 0.15) * j.kickPitch;
     const o=ac.createOscillator(); o.type='sine';
-    o.frequency.setValueAtTime(200*j.kickPitch,t);
-    o.frequency.exponentialRampToValueAtTime(48*j.kickPitch,t+0.04);
+    o.frequency.setValueAtTime(startF,t);
+    o.frequency.exponentialRampToValueAtTime(hitJit(48, 0.12)*j.kickPitch,t+hitJit(0.04, 0.3));
     const a=ac.createGain();
-    a.gain.setValueAtTime(0.36,t); a.gain.exponentialRampToValueAtTime(0.001,t+0.18);
-    const cl=ac.createOscillator(); cl.type='square'; cl.frequency.value=1500;
+    a.gain.setValueAtTime(0.36,t); a.gain.exponentialRampToValueAtTime(0.001,t+decay);
+    const clickF = hitJit(1500, 0.3);
+    const cl=ac.createOscillator(); cl.type='square'; cl.frequency.value=clickF;
     const ca=ac.createGain();
-    ca.gain.setValueAtTime(0.06,t); ca.gain.exponentialRampToValueAtTime(0.001,t+0.008);
+    ca.gain.setValueAtTime(hitJit(0.06, 0.25),t); ca.gain.exponentialRampToValueAtTime(0.001,t+0.008);
     cl.connect(ca); ca.connect(instruments.drums.gain);
     o.connect(a); a.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+0.22); cl.start(t); cl.stop(t+0.02);
+    o.start(t); o.stop(t+decay+0.04); cl.start(t); cl.stop(t+0.02);
   },
 };
 
 // ---- SNARE PRESETS ----
 const SNARE_PRESETS = {
   '909': (t,j) => {
-    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=180;
-    const oa=ac.createGain(); oa.gain.setValueAtTime(0.10,t); oa.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+    const toneF = hitJit(180, 0.15);
+    const noiseDecay = hitJit(0.12, 0.3);
+    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=toneF;
+    const oa=ac.createGain(); oa.gain.setValueAtTime(0.10,t); oa.gain.exponentialRampToValueAtTime(0.001,t+hitJit(0.08, 0.25));
     o.connect(oa); oa.connect(instruments.drums.gain);
-    const n=ac.createBufferSource(); n.buffer=makeNoise(0.15);
+    const n=ac.createBufferSource(); n.buffer=makeNoise(noiseDecay+0.05);
     const bp=ac.createBiquadFilter(); bp.type='bandpass';
-    bp.frequency.value=4000*j.brightness; bp.Q.value=1;
-    const na=ac.createGain(); na.gain.setValueAtTime(0.10,t); na.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    bp.frequency.value=hitJit(4000, 0.2)*j.brightness; bp.Q.value=hitJit(1, 0.3);
+    const na=ac.createGain(); na.gain.setValueAtTime(0.10,t); na.gain.exponentialRampToValueAtTime(0.001,t+noiseDecay);
     n.connect(bp); bp.connect(na); na.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+0.15); n.start(t); n.stop(t+0.15);
+    o.start(t); o.stop(t+0.15); n.start(t); n.stop(t+noiseDecay+0.05);
   },
   'clap': (t,j) => {
-    // Layered clap — 3 short noise bursts for the "hand" texture
-    for (let i=0;i<3;i++) {
+    const numLayers = Math.random() < 0.3 ? 4 : 3; // sometimes 4 layers for fuller clap
+    const spacing = hitJit(0.008, 0.35);
+    for (let i=0;i<numLayers;i++) {
       const n=ac.createBufferSource(); n.buffer=makeNoise(0.05);
       const bp=ac.createBiquadFilter(); bp.type='bandpass';
-      bp.frequency.value=1500*j.brightness; bp.Q.value=1.2;
-      const a=ac.createGain(); a.gain.setValueAtTime(0.12,t+i*0.008); a.gain.exponentialRampToValueAtTime(0.001,t+i*0.008+0.05);
+      bp.frequency.value=hitJit(1500, 0.2)*j.brightness; bp.Q.value=hitJit(1.2, 0.25);
+      const a=ac.createGain(); a.gain.setValueAtTime(hitJit(0.12, 0.15),t+i*spacing); a.gain.exponentialRampToValueAtTime(0.001,t+i*spacing+0.05);
       n.connect(bp); bp.connect(a); a.connect(instruments.drums.gain);
-      n.start(t+i*0.008); n.stop(t+i*0.008+0.06);
+      n.start(t+i*spacing); n.stop(t+i*spacing+0.06);
     }
-    // Tail reverb sim
-    const n=ac.createBufferSource(); n.buffer=makeNoise(0.2);
-    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200; bp.Q.value=1.5;
-    const a=ac.createGain(); a.gain.setValueAtTime(0.05,t+0.03); a.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+    const tailDecay = hitJit(0.2, 0.3);
+    const n=ac.createBufferSource(); n.buffer=makeNoise(tailDecay+0.02);
+    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=hitJit(1200, 0.2); bp.Q.value=hitJit(1.5, 0.25);
+    const a=ac.createGain(); a.gain.setValueAtTime(0.05,t+0.03); a.gain.exponentialRampToValueAtTime(0.001,t+tailDecay);
     n.connect(bp); bp.connect(a); a.connect(instruments.drums.gain);
-    n.start(t+0.03); n.stop(t+0.22);
+    n.start(t+0.03); n.stop(t+tailDecay+0.02);
   },
   'brush': (t,j) => {
-    // Brushed snare — mostly noise, low mid bandpass, softer attack
-    const n=ac.createBufferSource(); n.buffer=makeNoise(0.25);
+    const decay = hitJit(0.2, 0.35);
+    const n=ac.createBufferSource(); n.buffer=makeNoise(decay+0.06);
     const bp=ac.createBiquadFilter(); bp.type='bandpass';
-    bp.frequency.value=2200*j.brightness; bp.Q.value=0.6;
+    bp.frequency.value=hitJit(2200, 0.2)*j.brightness; bp.Q.value=hitJit(0.6, 0.3);
     const a=ac.createGain();
-    a.gain.setValueAtTime(0,t); a.gain.linearRampToValueAtTime(0.11,t+0.015);
-    a.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+    a.gain.setValueAtTime(0,t); a.gain.linearRampToValueAtTime(hitJit(0.11, 0.15),t+hitJit(0.015, 0.3));
+    a.gain.exponentialRampToValueAtTime(0.001,t+decay);
     n.connect(bp); bp.connect(a); a.connect(instruments.drums.gain);
-    n.start(t); n.stop(t+0.26);
+    n.start(t); n.stop(t+decay+0.06);
   },
   'rimshot': (t,j) => {
-    // Rimshot crack — bright triangle + short noise snap
-    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=340;
-    const oa=ac.createGain(); oa.gain.setValueAtTime(0.15,t); oa.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+    const toneF = hitJit(340, 0.15);
+    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=toneF;
+    const oa=ac.createGain(); oa.gain.setValueAtTime(hitJit(0.15, 0.2),t); oa.gain.exponentialRampToValueAtTime(0.001,t+hitJit(0.05, 0.25));
     o.connect(oa); oa.connect(instruments.drums.gain);
     const n=ac.createBufferSource(); n.buffer=makeNoise(0.06);
-    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3000*j.brightness;
-    const na=ac.createGain(); na.gain.setValueAtTime(0.08,t); na.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(3000, 0.2)*j.brightness;
+    const na=ac.createGain(); na.gain.setValueAtTime(hitJit(0.08, 0.2),t); na.gain.exponentialRampToValueAtTime(0.001,t+hitJit(0.05, 0.25));
     n.connect(hp); hp.connect(na); na.connect(instruments.drums.gain);
     o.start(t); o.stop(t+0.08); n.start(t); n.stop(t+0.07);
   },
   'lofi-snare': (t,j) => {
-    // Tape-muffled snare — lowpassed, softer
-    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=200;
-    const oa=ac.createGain(); oa.gain.setValueAtTime(0.11,t); oa.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+    const toneF = hitJit(200, 0.15);
+    const noiseDecay = hitJit(0.15, 0.3);
+    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=toneF;
+    const oa=ac.createGain(); oa.gain.setValueAtTime(hitJit(0.11, 0.15),t); oa.gain.exponentialRampToValueAtTime(0.001,t+hitJit(0.1, 0.25));
     o.connect(oa); oa.connect(instruments.drums.gain);
-    const n=ac.createBufferSource(); n.buffer=makeNoise(0.2);
-    const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=2500*j.brightness; lpf.Q.value=0.7;
-    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1800; bp.Q.value=0.8;
-    const na=ac.createGain(); na.gain.setValueAtTime(0.09,t); na.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+    const n=ac.createBufferSource(); n.buffer=makeNoise(noiseDecay+0.06);
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=hitJit(2500, 0.2)*j.brightness; lpf.Q.value=hitJit(0.7, 0.3);
+    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=hitJit(1800, 0.2); bp.Q.value=hitJit(0.8, 0.25);
+    const na=ac.createGain(); na.gain.setValueAtTime(hitJit(0.09, 0.15),t); na.gain.exponentialRampToValueAtTime(0.001,t+noiseDecay);
     n.connect(bp); bp.connect(lpf); lpf.connect(na); na.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+0.18); n.start(t); n.stop(t+0.2);
+    o.start(t); o.stop(t+0.18); n.start(t); n.stop(t+noiseDecay+0.06);
   },
 };
 
 // ---- HAT PRESETS ----
 const HAT_PRESETS = {
   'tight': (t,open,j) => {
-    const dur=open?0.22:0.05;
+    const dur=open?hitJit(0.22,0.25):hitJit(0.05,0.3);
     const n=ac.createBufferSource(); n.buffer=makeNoise(dur+0.05);
-    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000*j.brightness; hp.Q.value=1;
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(7000,0.15)*j.brightness; hp.Q.value=hitJit(1,0.3);
     const a=ac.createGain(); a.gain.setValueAtTime(open?0.05:0.04,t); a.gain.exponentialRampToValueAtTime(0.001,t+dur);
     n.connect(hp); hp.connect(a); a.connect(instruments.drums.gain);
     n.start(t); n.stop(t+dur+0.05);
   },
   'sloshy': (t,open,j) => {
-    // Wetter, longer decay, lower highpass
-    const dur=open?0.35:0.08;
+    const dur=open?hitJit(0.35,0.25):hitJit(0.08,0.3);
     const n=ac.createBufferSource(); n.buffer=makeNoise(dur+0.05);
-    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=5500*j.brightness; hp.Q.value=1.2;
-    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=9000; bp.Q.value=0.7;
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(5500,0.15)*j.brightness; hp.Q.value=hitJit(1.2,0.25);
+    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=hitJit(9000,0.15); bp.Q.value=hitJit(0.7,0.3);
     const a=ac.createGain(); a.gain.setValueAtTime(open?0.055:0.038,t); a.gain.exponentialRampToValueAtTime(0.001,t+dur);
     n.connect(hp); hp.connect(bp); bp.connect(a); a.connect(instruments.drums.gain);
     n.start(t); n.stop(t+dur+0.05);
   },
   'chip': (t,open,j) => {
-    // 8-bit square-based hat
-    const dur=open?0.15:0.035;
-    const o=ac.createOscillator(); o.type='square'; o.frequency.value=11000*j.brightness;
-    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=8000;
+    const dur=open?hitJit(0.15,0.25):hitJit(0.035,0.3);
+    const chipF = hitJit(11000,0.12)*j.brightness;
+    const o=ac.createOscillator(); o.type='square'; o.frequency.value=chipF;
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(8000,0.1);
     const a=ac.createGain(); a.gain.setValueAtTime(open?0.03:0.025,t); a.gain.exponentialRampToValueAtTime(0.001,t+dur);
     o.connect(hp); hp.connect(a); a.connect(instruments.drums.gain);
     o.start(t); o.stop(t+dur+0.02);
@@ -3192,9 +4211,11 @@ const BASS_PRESETS = {
     const sub=ac.createOscillator(); sub.type='sine'; sub.frequency.value=f;
     const saw=ac.createOscillator(); saw.type='sawtooth'; saw.frequency.value=f;
     const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
-    lpf.frequency.setValueAtTime(f*8*j.brightness,t);
-    lpf.frequency.exponentialRampToValueAtTime(f*2*j.brightness,t+0.1);
-    lpf.Q.value=2;
+    const filtOpen = hitJit(8, 0.3) * j.brightness;
+    const filtClose = hitJit(2, 0.25) * j.brightness;
+    lpf.frequency.setValueAtTime(f*filtOpen,t);
+    lpf.frequency.exponentialRampToValueAtTime(f*filtClose,t+hitJit(0.1, 0.3));
+    lpf.Q.value=hitJit(2, 0.15);
     const mix=ac.createGain(); mix.gain.value=0.5;
     saw.connect(lpf); lpf.connect(mix);
     const sG=ac.createGain(); sG.gain.value=0.5; sub.connect(sG); sG.connect(mix);
@@ -3215,13 +4236,16 @@ const BASS_PRESETS = {
   },
   'reese': (f,t,dur,j) => {
     // Reese bass — two detuned saws, beats for movement
+    const detune = j.detuneCents * hitJit(1, 0.3); // vary detune per note
     const o1=ac.createOscillator(); o1.type='sawtooth'; o1.frequency.value=f;
     const o2=ac.createOscillator(); o2.type='sawtooth';
-    o2.frequency.value=f*Math.pow(2,j.detuneCents/1200);
+    o2.frequency.value=f*Math.pow(2,detune/1200);
     const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
-    lpf.frequency.setValueAtTime(f*4*j.brightness,t);
-    lpf.frequency.linearRampToValueAtTime(f*6*j.brightness,t+dur*0.5);
-    lpf.Q.value=3;
+    const filtStart = hitJit(4, 0.3) * j.brightness;
+    const filtEnd = hitJit(6, 0.25) * j.brightness;
+    lpf.frequency.setValueAtTime(f*filtStart,t);
+    lpf.frequency.linearRampToValueAtTime(f*filtEnd,t+dur*0.5);
+    lpf.Q.value=hitJit(3, 0.15);
     const mix=ac.createGain(); mix.gain.value=0.35;
     o1.connect(lpf); o2.connect(lpf); lpf.connect(mix);
     const amp=ac.createGain();
@@ -3234,9 +4258,10 @@ const BASS_PRESETS = {
     // Plucky acid-ish bass — fast filter env, square wave
     const o=ac.createOscillator(); o.type='square'; o.frequency.value=f;
     const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
-    lpf.frequency.setValueAtTime(f*12*j.brightness,t);
-    lpf.frequency.exponentialRampToValueAtTime(f*1.5,t+0.12);
-    lpf.Q.value=6;
+    const filtPeak = hitJit(12, 0.3) * j.brightness;
+    lpf.frequency.setValueAtTime(f*filtPeak,t);
+    lpf.frequency.exponentialRampToValueAtTime(f*hitJit(1.5, 0.25),t+hitJit(0.12, 0.3));
+    lpf.Q.value=hitJit(6, 0.12);
     const amp=ac.createGain();
     amp.gain.setValueAtTime(0,t); amp.gain.linearRampToValueAtTime(0.18,t+0.005);
     amp.gain.exponentialRampToValueAtTime(0.04,t+0.15);
@@ -3246,11 +4271,13 @@ const BASS_PRESETS = {
   },
   'fm-wob': (f,t,dur,j) => {
     // FM bass with slow wobble on mod depth
+    const modRatio = hitJit(2, 0.08); // subtle mod ratio variation — keeps bass tonal
     const car=ac.createOscillator(); car.type='sine'; car.frequency.value=f;
-    const mod=ac.createOscillator(); mod.type='sine'; mod.frequency.value=f*2;
+    const mod=ac.createOscillator(); mod.type='sine'; mod.frequency.value=f*modRatio;
     const mG=ac.createGain();
-    mG.gain.setValueAtTime(f*2.5,t);
-    mG.gain.exponentialRampToValueAtTime(f*0.3,t+dur*0.6);
+    const fmDepth = hitJit(2.5, 0.3);
+    mG.gain.setValueAtTime(f*fmDepth,t);
+    mG.gain.exponentialRampToValueAtTime(f*hitJit(0.3, 0.3),t+dur*hitJit(0.6, 0.2));
     mod.connect(mG); mG.connect(car.frequency);
     const amp=ac.createGain();
     amp.gain.setValueAtTime(0,t); amp.gain.linearRampToValueAtTime(0.24,t+0.015);
@@ -3442,7 +4469,7 @@ const KEYS_PRESETS = {
 // ---- TIMBRE STATE & ROLLER ----
 let currentTimbre = {
   kick:'909', snare:'909', hat:'tight',
-  bass:'sub-saw', keys:'rhodes',
+  bass:'sub-saw', keys:'rhodes', guitar:'steel',
   jitter:{ kickPitch:1, brightness:1, detuneCents:8 }
 };
 
@@ -3568,12 +4595,39 @@ function rollTimbres() {
     cinematic:['piano','piano','piano','rhodes','glass'],
   };
 
+  const guitarPool = {
+    lofi:['fingerpick','nylon','muted'],
+    jazz:['nylon','fingerpick','electric-clean'],
+    bossa:['nylon','nylon','fingerpick'],
+    soul:['fingerpick','electric-clean','steel'],
+    rnb:['electric-clean','fingerpick','muted'],
+    funk:['muted','muted','electric-clean','steel'],
+    house:['muted','electric-clean','steel'],
+    techno:['muted','electric-clean'],
+    synthwave:['electric-clean','steel','muted'],
+    dnb:['muted','electric-clean'],
+    dubstep:['muted','electric-clean'],
+    chiptune:['muted','steel'],
+    futurebass:['electric-clean','fingerpick'],
+    complextro:['muted','electric-clean'],
+    ambient:['fingerpick','nylon','electric-clean'],
+    darkambient:['nylon','fingerpick'],
+    chillwave:['fingerpick','nylon','electric-clean'],
+    classical:['nylon','nylon','fingerpick'],
+    romantic:['nylon','fingerpick'],
+    impressionist:['nylon','fingerpick'],
+    tango:['nylon','steel'],
+    waltz:['nylon','fingerpick'],
+    cinematic:['fingerpick','steel','nylon','electric-clean'],
+  };
+
   const pickFrom = (pool) => pool ? pool[Math.floor(Math.random()*pool.length)] : null;
-  currentTimbre.kick  = pickFrom(kickPool[s])  || pickKey(KICK_PRESETS);
-  currentTimbre.snare = pickFrom(snarePool[s]) || pickKey(SNARE_PRESETS);
-  currentTimbre.hat   = pickFrom(hatPool[s])   || pickKey(HAT_PRESETS);
-  currentTimbre.bass  = pickFrom(bassPool[s])  || pickKey(BASS_PRESETS);
-  currentTimbre.keys  = pickFrom(keysPool[s])  || pickKey(KEYS_PRESETS);
+  currentTimbre.kick   = pickFrom(kickPool[s])   || pickKey(KICK_PRESETS);
+  currentTimbre.snare  = pickFrom(snarePool[s])  || pickKey(SNARE_PRESETS);
+  currentTimbre.hat    = pickFrom(hatPool[s])    || pickKey(HAT_PRESETS);
+  currentTimbre.bass   = pickFrom(bassPool[s])   || pickKey(BASS_PRESETS);
+  currentTimbre.keys   = pickFrom(keysPool[s])   || pickKey(KEYS_PRESETS);
+  currentTimbre.guitar = pickFrom(guitarPool[s]) || pickKey(GUITAR_PRESETS);
 
   // Level 1: per-song jitter on top
   currentTimbre.jitter = {
@@ -3581,10 +4635,22 @@ function rollTimbres() {
     brightness: 0.85 + Math.random()*0.25,   // 0.85–1.10 — tamer, no harsh rolls
     detuneCents: 4 + Math.random()*18,       // 4–22 cents
   };
+  // Per-song slider jitter — small random offsets for diversity
+  const jitterSlider = (id, lo, hi, pct) => {
+    const base = parseFloat($(id).value);
+    const range = hi - lo;
+    const offset = (Math.random() - 0.5) * 2 * range * pct;
+    $(id).value = Math.round(Math.max(lo, Math.min(hi, base + offset)));
+  };
+  jitterSlider('brightness', 500, 12000, 0.15);
+  jitterSlider('reverb', 5, 80, 0.15);
+  jitterSlider('depth', 10, 100, 0.1);
+  jitterSlider('rate', 1, 10, 0.1);
+
   rollBusFX();
   logEvent('timbre_roll', {
     style:s, kick:currentTimbre.kick, snare:currentTimbre.snare, hat:currentTimbre.hat,
-    bass:currentTimbre.bass, keys:currentTimbre.keys, fx:currentBusFX
+    bass:currentTimbre.bass, keys:currentTimbre.keys, guitar:currentTimbre.guitar, fx:currentBusFX
   });
   const styleDef = SONG_STYLES[s] || {};
   const bpm = parseInt($('bpm').value);
@@ -3770,13 +4836,9 @@ function initNoise() {
   s.start();
 }
 
-// ---- BREATH CUE (ocean wave — asymmetric swell with filter sweep) ----
+// ---- BREATH CUE (LFO-driven wind/breathing sound) ----
 let breathNodes = {};
-let breathCycleStart = 0; // Date.now() when wave cycle started
-let breathCueTimer = null;
-const BREATH_CYCLE_MS = 10000; // 10s = 6 breaths/min
-// Wave shape: 40% rising (slow build), 15% peak/crash, 45% receding (long hiss)
-const WAVE_RISE = 0.40, WAVE_PEAK = 0.15, WAVE_FALL = 0.45;
+let breathLfoStartTime = 0;
 function initBreathCue() {
   // White noise source
   const sz=2*ac.sampleRate, buf=ac.createBuffer(1,sz,ac.sampleRate);
@@ -3784,71 +4846,66 @@ function initBreathCue() {
   for(let i=0;i<sz;i++) d[i]=Math.random()*2-1;
   const src=ac.createBufferSource(); src.buffer=buf; src.loop=true;
 
-  // Bandpass — frequency swept for wave character
-  const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=300; bp.Q.value=0.6;
+  // Primary bandpass — shaped per-phase for inhale vs exhale
+  const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=600; bp.Q.value=0.8;
+  // Secondary highshelf — boosts/cuts highs to add brightness on inhale, warmth on exhale
+  const shelf=ac.createBiquadFilter(); shelf.type='highshelf'; shelf.frequency.value=1200; shelf.gain.value=0;
 
-  // Low rumble layer — separate low-passed noise for undertow
-  const buf2=ac.createBuffer(1,sz,ac.sampleRate);
-  const d2=buf2.getChannelData(0);
-  for(let i=0;i<sz;i++) d2[i]=Math.random()*2-1;
-  const src2=ac.createBufferSource(); src2.buffer=buf2; src2.loop=true;
-  const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=200; lp.Q.value=0.5;
-  const rumbleGain=ac.createGain(); rumbleGain.gain.value=0;
-
+  // Amplitude modulated at 0.1Hz (6 breaths/min)
   const amp=ac.createGain(); amp.gain.value=0;
+  const lfo=ac.createOscillator(); lfo.type='sine'; lfo.frequency.value=0.1;
+  const lfoG=ac.createGain(); lfoG.gain.value=0.06;
+  lfo.connect(lfoG); lfoG.connect(amp.gain);
 
-  src.connect(bp); bp.connect(amp); amp.connect(dryBus);
-  src2.connect(lp); lp.connect(rumbleGain); rumbleGain.connect(dryBus);
-  src.start(); src2.start();
+  // Secondary slower mod on filter freq for organic feel
+  const fLfo=ac.createOscillator(); fLfo.type='sine'; fLfo.frequency.value=0.1;
+  const fLfoG=ac.createGain(); fLfoG.gain.value=300;
+  fLfo.connect(fLfoG); fLfo.connect(bp.frequency);
 
-  breathNodes = { amp, bp, rumbleGain };
-  breathCycleStart = Date.now();
+  src.connect(bp); bp.connect(shelf); shelf.connect(amp); amp.connect(dryBus);
+  src.start(); lfo.start(); fLfo.start();
+  breathLfoStartTime = ac.currentTime;
+  breathNodes = {amp, lfoG, bp, shelf, src};
 
-  // Manual envelope shaping — 50ms timer for smooth ocean wave
-  function shapeWave() {
-    if (!ac || !breathNodes.amp) return;
-    const enabled = $('breathCue').checked;
-    const maxVol = enabled ? 0.07 : 0;
-    const phase = ((Date.now() - breathCycleStart) % BREATH_CYCLE_MS) / BREATH_CYCLE_MS;
-
-    let vol, filterFreq;
-    if (phase < WAVE_RISE) {
-      const p = phase / WAVE_RISE;
-      vol = p * p * maxVol;
-      filterFreq = 300 + p * 600;
-    } else if (phase < WAVE_RISE + WAVE_PEAK) {
-      const p = (phase - WAVE_RISE) / WAVE_PEAK;
-      vol = maxVol * (1 - p * 0.15);
-      filterFreq = 900 + (1 - Math.abs(p - 0.5) * 2) * 400;
+  // Asymmetric breath shaping — strongly differentiate inhale from exhale:
+  // Inhale: bright, airy, rising — high bandpass center + high shelf boost
+  // Exhale: warm, soft, falling — low bandpass center + high shelf cut
+  function shapeBreath() {
+    if (!ac || ac.state === 'closed') return;
+    const phase = getBreathPhase();
+    const inInhale = phase < 0.5;
+    if (inInhale) {
+      const t = phase * 2;
+      const sinT = Math.sin(t * Math.PI);
+      bp.frequency.value = 500 + sinT * 800;   // 500→1300→500 — noticeably bright
+      bp.Q.value = 0.7 + sinT * 0.8;           // tighter, whistly
+      shelf.gain.value = sinT * 6;              // +6dB high shelf boost at peak
     } else {
-      const p = (phase - WAVE_RISE - WAVE_PEAK) / WAVE_FALL;
-      vol = maxVol * (1 - p) * (1 - p);
-      filterFreq = 900 - p * 600;
+      const t = (phase - 0.5) * 2;
+      const sinT = Math.sin(t * Math.PI);
+      bp.frequency.value = 250 + sinT * 200;   // 250→450→250 — much lower, warm
+      bp.Q.value = 0.4 + sinT * 0.2;           // wide, diffuse
+      shelf.gain.value = sinT * -5;             // -5dB high shelf cut — darker
     }
-
-    const now = ac.currentTime;
-    breathNodes.amp.gain.setTargetAtTime(vol, now, 0.05);
-    breathNodes.bp.frequency.setTargetAtTime(filterFreq, now, 0.05);
-    breathNodes.rumbleGain.gain.setTargetAtTime(vol * 0.5, now, 0.15);
-
-    breathCueTimer = setTimeout(shapeWave, 50);
+    requestAnimationFrame(shapeBreath);
   }
-  shapeWave();
+  shapeBreath();
 }
 
-// Returns 0-1 position in wave cycle: 0=start rise, 0.40=peak, 0.55=start recede, 1.0=silence
+// Returns 0-1 breath phase based on LFO sine: 0=silence, 0.25=peak inhale, 0.5=silence, 0.75=peak exhale
 function getBreathPhase() {
-  if (!breathCycleStart) return 0;
-  return ((Date.now() - breathCycleStart) % BREATH_CYCLE_MS) / BREATH_CYCLE_MS;
+  if (!breathLfoStartTime || !ac) return 0;
+  const elapsed = ac.currentTime - breathLfoStartTime;
+  return (elapsed * 0.1) % 1; // 0.1Hz LFO
 }
 
 // Returns the next ac.currentTime when breath phase will be at targetPhase (0-1)
 function nextBreathPhaseTime(targetPhase) {
-  if (!ac) return ac.currentTime;
+  if (!ac) return 0;
   const currentPhase = getBreathPhase();
   let phaseDiff = targetPhase - currentPhase;
   if (phaseDiff <= 0) phaseDiff += 1;
-  return ac.currentTime + phaseDiff * (BREATH_CYCLE_MS / 1000);
+  return ac.currentTime + phaseDiff * 10; // 10s per cycle at 0.1Hz
 }
 
 // =====================================================
@@ -3942,7 +4999,7 @@ function stopEntrainmentCarrier() {
 // Micro-humanization: tiny timing jitter for pitched instruments.
 // Drums stay on the grid. Range ~±4ms — below the perceptual threshold for
 // "wrong" but above the threshold for "not a machine".
-function humT(t) { return t + (Math.random() - 0.5) * 0.008; }
+function humT(t) { return t + (Math.random() - 0.5) * 0.018; } // ±9ms micro-timing — more human feel
 
 function tick(time) {
   if (silenceMode || entrainmentMode) { tickCount++; return; }
@@ -3984,7 +5041,7 @@ function tick(time) {
       updatePadNotes([voicedKeys[0],voicedKeys[1],voicedKeys[2]||voicedKeys[0]+12]);
 
       // Strings: play whole chord sustained for the chord duration
-      if(activeInstruments.has('strings') && ch.root !== lastChordRoot) {
+      if(activeInstruments.has('strings') && ch.root !== lastChordRoot && (barMutation?.thinInstrument !== 'strings')) {
         const strNotes = voicedKeys.slice(0,3).map(m => m+12); // octave up
         playStrings(strNotes, humT(time), sixteenth * ch.dur * (ch.dur>4?4:ch.dur));
       }
@@ -4001,6 +5058,9 @@ function tick(time) {
   // Drums — with per-bar mutation for rhythmic variety
   if(curDrumPat) {
     const m = barMutation || {};
+    // Half-drop: silence drums for first half of bar
+    const inHalfDrop = m.halfDrop && step < 8;
+
     // Accent map: beat 1 strong, beat 3 medium-strong, beats 2/4 softer
     //   step 0=1.0, 4=0.82, 8=0.92, 12=0.82, off-beats 0.7
     let accent;
@@ -4010,6 +5070,7 @@ function tick(time) {
     else if (step % 4 === 0) accent = 0.85;
     else accent = 0.7;
 
+    if (!inHalfDrop) {
     // Base pattern hits (with possible dropouts)
     let kickHit = !!curDrumPat.kick[step];
     let snareHit = !!curDrumPat.snare[step];
@@ -4018,9 +5079,11 @@ function tick(time) {
     if (snareHit) playSnare(time, accent);
     if (curDrumPat.hat[step]) playHihat(time, step%8===6, accent * 0.85);
     if (curDrumPat.rim[step]) playRim(time);
+    }
 
     // Per-bar extras (injected by mutateBarForVariety) — quieter ghost hits
     if (m.extraKickAt === step) playKick(time, 0.7);
+    if (m.extraKickAt2 === step) playKick(time, 0.6);
     if (m.extraSnareAt === step) playSnare(time, 0.65);
 
     // Ghost hats — always quiet
@@ -4034,15 +5097,26 @@ function tick(time) {
     }
   }
 
-  // Bass
+  // Bass — with chromatic approach notes and octave variation
   if(curBassPat) {
     const bs=curBassPat[step];
-    if(bs===1) playBass(currentBassRoot, humT(time), sixteenth*3);
-    else if(bs===5) playBass(currentBassRoot+7, humT(time), sixteenth*2);
+    if(bs===1) {
+      let bassNote = currentBassRoot;
+      // Occasional octave jump (12% chance, up or down)
+      if (Math.random() < 0.12) bassNote += Math.random() < 0.5 ? 12 : -12;
+      // Chromatic approach: on off-beats, occasionally slide from a semitone below/above
+      if (step % 4 !== 0 && Math.random() < 0.08) bassNote += Math.random() < 0.5 ? -1 : 1;
+      playBass(bassNote, humT(time), sixteenth*3);
+    }
+    else if(bs===5) {
+      let bassNote = currentBassRoot+7;
+      if (Math.random() < 0.08) bassNote += Math.random() < 0.5 ? 12 : -12;
+      playBass(bassNote, humT(time), sixteenth*2);
+    }
   }
 
   // Guitar
-  if(curGuitarPat) {
+  if(curGuitarPat && (barMutation?.thinInstrument !== 'guitar')) {
     const gs=curGuitarPat[step];
     if(gs>=0 && voicedGuitar.length>0) {
       playGuitar(voicedGuitar[gs%voicedGuitar.length], humT(time), sixteenth*3);
@@ -4056,7 +5130,7 @@ function tick(time) {
   }
 
   // Vibes
-  if(curVibesPat) {
+  if(curVibesPat && (barMutation?.thinInstrument !== 'vibes')) {
     const vs=curVibesPat[step];
     if(vs>=0 && voicedKeys.length>0) {
       playVibes(voicedKeys[vs%voicedKeys.length]+12, humT(time), sixteenth*4);
@@ -4083,7 +5157,7 @@ function tick(time) {
   }
 
   // Synth — plays arpeggiated lead or chord stabs depending on energy
-  if(activeInstruments.has('synth')) {
+  if(activeInstruments.has('synth') && (barMutation?.thinInstrument !== 'synth')) {
     const style = currentSongStyle;
     const isElectronic = ['dubstep','chiptune','futurebass','house','techno','synthwave','dnb','complextro'].includes(style);
     // Pick wave based on style
@@ -4178,7 +5252,7 @@ const checks=['muteKeys','muteBass','muteGuitar','muteDrums','muteStrings','mute
 for(const id of checks) $(id).addEventListener('change',updateUI);
 
 $('breathCue').addEventListener('change',()=>{
-  // shapeWave() reads $('breathCue').checked on each tick — no extra action needed
+  if(breathNodes.amp) breathNodes.amp.gain.value=$('breathCue').checked?0.06:0;
 });
 
 // Closed-loop control — gate on Polar + profile + calibration
@@ -4350,6 +5424,74 @@ $('nextSongBtn').addEventListener('click', () => {
   triggerSongTransition();
 });
 
+// Previous song — go back to the last song's parameters
+$('prevSongBtn').addEventListener('click', () => {
+  if (!playing || !ac) return;
+  if (inSongTransition || Breaks.inMode || inBreathingMode) return;
+  if (!currentProfile || !currentProfile.songHistory) return;
+  // We need at least 2 entries: current + previous
+  if (currentSongHistoryIdx < 1) return;
+  const prevEntry = currentProfile.songHistory[currentSongHistoryIdx - 1];
+  if (!prevEntry || !prevEntry.params) return;
+  currentSongHistoryIdx--;
+  replaySongFromParams(prevEntry.params);
+});
+
+function replaySongFromParams(params) {
+  if (!ac) return;
+  inSongTransition = true;
+  const preVol = masterGain.gain.value;
+  const now = ac.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  masterGain.gain.linearRampToValueAtTime(0.0001, now + 1.5);
+
+  setTimeout(() => {
+    rollSongEnergy();
+    // Restore style
+    if (params.style && SONG_STYLES[params.style]) {
+      currentSongStyle = params.style;
+      const style = SONG_STYLES[params.style];
+      currentSwing = style.swing;
+      document.querySelectorAll('.song-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.song === params.style || (shuffleMode && b.dataset.song === 'shuffle'));
+      });
+      $('sectionInfo').textContent = style.name.toUpperCase();
+    }
+    // Restore sliders
+    if (params.bpm) $('bpm').value = params.bpm;
+    if (params.rate) $('rate').value = params.rate;
+    if (params.depth) $('depth').value = params.depth;
+    if (params.brightness) $('brightness').value = params.brightness;
+    if (params.reverb) $('reverb').value = params.reverb;
+    // Restore timbres
+    if (params.timbre) {
+      currentTimbre = { ...params.timbre };
+      if (params.timbre.jitter) currentTimbre.jitter = { ...params.timbre.jitter };
+    }
+    // Restore bus FX
+    if (params.busFx) currentBusFX = JSON.parse(JSON.stringify(params.busFx));
+
+    resetRateButtons();
+    songStartedAt = Date.now();
+    currentSongForm = pick(SONG_FORMS);
+    currentSectionIdx = 0;
+    barInSection = 0;
+    sectionVisitCount = {};
+    lastProgIdxBySection = {};
+    chorusesSeenInSong = 0;
+    sectionTranspose = 0;
+    isMelodyChorus = false;
+    enterSection();
+
+    const t2 = ac.currentTime;
+    masterGain.gain.cancelScheduledValues(t2);
+    masterGain.gain.setValueAtTime(0.0001, t2);
+    masterGain.gain.linearRampToValueAtTime(preVol, t2 + 0.8);
+    inSongTransition = false;
+  }, 2000);
+}
+
 // Settings panel — move Focus Tuning + Music sections into the side panel
 (() => {
   const content = $('settingsContent');
@@ -4467,6 +5609,7 @@ $('playBtn').addEventListener('click', async()=>{
     $('breakWrap').style.display='';
     tickCount=0;
     startSessionLog();
+    startSessionTimer();
     startPersistLoop();
     if (silenceMode) {
       // No music, no progression — just biofeedback and interventions.
@@ -4525,6 +5668,7 @@ $('playBtn').addEventListener('click', async()=>{
     $('breakWrap').style.display='none';
     clearTimeout(seqTimer);
     stopPersistLoop();
+    stopSessionTimer();
     $('playBtn').classList.remove('active');
     $('playLabel').textContent='START';
     $('status').textContent='Paused';
@@ -4628,6 +5772,40 @@ function startJhanaJourney() {
       startJhanaDrone();
     }
   }, 15000);
+  // At surrender phase (~22 min), add slow drone modulation — "wave carrying you"
+  setTimeout(() => {
+    if (playing && jhanaMode && ac && jhanaDroneNodes) {
+      const now = ac.currentTime;
+      jhanaDroneNodes.forEach(n => {
+        // Add LFO to each drone gain for a gentle swell (~10s cycle, ±30% volume)
+        const lfoL = ac.createOscillator(); lfoL.type = 'sine'; lfoL.frequency.value = 0.1; // 10s cycle
+        const lfoGainL = ac.createGain(); lfoGainL.gain.value = n.gL.gain.value * 0.3;
+        lfoL.connect(lfoGainL); lfoGainL.connect(n.gL.gain);
+        lfoL.start(now);
+        const lfoR = ac.createOscillator(); lfoR.type = 'sine'; lfoR.frequency.value = 0.1;
+        const lfoGainR = ac.createGain(); lfoGainR.gain.value = n.gR.gain.value * 0.3;
+        lfoR.connect(lfoGainR); lfoGainR.connect(n.gR.gain);
+        lfoR.start(now);
+        n._lfoL = lfoL; n._lfoR = lfoR;
+      });
+    }
+  }, 1320000); // 22 min
+
+  // Sustained pulsing bowl bed during deepening (~14-18 min)
+  // Overlapping pulsing bowls every 12s create a continuous warm low wave
+  setTimeout(() => {
+    if (!playing || !jhanaMode || !ac) return;
+    let pulseCount = 0;
+    const maxPulses = 15; // ~3 min of overlapping pulses
+    function nextPulse() {
+      if (!playing || !jhanaMode || !ac || pulseCount >= maxPulses) return;
+      playPulsingBowl(ac.currentTime + 0.05);
+      pulseCount++;
+      setTimeout(nextPulse, 12000 + Math.random() * 4000); // 12-16s apart
+    }
+    nextPulse();
+  }, 840000); // start at 14 min
+
   // Start ASMR kindling at ~5 min (piti-building phase)
   setTimeout(() => {
     if (playing && jhanaMode) {
@@ -4639,10 +5817,16 @@ function startJhanaJourney() {
     const elapsed = (Date.now() - jhanaStartTime) / 1000;
     // Fire any cues whose time has come
     while (jhanaJourneyStep < JHANA_JOURNEY.length && elapsed >= JHANA_JOURNEY[jhanaJourneyStep].at) {
-      speak(JHANA_JOURNEY[jhanaJourneyStep].say);
-      $('sectionInfo').textContent = '\u2728 ' + JHANA_JOURNEY[jhanaJourneyStep].say;
+      const cue = JHANA_JOURNEY[jhanaJourneyStep];
+      speak(cue.say);
+      $('sectionInfo').textContent = '\u2728 ' + cue.say;
       $('sectionInfo').style.color = '#70b8d0';
       jhanaJourneyStep++;
+      if (cue.end) {
+        // Auto-stop after a short delay to let the final speech finish
+        setTimeout(() => { if (playing && jhanaMode) $('playBtn').click(); }, 5000);
+        return;
+      }
     }
     // Biofeedback: gentle encouragement when RMSSD is rising,
     // plus adaptive piti pivot when access concentration is detected
@@ -4655,14 +5839,14 @@ function startJhanaJourney() {
         const olderAvg = older.reduce((a,b)=>a+b) / older.length;
 
         // Detect access concentration via low coefficient of variation (stability)
-        if (!jhanaPitiPivotDone && recent.length >= 10 && elapsed > 180) {
+        if (!jhanaPitiPivotDone && recent.length >= 10 && elapsed > 300) {
           const variance = recent.reduce((s, v) => s + Math.pow(v - recentAvg, 2), 0) / recent.length;
           const cv = Math.sqrt(variance) / recentAvg;
           // CV < 0.04 = very stable HRV = access concentration
           if (cv < 0.04) {
-            // Track consecutive stable checks — need 2 in a row (~2 min sustained)
+            // Track consecutive stable checks — need 3 in a row (~3 min sustained)
             jhanaStableChecks = (jhanaStableChecks || 0) + 1;
-            if (jhanaStableChecks >= 2) {
+            if (jhanaStableChecks >= 3) {
               jhanaPitiPivotDone = true;
               speak("Your body has settled deeply. Now — find the most pleasant feeling you can, and give it all your attention.");
               $('sectionInfo').textContent = '\u2728 Access concentration reached — shift to piti';
@@ -4685,19 +5869,6 @@ function startJhanaJourney() {
     }
     if (jhanaJourneyStep < JHANA_JOURNEY.length) {
       jhanaJourneyTimer = setTimeout(journeyTick, 1000);
-    } else {
-      // Journey complete — stay in silent meditation, very sparse check-ins
-      setTimeout(() => {
-        if (playing && jhanaMode) {
-          speak("Still here with you. Take as long as you need.");
-          // Check again in 5 min
-          setTimeout(() => {
-            if (playing && jhanaMode) {
-              speak("Whenever you're ready, you can stop the session.");
-            }
-          }, 300000);
-        }
-      }, 120000);
     }
   }
   jhanaJourneyTimer = setTimeout(journeyTick, 1000);
@@ -5248,6 +6419,23 @@ let sessionLog = {
   events: [],         // [{time, type, ...details}] — all notable events
 };
 
+let sessionTimerInterval = null;
+function startSessionTimer() {
+  $('sessionTimer').style.display = '';
+  $('sessionTimer').textContent = '0:00';
+  sessionTimerInterval = setInterval(() => {
+    if (!sessionLog.started) return;
+    const elapsed = Math.floor((Date.now() - sessionLog.started) / 1000);
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    $('sessionTimer').textContent = m + ':' + String(s).padStart(2, '0');
+  }, 1000);
+}
+function stopSessionTimer() {
+  clearInterval(sessionTimerInterval);
+  $('sessionTimer').style.display = 'none';
+}
+
 function logEvent(type, details) {
   sessionLog.events.push({ time: Date.now(), type, ...(details||{}) });
 }
@@ -5383,7 +6571,6 @@ const Breaks = {
   currentType: null,        // tracked separately from current.type — only set for suggested breaks, used by live stats
   lang: 'en',               // 'en' | 'zh' — controls guided-break cue language & TTS voice
   lastSuggestedIdx: -1,
-  inFatiguePause: false,
   // Meditation-break auxiliary timers (gong interval, bowl scheduler, affirmation scheduler)
   medGongTimer: null,
   medBowlTimer: null,
@@ -5418,11 +6605,12 @@ const Breaks = {
     flashTitle(urgent ? '⚠ Break — Attune' : '· Break check — Attune');
     speak(msg);
 
-    // Repeat voice reminder every 2 minutes while break suggestion is showing
-    if (Breaks.reminderTimer) clearInterval(Breaks.reminderTimer);
-    Breaks.reminderTimer = setInterval(() => {
-      if (!Breaks.suggestionShown) { clearInterval(Breaks.reminderTimer); Breaks.reminderTimer = null; return; }
-      speak("Don't forget to take a break.");
+    // Auto-dismiss after 2 minutes and do breathing intervention instead
+    if (Breaks.reminderTimer) clearTimeout(Breaks.reminderTimer);
+    Breaks.reminderTimer = setTimeout(() => {
+      Breaks.reminderTimer = null;
+      if (!Breaks.suggestionShown) return;
+      Breaks.skipToBreathing();
     }, 120000);
 
     // Show overlay
@@ -5481,8 +6669,8 @@ const Breaks = {
     const soldierBtn = document.createElement('button');
     soldierBtn.className = 'ble-btn';
     soldierBtn.style.cssText = 'font-size:13px;padding:8px 18px;color:#f88a8a;border-color:rgba(248,138,138,.2);margin-top:6px';
-    soldierBtn.textContent = 'Ignore and keep working';
-    soldierBtn.onclick = () => Breaks.dismissSuggestion();
+    soldierBtn.textContent = 'Skip break — do breathing instead';
+    soldierBtn.onclick = () => Breaks.skipToBreathing();
 
     btnRow.addEventListener('click', e => e.stopPropagation());
     btnRow.appendChild(takeBtn);
@@ -5493,28 +6681,22 @@ const Breaks = {
   },
 
   // ------------------------------------------------------------
-  // dismissSuggestion() — "Ignore and keep working". Pauses music until the
-  // fatigue score drops back below SUGGEST_THRESHOLD (see the handleHRM loop).
+  // skipToBreathing() — Skip break suggestion, do a breathing intervention
+  // instead. Called by the skip button or auto-dismiss after 2 minutes.
   // ------------------------------------------------------------
-  dismissSuggestion() {
+  skipToBreathing() {
     Breaks.suggestionShown = false;
     Breaks.suggestionUrgent = false;
     flashTitle(null);
-    if (Breaks.reminderTimer) { clearInterval(Breaks.reminderTimer); Breaks.reminderTimer = null; }
+    if (Breaks.reminderTimer) { clearTimeout(Breaks.reminderTimer); Breaks.reminderTimer = null; }
     $('calOverlay').classList.remove('active');
     $('calSkip').classList.remove('as-container');
     $('calSkip').innerHTML = 'Skip (use previous calibration)';
-    logEvent('break_dismissed_soldier_on', { fatigueScore: +Breaks.fatigueScore.toFixed(1) });
+    logEvent('break_skipped_to_breathing', { fatigueScore: +Breaks.fatigueScore.toFixed(1) });
 
-    // Pause music until fatigue drops — too much pressure to keep playing
-    if(masterGain && ac && playing){
-      Breaks.inFatiguePause = true;
-      preMusicVolume = masterGain.gain.value;
-      masterGain.gain.linearRampToValueAtTime(0, ac.currentTime + 3);
-      $('status').textContent = 'Music paused — will resume when fatigue drops';
-      $('status').className = 'status status-suggest';
-      speak('Music paused, will resume when fatigue drops. Take a 5 minute break if you want to resume sooner.');
-    }
+    // Do a breathing intervention instead
+    speak("Skipping break. Let's do some breathing.");
+    setTimeout(() => enterBreathingMode(), 1500);
   },
 
   // ------------------------------------------------------------
@@ -5804,7 +6986,7 @@ const Breaks = {
     $('calSub').innerHTML =
       '<div class="med-cfg">' +
       mkRow('Duration', [
-        {val:5,label:'5 min'},{val:10,label:'10 min'},{val:15,label:'15 min'},{val:20,label:'20 min'}
+        {val:5,label:'5 min'},{val:10,label:'10 min'},{val:15,label:'15 min'},{val:20,label:'20 min'},{val:0,label:'\u221E'}
       ], 'duration') +
       mkRow('Gong', [
         {val:0,label:'Off'},{val:60,label:'Every 60s'},{val:30,label:'Every 30s'}
@@ -5879,7 +7061,8 @@ const Breaks = {
   // ------------------------------------------------------------
   _startMeditation(brk) {
     const cfg = brk.config || { duration: 10, gongEvery: 60, bowls: true, affirmations: false };
-    const totalSec = brk.durMin * 60;
+    const unlimited = brk.durMin === 0;
+    const totalSec = unlimited ? 0 : brk.durMin * 60;
     const startTime = Date.now();
     const useZh = Breaks.lang === 'zh';
 
@@ -5893,7 +7076,7 @@ const Breaks = {
         : 'Settle in. Let your breath happen on its own.') +
       '</div>';
     $('calCircle').className = 'breath-circle break-pulse';
-    $('calCircleText').textContent = formatDuration(totalSec);
+    $('calCircleText').textContent = unlimited ? '\u221E' : formatDuration(totalSec);
 
     // Opening gong — always plays
     if (ac) playGong(ac.currentTime + 0.3);
@@ -5944,19 +7127,25 @@ const Breaks = {
     function tick() {
       if (!Breaks.inMode) return;
       const elapsed = (Date.now() - startTime) / 1000;
-      if (elapsed >= totalSec) { Breaks.exit(); return; }
-      const remain = Math.max(0, Math.ceil(totalSec - elapsed));
-      $('calBar').style.width = Math.min(100, (elapsed / totalSec) * 100).toFixed(0) + '%';
-      $('calPhase').textContent = formatDuration(remain) + (useZh ? ' 剩余' : ' remaining');
-      $('calCircleText').textContent = formatDuration(remain);
+      if (unlimited) {
+        $('calBar').style.width = '0%';
+        $('calPhase').textContent = formatDuration(Math.floor(elapsed)) + (useZh ? ' 已过' : ' elapsed');
+        $('calCircleText').textContent = formatDuration(Math.floor(elapsed));
+      } else {
+        if (elapsed >= totalSec) { Breaks.exit(); return; }
+        const remain = Math.max(0, Math.ceil(totalSec - elapsed));
+        $('calBar').style.width = Math.min(100, (elapsed / totalSec) * 100).toFixed(0) + '%';
+        $('calPhase').textContent = formatDuration(remain) + (useZh ? ' 剩余' : ' remaining');
+        $('calCircleText').textContent = formatDuration(remain);
+      }
       Breaks.timer = setTimeout(tick, 1000);
     }
 
     // Intro speech, then start countdown tick
     if (useZh) {
-      speak('冥想。' + brk.durMin + '分钟。', { queue: true, lang: 'zh' });
+      speak('冥想。' + (unlimited ? '无限时间。' : brk.durMin + '分钟。'), { queue: true, lang: 'zh' });
     } else {
-      speak('Meditation. ' + brk.durMin + ' minutes. Settle in.', { queue: true });
+      speak('Meditation. ' + (unlimited ? 'Open ended.' : brk.durMin + ' minutes.') + ' Settle in.', { queue: true });
     }
     Breaks.timer = setTimeout(tick, 3000);
   },
@@ -6773,16 +7962,7 @@ function handleHRM(ev){
         const prevAvg = prev20.reduce((a,b)=>a+b)/20;
         if(recentAvg < prevAvg * 0.9) Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 0.1);
       }
-      // Resume music if fatigue dropped during soldier-on pause
-      if(Breaks.inFatiguePause && Breaks.fatigueScore < Breaks.SUGGEST_THRESHOLD){
-        Breaks.inFatiguePause = false;
-        if(masterGain && ac) masterGain.gain.linearRampToValueAtTime(preMusicVolume, ac.currentTime + 5);
-        $('status').className = 'status';
-        $('status').textContent = 'Fatigue recovered — music resuming';
-        speak('Music resuming.');
-        logEvent('fatigue_pause_end', { fatigueScore: +Breaks.fatigueScore.toFixed(1) });
-      }
-      if(!Breaks.inMode && !inBreathingMode && !Breaks.inFatiguePause && playing && !shamanicMode && !jhanaMode && !bedtimeMode) {
+      if(!Breaks.inMode && !inBreathingMode && playing && !shamanicMode && !jhanaMode && !bedtimeMode) {
         if(Breaks.fatigueScore >= Breaks.URGENT_THRESHOLD) {
           if(!Breaks.suggestionShown || !Breaks.suggestionUrgent) Breaks.suggest(true);
         } else if(Breaks.fatigueScore >= Breaks.SUGGEST_THRESHOLD && !Breaks.suggestionShown) {
@@ -6933,6 +8113,209 @@ function captureSongParams() {
     jhana: !!jhanaMode,
     bedtime: !!bedtimeMode,
   };
+}
+
+// =====================================================
+// SONG RATING & HISTORY
+// =====================================================
+
+// Ensure profile has song data arrays
+function ensureSongData() {
+  if (!currentProfile) return;
+  if (!currentProfile.songRatings) currentProfile.songRatings = [];
+  if (!currentProfile.songHistory) currentProfile.songHistory = [];
+}
+
+// Capture a compact "song fingerprint" — the numeric params for PCA
+function songFingerprint() {
+  return {
+    style: currentSongStyle,
+    bpm: parseInt($('bpm').value),
+    swing: currentSwing || 0,
+    rate: parseFloat($('rate').value),
+    depth: parseInt($('depth').value),
+    brightness: parseInt($('brightness').value),
+    reverb: parseInt($('reverb').value),
+    kick: currentTimbre?.kick || '',
+    snare: currentTimbre?.snare || '',
+    hat: currentTimbre?.hat || '',
+    bass: currentTimbre?.bass || '',
+    keys: currentTimbre?.keys || '',
+    progression: currentProgression ? currentProgression.map(([r,t,d]) => r + ':' + t).join(',') : '',
+    busFx: currentBusFX ? JSON.parse(JSON.stringify(currentBusFX)) : null,
+    timbre: currentTimbre ? {
+      kick: currentTimbre.kick, snare: currentTimbre.snare,
+      hat: currentTimbre.hat, bass: currentTimbre.bass, keys: currentTimbre.keys,
+      jitter: currentTimbre.jitter ? { ...currentTimbre.jitter } : null,
+    } : null,
+  };
+}
+
+// Record current song in history (called on each new song)
+function recordSongInHistory() {
+  ensureSongData();
+  if (!currentProfile || shamanicMode || jhanaMode || bedtimeMode) return;
+  const entry = { date: new Date().toISOString(), params: songFingerprint(), rating: 0 };
+  currentProfile.songHistory.push(entry);
+  // Cap at 10K songs (~12MB in IndexedDB)
+  if (currentProfile.songHistory.length > 10000) {
+    currentProfile.songHistory = currentProfile.songHistory.slice(-10000);
+  }
+  currentSongHistoryIdx = currentProfile.songHistory.length - 1;
+  resetRateButtons();
+}
+
+let currentSongHistoryIdx = -1;
+
+function rateSong(rating) {
+  ensureSongData();
+  if (!currentProfile) return;
+  const fp = songFingerprint();
+  const entry = { date: new Date().toISOString(), params: fp, rating };
+  currentProfile.songRatings.push(entry);
+
+  // Also update the history entry for this song
+  if (currentSongHistoryIdx >= 0 && currentProfile.songHistory[currentSongHistoryIdx]) {
+    currentProfile.songHistory[currentSongHistoryIdx].rating = rating;
+  }
+
+  // Update button states
+  $('likeBtn').classList.toggle('active', rating === 1);
+  $('dislikeBtn').classList.toggle('active', rating === -1);
+
+  // Save
+  saveProfile(currentProfile);
+
+  if (rating === -1) {
+    // Dislike = skip immediately
+    logEvent('song_disliked', { style: currentSongStyle });
+    startNewSong();
+  } else {
+    logEvent('song_liked', { style: currentSongStyle });
+  }
+}
+
+$('likeBtn').addEventListener('click', () => rateSong(1));
+$('dislikeBtn').addEventListener('click', () => rateSong(-1));
+
+// Reset button state on new song
+function resetRateButtons() {
+  const rating = (currentProfile && currentProfile.songHistory && currentSongHistoryIdx >= 0)
+    ? (currentProfile.songHistory[currentSongHistoryIdx]?.rating || 0) : 0;
+  $('likeBtn').classList.toggle('active', rating === 1);
+  $('dislikeBtn').classList.toggle('active', rating === -1);
+}
+
+// =====================================================
+// PCA FOR SONG VISUALIZATION
+// =====================================================
+
+// Extract numeric feature vector from song params for PCA
+function songToVector(params) {
+  // One-hot encode style
+  const styleOH = STYLE_KEYS.map(k => k === params.style ? 1 : 0);
+  // One-hot encode timbres
+  const kickKeys = Object.keys(KICK_PRESETS);
+  const snareKeys = Object.keys(SNARE_PRESETS);
+  const hatKeys = Object.keys(HAT_PRESETS);
+  const bassKeys = Object.keys(BASS_PRESETS);
+  const keysKeys = Object.keys(KEYS_PRESETS);
+  const kickOH = kickKeys.map(k => k === params.kick ? 1 : 0);
+  const snareOH = snareKeys.map(k => k === params.snare ? 1 : 0);
+  const hatOH = hatKeys.map(k => k === params.hat ? 1 : 0);
+  const bassOH = bassKeys.map(k => k === params.bass ? 1 : 0);
+  const keysOH = keysKeys.map(k => k === params.keys ? 1 : 0);
+  // Encode progression as hash of chord roots (simple but effective)
+  const progHash = (params.progression || '').split(',').reduce((h, c) => {
+    const root = parseInt(c) || 0;
+    return h + root * 7.1;
+  }, 0);
+  return [
+    ...styleOH,
+    ...kickOH, ...snareOH, ...hatOH, ...bassOH, ...keysOH,
+    params.bpm || 90,
+    (params.swing || 0) * 100,
+    params.rate || 5,
+    params.depth || 50,
+    params.brightness || 5000,
+    params.reverb || 30,
+    progHash,
+  ];
+}
+
+// Simple 2D PCA via power iteration on covariance matrix
+function computePCA(vectors) {
+  const n = vectors.length;
+  if (n < 2) return vectors.map(() => [0, 0]);
+  const d = vectors[0].length;
+
+  // Mean-center
+  const mean = new Array(d).fill(0);
+  vectors.forEach(v => v.forEach((x, i) => mean[i] += x));
+  mean.forEach((_, i) => mean[i] /= n);
+  const centered = vectors.map(v => v.map((x, i) => x - mean[i]));
+
+  // Covariance matrix
+  const cov = Array.from({ length: d }, () => new Array(d).fill(0));
+  centered.forEach(v => {
+    for (let i = 0; i < d; i++)
+      for (let j = 0; j < d; j++)
+        cov[i][j] += v[i] * v[j];
+  });
+  for (let i = 0; i < d; i++)
+    for (let j = 0; j < d; j++)
+      cov[i][j] /= n;
+
+  // Power iteration for top 2 eigenvectors
+  function powerIter(mat, deflateVec) {
+    let vec = new Array(d).fill(0).map(() => Math.random());
+    for (let iter = 0; iter < 100; iter++) {
+      let next = new Array(d).fill(0);
+      for (let i = 0; i < d; i++)
+        for (let j = 0; j < d; j++)
+          next[i] += mat[i][j] * vec[j];
+      // Deflate
+      if (deflateVec) {
+        const dot = next.reduce((s, v, i) => s + v * deflateVec[i], 0);
+        next = next.map((v, i) => v - dot * deflateVec[i]);
+      }
+      const norm = Math.sqrt(next.reduce((s, v) => s + v * v, 0)) || 1;
+      vec = next.map(v => v / norm);
+    }
+    return vec;
+  }
+
+  const pc1 = powerIter(cov, null);
+  const pc2 = powerIter(cov, pc1);
+
+  // Project
+  return centered.map(v => [
+    v.reduce((s, x, i) => s + x * pc1[i], 0),
+    v.reduce((s, x, i) => s + x * pc2[i], 0),
+  ]);
+}
+
+// Apply saved song params to the song engine
+function applySongParams(params) {
+  if (!params) return;
+  // Set style
+  if (params.style && SONG_STYLES[params.style]) {
+    currentSongStyle = params.style;
+    shuffleMode = false;
+    document.querySelectorAll('.song-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.song === params.style);
+    });
+  }
+  if (params.bpm) $('bpm').value = params.bpm;
+  if (params.rate) $('rate').value = params.rate;
+  if (params.depth) $('depth').value = params.depth;
+  if (params.brightness) $('brightness').value = params.brightness;
+  if (params.reverb) $('reverb').value = params.reverb;
+  if (playing) {
+    startNewSong();
+  } else {
+    $('playBtn').click();
+  }
 }
 
 function applyBiofeedback(ratio){
