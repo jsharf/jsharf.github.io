@@ -157,8 +157,11 @@ input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 2px 12px rgba(138,180
 .mode-tag.jhana{background:rgba(112,184,208,.3)}.mode-tag.shamanic{background:rgba(208,160,80,.3)}.mode-tag.bedtime{background:rgba(138,127,208,.3)}
 .history-export-btn{background:none;border:1px solid rgba(100,100,150,.3);color:#8a8aaa;font-size:10px;padding:2px 8px;border-radius:4px;cursor:pointer}
 .history-export-btn:hover{border-color:rgba(100,100,150,.6);color:#bbb}
-.history-close{background:none;border:1px solid rgba(100,100,150,.3);color:#aaa;padding:6px 24px;border-radius:6px;cursor:pointer;font-size:13px;margin:10px 0 20px}
-.history-close:hover{border-color:rgba(100,100,150,.6);color:#ddd}
+/* Universal big-X close button for dismissable overlays.
+   Positioned absolutely in the top-right corner for easy one-hand tap. */
+.overlay-close{position:fixed;top:14px;right:14px;z-index:10000;width:44px;height:44px;border-radius:50%;background:rgba(20,20,35,.75);border:1px solid rgba(140,140,180,.35);color:#c8ccdc;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all .2s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.overlay-close:hover{background:rgba(35,35,55,.9);border-color:rgba(180,180,220,.6);color:#e8ecf8;transform:scale(1.06)}
+.overlay-close:active{transform:scale(.96)}
 .history-toolbar{display:flex;gap:8px;margin:0 0 16px;align-items:center;flex-wrap:wrap}
 .history-toolbar button{background:none;border:1px solid rgba(100,100,150,.3);color:#8a8aaa;font-size:11px;padding:4px 12px;border-radius:5px;cursor:pointer}
 .history-toolbar button:hover{border-color:rgba(100,100,150,.6);color:#bbb}
@@ -327,9 +330,8 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="history-stats" id="historyStats"></div>
 <div class="history-toolbar">
 <button id="historyExportAll">Export All</button>
-<span style="flex:1"></span>
-<button class="history-close" id="historyClose">Close</button>
 </div>
+<button class="overlay-close" id="historyClose" title="Close" aria-label="Close">✕</button>
 <div class="history-title" style="font-size:16px;margin-top:24px">Music Taste Map</div>
 <div style="font-size:11px;color:#6a6a8a;margin-bottom:8px">Songs projected by similarity. <span style="color:#6d6">&#9679;</span> liked <span style="color:#d66">&#9679;</span> disliked <span style="color:#666">&#9679;</span> neutral. Click a dot to select.</div>
 <canvas class="pca-canvas" id="pcaCanvas" width="700" height="300"></canvas>
@@ -358,10 +360,10 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 </div>
 </div>
 <div id="vizExpandOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,5,15,.92);backdrop-filter:blur(12px);padding:20px;box-sizing:border-box;overflow:auto">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<div style="margin-bottom:12px">
 <span id="vizExpandTitle" style="color:#aac;font-size:14px;letter-spacing:.05em">Session History</span>
-<button id="vizCollapseBtn" style="font-size:13px;padding:4px 12px;background:rgba(80,80,120,.4);border:1px solid rgba(120,120,160,.3);border-radius:4px;color:#aac;cursor:pointer">✕ Close</button>
 </div>
+<button class="overlay-close" id="vizCollapseBtn" title="Close" aria-label="Close">✕</button>
 <canvas id="vizExpandCanvas" style="width:100%;height:calc(100vh - 80px);display:block;background:rgba(10,10,20,.6);border:1px solid rgba(80,80,120,.2);border-radius:8px"></canvas>
 </div>
 <div class="cal-overlay" id="calOverlay">
@@ -9453,5 +9455,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-16-1642<!--/VERSION--></div>
 </body>
 </html>
