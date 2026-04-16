@@ -11,6 +11,70 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .container{position:relative;z-index:1;width:100%;max-width:1220px;padding:10px 32px 14px;zoom:1.22}
 h1{font-size:26px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#e8e8f0;text-align:center;margin:4px 0 14px;text-shadow:0 0 30px rgba(138,180,248,.15)}
 .bio-indicator{position:fixed;top:20px;left:22px;z-index:50;display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:14px;background:rgba(20,20,35,.65);backdrop-filter:blur(12px);border:1px solid rgba(60,60,90,.3);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#888}
+/* Companion — soft animated face that reacts to HRV state.
+   Positive psychology angle: a face-like shape increases parasocial warmth,
+   and state-linked expressions (smile on CALM, closed eyes on breathing,
+   soft sparkle on improvement) turn the app from "monitoring tool" into
+   something people want to sit next to. */
+.companion{position:fixed;bottom:18px;right:18px;width:76px;height:76px;z-index:60;pointer-events:none;opacity:0;transition:opacity .8s ease,transform .6s ease;filter:drop-shadow(0 6px 18px rgba(138,180,248,.15))}
+.companion.visible{opacity:.95}
+.companion .face-ring{transform-origin:50% 50%;animation:companion-breath 5s ease-in-out infinite}
+@keyframes companion-breath{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.05);opacity:1}}
+.companion.breathing .face-ring{animation:companion-breath-deep 8s ease-in-out infinite}
+@keyframes companion-breath-deep{0%,100%{transform:scale(.92);opacity:.75}50%{transform:scale(1.12);opacity:1}}
+.companion .face-bg{fill:rgba(32,32,52,.88);stroke:rgba(140,160,220,.45);stroke-width:1.3;transition:fill .8s,stroke .8s}
+.companion.calm .face-bg{fill:rgba(30,60,50,.85);stroke:rgba(138,248,180,.55)}
+.companion.alert .face-bg{fill:rgba(55,50,25,.85);stroke:rgba(248,216,138,.5)}
+.companion.stress .face-bg{fill:rgba(55,30,35,.85);stroke:rgba(248,138,138,.5)}
+.companion.celebrate .face-bg{fill:rgba(40,70,55,.9);stroke:rgba(160,255,200,.85);filter:drop-shadow(0 0 12px rgba(138,248,180,.7))}
+.companion .eye{fill:#d8dcec;transition:cy .5s,rx .5s,ry .5s,opacity .5s}
+.companion.calm .eye{fill:#b8f0d0}
+.companion.alert .eye{fill:#f0d88a}
+.companion.stress .eye{fill:#f0a0a0;cy:48}
+.companion.breathing .eye,.companion.idle .eye{opacity:.25}
+.companion .mouth{fill:none;stroke:#c8ccdc;stroke-width:2.4;stroke-linecap:round;transition:d .6s,stroke .6s}
+.companion.calm .mouth{stroke:#b8f0d0}
+.companion.alert .mouth{stroke:#f0d88a}
+.companion.stress .mouth{stroke:#f0a0a0}
+.companion.celebrate .mouth{stroke:#b8f0d0}
+.companion .sparkle{opacity:0;fill:#f8e88a;transition:opacity .3s}
+.companion.celebrate .sparkle{animation:sparkle-pulse 2.4s ease-out}
+@keyframes sparkle-pulse{0%{opacity:0}25%{opacity:1}75%{opacity:.6}100%{opacity:0}}
+.companion-bubble{position:fixed;bottom:98px;right:18px;max-width:220px;padding:8px 12px;border-radius:12px;background:rgba(20,20,35,.82);backdrop-filter:blur(10px);border:1px solid rgba(138,180,248,.25);font-size:12px;color:#c8d0e0;z-index:60;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .4s,transform .4s;line-height:1.35}
+.companion-bubble.visible{opacity:1;transform:translateY(0)}
+.companion-bubble::after{content:'';position:absolute;bottom:-6px;right:28px;width:10px;height:10px;background:inherit;border-right:1px solid rgba(138,180,248,.25);border-bottom:1px solid rgba(138,180,248,.25);transform:rotate(45deg)}
+/* First-run tutorial — a small todo panel that highlights the real UI
+   controls (via a pulsing glow) as the user works through connecting,
+   picking a style, and starting. No duplicated controls; the user drives
+   the real app while the panel narrates progress. */
+.tutorial-panel{position:fixed;bottom:18px;left:18px;z-index:150;background:rgba(18,20,36,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(138,180,248,.35);border-radius:12px;padding:10px 12px;box-shadow:0 8px 30px rgba(0,0,0,.4);width:240px;max-width:calc(100vw - 36px);opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .5s,transform .5s}
+.tutorial-panel.active{opacity:1;pointer-events:all;transform:translateY(0)}
+.tutorial-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.tutorial-progress{font-size:10px;font-weight:600;color:#8ab4f8;letter-spacing:.1em;padding:2px 7px;border:1px solid rgba(138,180,248,.4);border-radius:8px;background:rgba(138,180,248,.08);flex-shrink:0;font-variant-numeric:tabular-nums}
+.tutorial-label{font-size:9px;text-transform:uppercase;letter-spacing:.16em;color:#7a7a98;font-weight:600}
+.tutorial-step{transition:opacity .25s}
+.tutorial-step[hidden]{display:none}
+.tutorial-step-title{font-size:13px;color:#d8dce8;font-weight:500;margin-bottom:2px}
+.tutorial-step-opt{color:#8a8aaa;font-weight:400;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-left:4px}
+.tutorial-step-hint{color:#8a8aaa;font-size:11px;line-height:1.4}
+.tutorial-step-action{font-size:11px;color:#7a7a98;margin-top:6px;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(100,100,140,.3);text-underline-offset:2px;display:inline-block}
+.tutorial-step-action:hover{color:#aaaacc;text-decoration-color:rgba(160,160,200,.5)}
+/* Pulsing glow applied to the real UI target of the active step */
+.tutorial-highlight{animation:tutorial-glow 1.2s ease-in-out infinite;position:relative;z-index:10}
+@keyframes tutorial-glow{
+  0%,100%{box-shadow:0 0 0 2px rgba(138,180,248,.6),0 0 28px rgba(138,180,248,.4),0 0 72px rgba(138,180,248,.22)}
+  50%{box-shadow:0 0 0 5px rgba(180,215,255,1),0 0 48px rgba(138,180,248,.85),0 0 110px rgba(138,180,248,.5)}
+}
+/* Profile creation prompt */
+.profile-prompt-overlay{position:fixed;inset:0;background:rgba(5,5,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:220;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s;padding:20px}
+.profile-prompt-overlay.active{opacity:1;pointer-events:all}
+.profile-prompt-card{max-width:380px;width:100%;background:rgba(20,20,35,.95);border:1px solid rgba(138,180,248,.4);border-radius:16px;padding:24px 22px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.profile-prompt-title{font-size:18px;font-weight:600;color:#e8e8f0;letter-spacing:.12em;text-transform:uppercase;text-align:center;margin-bottom:4px}
+.profile-prompt-sub{font-size:13px;color:#9999bb;text-align:center;margin-bottom:16px;line-height:1.45}
+.profile-prompt-input{width:100%;padding:12px 14px;background:rgba(15,15,30,.8);border:1px solid rgba(60,60,90,.5);border-radius:10px;color:#d8dce8;font-size:15px;outline:none;margin-bottom:12px;font-family:inherit;transition:border-color .2s}
+.profile-prompt-input:focus{border-color:rgba(138,180,248,.55)}
+.profile-prompt-confirm{width:100%;background:rgba(138,180,248,.15);border:1px solid rgba(138,180,248,.45);color:#c8d8f8;font-size:14px;padding:11px 14px;border-radius:10px;cursor:pointer;font-weight:500;font-family:inherit;transition:all .2s}
+.profile-prompt-confirm:hover{background:rgba(138,180,248,.25);border-color:rgba(138,180,248,.65)}
 .bio-dot{width:10px;height:10px;border-radius:50%;background:#555;display:inline-block;transition:background .5s}
 .bio-indicator.good .bio-dot{background:#4ade80;box-shadow:0 0 8px #4ade80}
 .bio-indicator.warn .bio-dot{background:#f8c864;box-shadow:0 0 8px #f8c864}
@@ -326,6 +390,45 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="container">
 <h1>Attune</h1>
 <div id="bioIndicator" class="bio-indicator" style="display:none"><span class="bio-dot"></span><span id="bioIndicatorText">CONNECTED</span></div>
+<svg id="companion" class="companion" viewBox="0 0 100 100" aria-hidden="true">
+  <g class="face-ring">
+    <circle class="face-bg" cx="50" cy="50" r="42"/>
+    <ellipse class="eye" cx="38" cy="44" rx="3.2" ry="3.2"/>
+    <ellipse class="eye" cx="62" cy="44" rx="3.2" ry="3.2"/>
+    <path id="companionMouth" class="mouth" d="M 38 62 Q 50 70 62 62"/>
+    <circle class="sparkle" cx="18" cy="22" r="2"/>
+    <circle class="sparkle" cx="82" cy="24" r="2.2"/>
+    <circle class="sparkle" cx="88" cy="60" r="1.8"/>
+  </g>
+</svg>
+<div id="companionBubble" class="companion-bubble"></div>
+<div id="tutorialPanel" class="tutorial-panel">
+  <div class="tutorial-header">
+    <span class="tutorial-progress" id="tutProgress">1 / 3</span>
+    <span class="tutorial-label">Getting Started</span>
+  </div>
+  <div class="tutorial-step" id="tutStep1">
+    <div class="tutorial-step-title">Connect your heart rate monitor</div>
+    <div class="tutorial-step-hint">Tap the glowing Connect button. Enables adaptive music + breathing guidance.</div>
+    <span class="tutorial-step-action" id="tutSkipBle">Music only (no adaptive features)</span>
+  </div>
+  <div class="tutorial-step" id="tutStep2" hidden>
+    <div class="tutorial-step-title">Pick a style<span class="tutorial-step-opt">optional</span></div>
+    <div class="tutorial-step-hint">Default is Shuffle. Change any time.</div>
+  </div>
+  <div class="tutorial-step" id="tutStep3" hidden>
+    <div class="tutorial-step-title">Hit START</div>
+    <div class="tutorial-step-hint">Big circular button. Headphones recommended.</div>
+  </div>
+</div>
+<div id="profilePromptOverlay" class="profile-prompt-overlay">
+  <div class="profile-prompt-card">
+    <div class="profile-prompt-title">Who's listening?</div>
+    <div class="profile-prompt-sub">A name saves your baseline HRV and session history on this device. We picked one for you — edit it if you want.</div>
+    <input type="text" id="profilePromptInput" class="profile-prompt-input">
+    <button id="profilePromptConfirm" class="profile-prompt-confirm">Let's go</button>
+  </div>
+</div>
 
 <div class="profile-bar">
 <select id="profileSelect"><option value="">Loading...</option></select>
@@ -1458,6 +1561,192 @@ if (window.speechSynthesis) {
 
 // Thin facade for existing call sites.
 function speak(text, opts) { tts.say(text, opts); }
+
+// ===================================================================
+// Companion — small animated face that reacts to HRV state.
+// ===================================================================
+// Psych angle: a persistent face-like element creates low-grade parasocial
+// presence ("it's watching out for me"), and state-linked micro-expressions
+// turn abstract HRV numbers into something emotionally legible.
+// Spontaneous warm bubbles on sustained improvement turn the biofeedback
+// loop into a positive-reward loop instead of a nag loop.
+const Companion = {
+  el: null,
+  bubble: null,
+  mouth: null,
+  lastState: null,
+  lastBubbleAt: 0,
+  lastCelebrateAt: 0,
+  recentStates: [], // last ~60s of HRV states, for sustained-improvement detection
+  celebrateTimer: null,
+  bubbleTimer: null,
+  connected: false,
+
+  init() {
+    this.el = $('companion');
+    this.bubble = $('companionBubble');
+    this.mouth = $('companionMouth');
+  },
+
+  show() {
+    if (!this.el) return;
+    this.connected = true;
+    this.el.classList.add('visible');
+  },
+
+  hide() {
+    if (!this.el) return;
+    this.connected = false;
+    this.el.classList.remove('visible');
+    this.bubble.classList.remove('visible');
+  },
+
+  _setClass(mood) {
+    if (!this.el) return;
+    // Keep 'visible' and 'breathing' (breathing is controlled separately); replace mood class.
+    const breathing = this.el.classList.contains('breathing');
+    const celebrate = this.el.classList.contains('celebrate');
+    this.el.className = 'companion';
+    if (this.connected) this.el.classList.add('visible');
+    if (breathing) this.el.classList.add('breathing');
+    if (celebrate) this.el.classList.add('celebrate');
+    if (mood) this.el.classList.add(mood);
+  },
+
+  _setMouth(shape) {
+    if (!this.mouth) return;
+    // Shapes: smile, softSmile, flat, frown, closed
+    const paths = {
+      smile:     'M 34 58 Q 50 74 66 58',
+      softSmile: 'M 38 62 Q 50 70 62 62',
+      flat:      'M 38 64 L 62 64',
+      frown:     'M 38 66 Q 50 58 62 66',
+      closed:    'M 42 64 Q 50 66 58 64',
+    };
+    this.mouth.setAttribute('d', paths[shape] || paths.softSmile);
+  },
+
+  setState(st) {
+    if (!this.el) return;
+    if (!this.connected) this.show();
+    const mood = st === 'STRESS' ? 'stress'
+               : st === 'ALERT'  ? 'alert'
+               : (st === 'CALM' || st === 'FLOW') ? 'calm'
+               : 'calm'; // OK → calm-ish (gentle)
+    const mouth = st === 'STRESS' ? 'frown'
+                : st === 'ALERT'  ? 'flat'
+                : (st === 'CALM' || st === 'FLOW') ? 'smile'
+                : 'softSmile';
+    this._setClass(mood);
+    this._setMouth(mouth);
+    this.lastState = st;
+  },
+
+  setBreathing(on) {
+    if (!this.el) return;
+    if (on) {
+      this.el.classList.add('breathing');
+      this._setMouth('closed');
+    } else {
+      this.el.classList.remove('breathing');
+    }
+  },
+
+  bubbleMsg(msg, ms) {
+    if (!this.bubble) return;
+    const now = Date.now();
+    // Throttle bubbles: at most one every 45s to avoid clutter
+    if (now - this.lastBubbleAt < 45000) return;
+    this.lastBubbleAt = now;
+    this.bubble.textContent = msg;
+    this.bubble.classList.add('visible');
+    if (this.bubbleTimer) clearTimeout(this.bubbleTimer);
+    this.bubbleTimer = setTimeout(() => {
+      this.bubble.classList.remove('visible');
+    }, ms || 5000);
+  },
+
+  celebrate(msg) {
+    if (!this.el) return;
+    const now = Date.now();
+    if (now - this.lastCelebrateAt < 90000) return; // cooldown to keep it special
+    this.lastCelebrateAt = now;
+    this.el.classList.add('celebrate');
+    this._setMouth('smile');
+    if (this.celebrateTimer) clearTimeout(this.celebrateTimer);
+    this.celebrateTimer = setTimeout(() => {
+      this.el.classList.remove('celebrate');
+    }, 2400);
+    if (msg) this.bubbleMsg(msg, 5000);
+  },
+
+  // Watch RMSSD trajectory over a rolling window for sustained improvement.
+  // Triggers a gentle celebration when the user has been meaningfully calmer
+  // than baseline for ~60s — positive reinforcement for doing nothing but
+  // settling into the session.
+  trackImprovement(rmssd, st) {
+    const now = Date.now();
+    this.recentStates.push({ t: now, rmssd, st });
+    // Keep last 120s
+    this.recentStates = this.recentStates.filter(x => x.t > now - 120000);
+    // Need at least 60s of history before firing
+    if (this.recentStates.length < 30) return;
+    const oldest = this.recentStates[0];
+    if (now - oldest.t < 60000) return;
+
+    // Condition 1: coming back from STRESS — any move to OK/CALM/FLOW after recent stress
+    const hadRecentStress = this.recentStates.some(x => x.st === 'STRESS' && (now - x.t) < 90000 && (now - x.t) > 20000);
+    const nowCalm = (st === 'CALM' || st === 'FLOW' || st === 'OK');
+    if (hadRecentStress && nowCalm) {
+      const recent30 = this.recentStates.filter(x => now - x.t < 30000);
+      const stable = recent30.length >= 20 && recent30.every(x => x.st !== 'STRESS');
+      if (stable) {
+        this.celebrate(pickWarmMessage('recovery'));
+        // Clear recent-stress memory so we don't chain-celebrate
+        this.recentStates = this.recentStates.map(x => x.st === 'STRESS' ? { ...x, st: 'OK' } : x);
+        return;
+      }
+    }
+
+    // Condition 2: sustained CALM/FLOW for >60s with no STRESS in window
+    if (nowCalm && rmssdBaseline) {
+      const calmRun = this.recentStates.filter(x => x.st === 'CALM' || x.st === 'FLOW');
+      if (calmRun.length >= 40) {
+        const anyStress = this.recentStates.some(x => x.st === 'STRESS');
+        if (!anyStress) {
+          this.celebrate(pickWarmMessage('sustained'));
+          // Prune history so we don't chain-fire
+          this.recentStates = [];
+        }
+      }
+    }
+  },
+};
+
+function pickWarmMessage(kind) {
+  const pool = {
+    recovery: [
+      'Nice — you settled back in.',
+      'That came back around. Well done.',
+      'You rode that out. Calm returning.',
+      'Your body is finding its way back.',
+    ],
+    sustained: [
+      'Lovely steady stretch.',
+      'You\'re in a good groove.',
+      'This is a really calm window.',
+      'Beautiful — your nervous system is happy here.',
+    ],
+    breathingSuccess: [
+      'That worked. You did that.',
+      'Lovely recovery. You\'ve got this.',
+      'Nice work. Back to baseline.',
+      'Really nice. That was skillful.',
+    ],
+  };
+  const arr = pool[kind] || pool.sustained;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 // Init DB on load
 // DB init happens at bottom of script (with compaction)
@@ -5628,6 +5917,11 @@ document.querySelectorAll('.break-lang-btn').forEach(btn => {
 // Play/Stop
 $('playBtn').addEventListener('click', async()=>{
   if(!playing){
+    // First-start profile creation. If there's no profile yet, prompt the user
+    // for a name (or accept a humanhash default). The user's click on the
+    // prompt's confirm button is itself a user gesture, which carries through
+    // to the audio context resume that follows.
+    if (typeof ensureProfileBeforeStart === 'function') await ensureProfileBeforeStart();
     if(!ac) initAudio();
     if(ac.state==='suspended') await ac.resume();
     playing=true;
@@ -6728,7 +7022,9 @@ $('bleBtn').addEventListener('click',async()=>{
     stopEcgStream();
     $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');
     $('bioTitle').textContent='Biofeedback';
-    $('hrVal').textContent='--';$('rmssdVal').textContent='--';$('stateVal').textContent='--';return;}
+    $('hrVal').textContent='--';$('rmssdVal').textContent='--';$('stateVal').textContent='--';
+    Companion.hide();
+    return;}
   if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     $('status').textContent = isSafari
@@ -6745,6 +7041,7 @@ $('bleBtn').addEventListener('click',async()=>{
       $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');bleDevice=null;
       $('bioTitle').textContent='Biofeedback';
       $('bioIndicator').style.display='none';
+      Companion.hide();
       stopEcgStream();
       logEvent('ble_disconnected');
       if(playing){
@@ -6765,6 +7062,7 @@ $('bleBtn').addEventListener('click',async()=>{
     const devName = (bleDevice.name && bleDevice.name.trim()) || 'Heart Rate Monitor';
     $('bioTitle').textContent = 'Biofeedback — ' + devName;
     $('bioIndicator').style.display='flex';$('bioIndicator').className='bio-indicator';
+    Companion.show();
     $('bioIndicatorText').textContent=(currentProfile && currentProfile.rmssdBaseline) ? 'CONNECTED' : 'CALIBRATING';
     rrIntervals=[];rmssdHistory=[];baselinesamples=0;
     // Restore saved profile baseline instead of wiping it
@@ -8106,6 +8404,7 @@ function flashTitle(alert) {
 function enterBreathingMode() {
   if (inBreathingMode || !ac || Breaks.inMode) return;
   inBreathingMode = true;
+  Companion.setBreathing(true);
   playAttentionChime();
   flashTitle('⚠ Breathe — Attune');
   breathingStartTime = Date.now();
@@ -8194,6 +8493,13 @@ function doBreathCycle() {
 function exitBreathingMode() {
   if (!inBreathingMode || !ac) return;
   inBreathingMode = false;
+  Companion.setBreathing(false);
+  // Celebrate if the breathing intervention actually worked (RMSSD climbed meaningfully).
+  const endRmssd = rmssdHistory.length ? rmssdHistory[rmssdHistory.length-1] : 0;
+  const improved = breathingPeakRmssd - breathingStartRmssd;
+  if (improved >= 5 || (breathingStartRmssd > 0 && breathingPeakRmssd / breathingStartRmssd >= 1.2)) {
+    Companion.celebrate(pickWarmMessage('breathingSuccess'));
+  }
   const lastBP2 = breakPeriods[breakPeriods.length-1];
   if(lastBP2 && !lastBP2.end) lastBP2.end = Date.now();
   clearTimeout(breathingInterval);
@@ -8327,6 +8633,8 @@ function handleHRM(ev){
       else {st='OK';cl='good';}
       $('stateVal').textContent=st;$('stateVal').className='hrv-stat-value '+cl;$('rmssdVal').className='hrv-stat-value '+cl;
       $('bioIndicator').className='bio-indicator '+cl;$('bioIndicatorText').textContent=st;
+      Companion.setState(st);
+      Companion.trackImprovement(rmssd, st);
       if(rmssdHistory.length % 30 === 0) logEvent('hrv_snapshot', { hr: +$('hrVal').textContent, rmssd: +rmssd.toFixed(1), state: st, ratio: +ratio.toFixed(2), fatigueScore: +Breaks.fatigueScore.toFixed(1), tempo: +$('bpm').value });
 
       // Fatigue score for break suggestions
@@ -8979,6 +9287,142 @@ window.addEventListener('beforeunload', () => {
 
 // Init DB
 openDB().then(() => loadProfileList());
+Companion.init();
+
+// Humanhash-style name generator — warm nature-ish compound, e.g. "quiet-fox".
+// Keep the adjective pool gentle; avoid anything that could read as a judgment
+// on the person picking the name (no "dim", "slow", "low", etc).
+function humanhash() {
+  const adj = ['quiet','bright','soft','warm','calm','gentle','kind','deep','still','swift','wise','silver','amber','woven','cool','hushed','rustling','glowing','dappled','misty','sunny','breezy','peaceful','golden','radiant','lively','bold','merry'];
+  const noun = ['fox','owl','heron','moth','river','cedar','finch','hare','willow','ember','field','stone','pine','mist','brook','thistle','reed','dune','creek','fern','lark','sparrow','moss','juniper'];
+  return adj[Math.floor(Math.random()*adj.length)] + '-' + noun[Math.floor(Math.random()*noun.length)];
+}
+
+// Show the profile-creation prompt. Resolves when a profile has been created
+// and currentProfile is set. Used the first time the user hits START.
+function promptCreateProfile() {
+  return new Promise(resolve => {
+    const overlay = $('profilePromptOverlay');
+    const input = $('profilePromptInput');
+    const def = humanhash();
+    input.value = def;
+    overlay.classList.add('active');
+    // Focus and select-all so editing is one keystroke away if they don't like it.
+    setTimeout(() => { input.focus(); input.select(); }, 100);
+    const finish = async () => {
+      const name = (input.value && input.value.trim()) || def;
+      // Warm up the audio context while we still have a fresh user gesture from
+      // the confirm click. If we defer this, the playBtn handler's ac.resume()
+      // may land after transient user activation has been consumed.
+      try {
+        if (!ac && typeof initAudio === 'function') initAudio();
+        if (typeof ac !== 'undefined' && ac && ac.state === 'suspended') await ac.resume();
+      } catch(e){}
+      const profile = newProfileData(name);
+      await saveProfile(profile);
+      await loadProfileList();
+      currentProfile = profile;
+      try { localStorage.setItem('vibefib-lastProfile', name); } catch(e){}
+      const sel = $('profileSelect');
+      if (sel) sel.value = name;
+      overlay.classList.remove('active');
+      cleanup();
+      resolve(true);
+    };
+    const onKey = e => { if (e.key === 'Enter') finish(); };
+    const cleanup = () => {
+      $('profilePromptConfirm').removeEventListener('click', finish);
+      input.removeEventListener('keydown', onKey);
+    };
+    $('profilePromptConfirm').addEventListener('click', finish);
+    input.addEventListener('keydown', onKey);
+  });
+}
+
+// Guarded inside the main playBtn handler (below) — on first START with no
+// profile, we show the name prompt and await before continuing the start flow.
+// See playBtn click handler; it now calls ensureProfileBeforeStart().
+async function ensureProfileBeforeStart() {
+  if (currentProfile) return;
+  const profiles = await getProfiles();
+  if (profiles.length > 0) {
+    const last = (() => { try { return localStorage.getItem('vibefib-lastProfile'); } catch(e){ return null; } })();
+    currentProfile = profiles.find(p => p.name === last) || profiles[0];
+    return;
+  }
+  await promptCreateProfile();
+}
+
+// First-run tutorial — compact single-step panel with X/3 progress counter.
+// The panel only ever shows one step at a time, so it stays small enough to
+// tuck in the corner without blocking the UI it's pointing at.
+(function initTutorial() {
+  const key = 'attune-onboarded';
+  let done = false;
+  try { done = localStorage.getItem(key) === '1'; } catch(e){}
+  if (done) return;
+
+  const panel = $('tutorialPanel');
+  const progress = $('tutProgress');
+  const step1 = $('tutStep1'), step2 = $('tutStep2'), step3 = $('tutStep3');
+  const steps = [step1, step2, step3];
+  const stepDone = [false, false, false];
+  let current = 0;
+
+  const targetFor = (i) => {
+    if (i === 0) return $('bleBtn');
+    if (i === 1) return document.querySelector('.song-select');
+    if (i === 2) return $('playBtn');
+    return null;
+  };
+
+  const applyHighlight = () => {
+    document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+    if (current >= steps.length) return;
+    const tgt = targetFor(current);
+    if (tgt) tgt.classList.add('tutorial-highlight');
+  };
+
+  const refresh = () => {
+    steps.forEach((s, i) => { s.hidden = (i !== current); });
+    progress.textContent = Math.min(current + 1, steps.length) + ' / ' + steps.length;
+    applyHighlight();
+  };
+
+  const markStep = (i) => {
+    if (stepDone[i]) return;
+    stepDone[i] = true;
+    // Advance current to first not-done step
+    current = stepDone.findIndex(d => !d);
+    if (current === -1) current = steps.length;
+    refresh();
+  };
+
+  setTimeout(() => { panel.classList.add('active'); refresh(); }, 250);
+
+  // Step 1: BLE connect success
+  new MutationObserver(() => {
+    if ($('bleBtn').classList.contains('connected')) markStep(0);
+  }).observe($('bleBtn'), { attributes: true, attributeFilter: ['class'] });
+
+  // Step 1: skip link
+  $('tutSkipBle').addEventListener('click', () => markStep(0));
+
+  // Step 2: any song button click
+  document.querySelectorAll('.song-btn').forEach(b => {
+    b.addEventListener('click', () => markStep(1));
+  });
+
+  // Step 3: START (dismiss tutorial). Any prior pending steps auto-resolve.
+  $('playBtn').addEventListener('click', () => {
+    markStep(0); markStep(1); markStep(2);
+    setTimeout(() => {
+      panel.classList.remove('active');
+      document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+      try { localStorage.setItem(key, '1'); } catch(e){}
+    }, 800);
+  }, { once: true });
+})();
 
 // Pause on audio device change (headphone unplug / AirPods disconnect)
 let knownAudioDevices=null;
