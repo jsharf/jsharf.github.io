@@ -293,6 +293,13 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 </tr></thead><tbody id="historyBody"></tbody></table>
 </div>
 </div>
+<div id="vizExpandOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,5,15,.92);backdrop-filter:blur(12px);padding:20px;box-sizing:border-box;overflow:auto">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<span style="color:#aac;font-size:14px;letter-spacing:.05em">Session History</span>
+<button id="vizCollapseBtn" style="font-size:13px;padding:4px 12px;background:rgba(80,80,120,.4);border:1px solid rgba(120,120,160,.3);border-radius:4px;color:#aac;cursor:pointer">✕ Close</button>
+</div>
+<canvas id="vizExpandCanvas" style="width:100%;height:calc(100vh - 80px);display:block;background:rgba(10,10,20,.6);border:1px solid rgba(80,80,120,.2);border-radius:8px"></canvas>
+</div>
 <div class="cal-overlay" id="calOverlay">
 <div class="breath-circle" id="calCircle"><span class="breath-circle-text" id="calCircleText"></span></div>
 <div class="cal-title" id="calTitle">Calibration</div>
@@ -439,10 +446,12 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div><div class="hrv-stat-value" id="stateVal">--</div><div class="hrv-stat-label">State</div></div>
 </div>
 <div style="position:relative"><canvas class="viz-canvas" id="hrvViz"></canvas><div id="vizTooltip" style="display:none;position:absolute;pointer-events:none;background:rgba(15,15,30,.92);border:1px solid rgba(100,100,150,.4);border-radius:6px;padding:4px 8px;font-size:12px;color:#ddd;white-space:nowrap;z-index:5;backdrop-filter:blur(8px)"></div></div>
+<div id="ecgWrap" style="display:none;position:relative;margin-top:6px"><canvas id="ecgCanvas" style="width:100%;height:80px;display:block;background:rgba(5,15,10,.6);border:1px solid rgba(80,200,120,.2);border-radius:6px"></canvas><div style="position:absolute;top:4px;left:8px;font-size:10px;color:#70b090;letter-spacing:.08em">ECG · 130 Hz</div></div>
 <div class="toggle-row" style="display:none"><input type="checkbox" id="bioControl"><label for="bioControl">Closed-loop control</label></div>
 <div class="toggle-row" style="margin-top:4px">
 <button class="ble-btn" id="exportBtn" style="font-size:10px;padding:3px 10px">Export Session</button>
 <button class="ble-btn" id="historyBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">History</button>
+<button class="ble-btn" id="vizExpandBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">Session Data</button>
 </div>
 </div>
 <div class="status" id="status">Click START to begin</div>
@@ -2788,8 +2797,13 @@ function advanceBar() {
   isFillBar = (barPhrase === 7); // last bar of 8-bar phrase
   // Time-based forced song end at bar boundaries
   if (!inSongTransition && songStartedAt && (Date.now() - songStartedAt) >= SONG_MAX_MS) {
-    triggerSongTransition();
-    return;
+    if (jhanaMode || bedtimeMode) {
+      // No real song structure in these modes — just silently reset the timer
+      songStartedAt = Date.now();
+    } else {
+      triggerSongTransition();
+      return;
+    }
   }
   // Re-pick drum/bass patterns within a section for variation — rare
   if (Math.random() < 0.25 && !shamanicMode) {
@@ -5878,6 +5892,7 @@ function stopJhanaJourney() {
   if (jhanaJourneyTimer) { clearTimeout(jhanaJourneyTimer); jhanaJourneyTimer = null; }
   stopJhanaBowlLoop();
   stopJhanaDrone();
+
   stopJhanaAsmr();
 }
 
@@ -5935,6 +5950,7 @@ function stopBedtimeJourney() {
   if (bedtimeEndTimer) { clearTimeout(bedtimeEndTimer); bedtimeEndTimer = null; }
   stopJhanaBowlLoop();
   stopJhanaDrone();
+
 }
 
 function enterBedtimeMode() {
@@ -6056,7 +6072,9 @@ function drawViz(){
   function drawTimeTicks(row){
     c.font='8px sans-serif';c.fillStyle='rgba(150,150,180,0.3)';
     c.strokeStyle='rgba(150,150,180,0.06)';c.lineWidth=0.5;
-    for(let m=1;m<=5;m++){
+    const totalMin = windowMs / 60000;
+    const tickStep = totalMin <= 5 ? 1 : totalMin <= 15 ? 2 : totalMin <= 30 ? 5 : 10;
+    for(let m=tickStep; m <= totalMin; m += tickStep){
       const t=now-m*60000;
       if(t<tStart)continue;
       const x=tx(t);
@@ -6332,6 +6350,158 @@ $('hrvViz').addEventListener('mouseleave', () => {
   $('vizTooltip').style.display = 'none';
 });
 
+let vizExpandAnim = null;
+$('vizExpandBtn').addEventListener('click', () => {
+  $('vizExpandOverlay').style.display = 'block';
+  if (!vizExpandAnim) drawVizExpanded();
+});
+$('vizCollapseBtn').addEventListener('click', () => {
+  $('vizExpandOverlay').style.display = 'none';
+  if (vizExpandAnim) { cancelAnimationFrame(vizExpandAnim); vizExpandAnim = null; }
+});
+
+function drawVizExpanded() {
+  if ($('vizExpandOverlay').style.display === 'none') { vizExpandAnim = null; return; }
+  vizExpandAnim = requestAnimationFrame(drawVizExpanded);
+  const cv = $('vizExpandCanvas'), c = cv.getContext('2d'), dpr = window.devicePixelRatio || 1;
+  cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr; c.scale(dpr, dpr);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const pad = { top: 12, bottom: 18, left: 42, right: 12 };
+  const plotW = w - pad.left - pad.right;
+  const now = Date.now();
+  const sessionElapsed = songStartedAt ? (now - songStartedAt) : 5 * 60 * 1000;
+  const windowMs = Math.max(5 * 60 * 1000, sessionElapsed + 30000);
+  const tStart = now - windowMs;
+  function tx(t) { return pad.left + Math.max(0, Math.min(1, (t - tStart) / windowMs)) * plotW; }
+
+  c.clearRect(0, 0, w, h);
+
+  const rowH = (h - pad.top - pad.bottom - 24) / 3;
+  const rows = [
+    { top: pad.top, h: rowH },
+    { top: pad.top + rowH + 12, h: rowH },
+    { top: pad.top + 2 * (rowH + 12), h: rowH },
+  ];
+
+  // Time ticks
+  const totalMin = windowMs / 60000;
+  const tickStep = totalMin <= 5 ? 1 : totalMin <= 15 ? 2 : totalMin <= 30 ? 5 : 10;
+  function drawTicks(row) {
+    c.font = '10px sans-serif'; c.fillStyle = 'rgba(150,150,180,0.4)';
+    c.strokeStyle = 'rgba(150,150,180,0.08)'; c.lineWidth = 0.5;
+    for (let m = tickStep; m <= totalMin; m += tickStep) {
+      const t = now - m * 60000; if (t < tStart) continue;
+      const x = tx(t);
+      c.fillText('-' + m + 'm', x - 10, row.top + row.h + 14);
+      c.beginPath(); c.moveTo(x, row.top); c.lineTo(x, row.top + row.h); c.stroke();
+    }
+  }
+
+  // Break bands
+  function drawBreaks(row) {
+    for (const bp of breakPeriods) {
+      if (!bp.start) continue;
+      const end = bp.end || now; if (end < tStart) continue;
+      const x1 = tx(Math.max(bp.start, tStart)), x2 = tx(Math.min(end, now));
+      c.fillStyle = 'rgba(138,180,248,0.06)'; c.fillRect(x1, row.top, x2 - x1, row.h);
+    }
+  }
+
+  // Empty state helper
+  function drawExpandedEmpty(row, label, color) {
+    c.fillStyle = color.replace(/[\d.]+\)$/, '0.15)');
+    c.font = '12px sans-serif';
+    c.fillText(label, pad.left + 4, row.top + 16);
+    c.fillStyle = color.replace(/[\d.]+\)$/, '0.25)');
+    c.font = '13px sans-serif';
+    c.fillText('Waiting for data...', pad.left + plotW / 2 - 50, row.top + row.h / 2 + 5);
+    c.strokeStyle = color.replace(/[\d.]+\)$/, '0.08)'); c.lineWidth = 1;
+    c.strokeRect(pad.left, row.top, plotW, row.h);
+    drawTicks(row);
+  }
+
+  // RMSSD
+  if (rmssdHistory.length > 1) {
+    const r = rows[0];
+    const data = rmssdHistory.map((v, i, arr) => ({ time: now - (arr.length - 1 - i) * 1000, val: v }));
+    const visible = data.filter(d => d.time >= tStart);
+    if (visible.length > 1) {
+      const vals = visible.map(d => d.val);
+      const mn = Math.min(...vals) * 0.85, mx = Math.max(...vals) * 1.1;
+      const range = Math.max(mx - mn, 5);
+      function ry(v) { return r.top + r.h - (v - mn) / range * r.h; }
+      drawBreaks(r);
+      if (rmssdBaseline) {
+        const by = ry(rmssdBaseline);
+        if (by > r.top && by < r.top + r.h) {
+          c.strokeStyle = 'rgba(255,255,100,0.3)'; c.lineWidth = 1; c.setLineDash([4, 4]);
+          c.beginPath(); c.moveTo(pad.left, by); c.lineTo(pad.left + plotW, by); c.stroke();
+          c.setLineDash([]);
+          c.fillStyle = 'rgba(255,255,100,0.6)'; c.font = '10px sans-serif';
+          c.fillText('baseline ' + rmssdBaseline.toFixed(0) + 'ms', pad.left + plotW - 90, by - 3);
+        }
+      }
+      c.strokeStyle = 'rgba(138,248,180,0.8)'; c.lineWidth = 2; c.beginPath();
+      for (let i = 0; i < visible.length; i++) {
+        const x = tx(visible[i].time), y = ry(visible[i].val);
+        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+      }
+      c.stroke();
+      drawTicks(r);
+      c.fillStyle = 'rgba(138,248,180,0.7)'; c.font = '12px sans-serif';
+      c.fillText('RMSSD (ms)', pad.left + 4, r.top + 14);
+    }
+  } else {
+    drawExpandedEmpty(rows[0], 'RMSSD (ms)', 'rgba(138,248,180,1)');
+  }
+
+  // Heart Rate
+  if (hrHistory.length > 1) {
+    const r = rows[1];
+    const visible = hrHistory.filter(d => d.time >= tStart);
+    if (visible.length > 1) {
+      const vals = visible.map(d => d.hr);
+      const mn = Math.min(...vals) - 5, mx = Math.max(...vals) + 5;
+      const range = Math.max(mx - mn, 10);
+      function hy(v) { return r.top + r.h - (v - mn) / range * r.h; }
+      drawBreaks(r);
+      c.strokeStyle = 'rgba(248,138,138,0.7)'; c.lineWidth = 2; c.beginPath();
+      for (let i = 0; i < visible.length; i++) {
+        const x = tx(visible[i].time), y = hy(visible[i].hr);
+        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+      }
+      c.stroke();
+      drawTicks(r);
+      c.fillStyle = 'rgba(248,138,138,0.6)'; c.font = '12px sans-serif';
+      c.fillText('Heart Rate (bpm)', pad.left + 4, r.top + 14);
+    }
+  } else {
+    drawExpandedEmpty(rows[1], 'Heart Rate (bpm)', 'rgba(248,138,138,1)');
+  }
+
+  // Fatigue
+  if (fatigueHistory.length > 1) {
+    const r = rows[2];
+    const visible = fatigueHistory.filter(d => d.time >= tStart);
+    if (visible.length > 1) {
+      const mn = 0, mx = 100, range = 100;
+      function fy(v) { return r.top + r.h - (v - mn) / range * r.h; }
+      drawBreaks(r);
+      c.strokeStyle = 'rgba(248,180,138,0.7)'; c.lineWidth = 2; c.beginPath();
+      for (let i = 0; i < visible.length; i++) {
+        const x = tx(visible[i].time), y = fy(visible[i].score);
+        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+      }
+      c.stroke();
+      drawTicks(r);
+      c.fillStyle = 'rgba(248,180,138,0.6)'; c.font = '12px sans-serif';
+      c.fillText('Fatigue Score', pad.left + 4, r.top + 14);
+    }
+  } else {
+    drawExpandedEmpty(rows[2], 'Fatigue Score', 'rgba(248,180,138,1)');
+  }
+}
+
 function drawBg(){
   if(!playing)return;
   const cv=$('bgCanvas'),c=cv.getContext('2d'),dpr=window.devicePixelRatio||1;
@@ -6356,8 +6526,133 @@ let hrHistory=[];       // {time, hr} — heart rate over time
 let fatigueHistory=[];  // {time, score} — fatigue score over time
 let breakPeriods=[];    // {start, end} — for highlighting on timeline
 
+// ---- POLAR H10 ECG STREAMING ----
+// Uses Polar's proprietary Measurement Data (PMD) service. Stream is 130Hz, 14-bit.
+// Purely visual — not logged or analyzed.
+const PMD_SERVICE = 'fb005c80-02e7-f387-1cad-8acd2d8df0c8';
+const PMD_CONTROL = 'fb005c81-02e7-f387-1cad-8acd2d8df0c8';
+const PMD_DATA    = 'fb005c82-02e7-f387-1cad-8acd2d8df0c8';
+const ECG_SR = 130; // samples per second
+const ECG_WIN_SEC = 6;
+const ECG_BUF_SEC = 12; // big enough to hold ~1s lead + window
+let ecgBuffer = new Float32Array(ECG_SR * ECG_BUF_SEC);
+let ecgWriteIdx = 0;        // next sample write position (advances as BLE frames arrive)
+let ecgReadHead = 0;        // smooth display head (advances at constant ECG_SR)
+let ecgLastDrawT = 0;
+const ECG_TARGET_LAG = ECG_SR; // keep display ~1s behind write head
+let ecgTotalWritten = 0; // monotonic count of samples written (never wraps)
+let ecgAnimating = false;
+let ecgCtrlChar = null;
+let ecgDataChar = null;
+
+function parseEcgFrame(dv) {
+  // byte 0 = 0x00 (ECG), bytes 1-8 = uint64 timestamp ns, byte 9 = frame type
+  if (dv.byteLength < 10 || dv.getUint8(0) !== 0x00) return;
+  const frameType = dv.getUint8(9);
+  if (frameType !== 0x00) return; // only 0=130Hz 14-bit
+  // Samples start at byte 10 — each is signed int24 LE in microvolts
+  for (let i = 10; i + 2 < dv.byteLength; i += 3) {
+    let v = dv.getUint8(i) | (dv.getUint8(i+1) << 8) | (dv.getUint8(i+2) << 16);
+    if (v & 0x800000) v |= 0xFF000000; // sign extend
+    ecgBuffer[ecgWriteIdx] = v;
+    ecgWriteIdx = (ecgWriteIdx + 1) % ecgBuffer.length;
+    ecgTotalWritten++;
+  }
+}
+
+function drawEcg(ts) {
+  if (!ecgAnimating) return;
+  requestAnimationFrame(drawEcg);
+  const N = ecgBuffer.length;
+  // Advance read head at a steady 130Hz, but never past (write - target_lag)
+  if (!ecgLastDrawT) ecgLastDrawT = ts;
+  const dt = Math.min(0.1, (ts - ecgLastDrawT) / 1000);
+  ecgLastDrawT = ts;
+  // Signed distance from read to write (mod N)
+  const distToWrite = ((ecgWriteIdx - ecgReadHead) + N) % N;
+  const lag = distToWrite; // how many samples ahead the writer is
+  // Don't advance until we've built up enough buffer
+  let advance = 0;
+  if (lag > ECG_TARGET_LAG) {
+    advance = dt * ECG_SR;
+    if (lag > ECG_TARGET_LAG * 1.5) advance *= 1.15;      // writer pulled ahead → speed up
+    else if (lag < ECG_TARGET_LAG * 1.1) advance *= 0.85;  // near target → slow down
+    advance = Math.min(advance, Math.max(0, lag - ECG_TARGET_LAG * 0.5));
+  }
+  ecgReadHead = (ecgReadHead + advance) % N;
+
+  const cv = $('ecgCanvas'); if (!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== w * dpr || cv.height !== h * dpr) {
+    cv.width = w * dpr; cv.height = h * dpr;
+  }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  // Clamp display window to samples that have actually been written
+  const fullWin = ECG_SR * ECG_WIN_SEC;
+  const availSamples = Math.min(fullWin, Math.max(0, ecgTotalWritten - ECG_TARGET_LAG));
+  if (availSamples < 2) return; // not enough data yet
+  const winSamples = availSamples;
+  const endIdx = Math.floor(ecgReadHead + N) % N;
+  const startIdx = (endIdx - winSamples + N) % N;
+  // Autoscale from visible window only
+  let mn = Infinity, mx = -Infinity;
+  for (let i = 0; i < winSamples; i++) {
+    const v = ecgBuffer[((startIdx + i) | 0) % N];
+    if (v < mn) mn = v; if (v > mx) mx = v;
+  }
+  if (!isFinite(mn) || mx === mn) { mn = -1000; mx = 1000; }
+  const pad = (mx - mn) * 0.1; mn -= pad; mx += pad;
+  ctx.strokeStyle = '#7fe3a0'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  // Use fractional read head for sub-sample smoothness
+  for (let px = 0; px < w; px++) {
+    const frac = px / (w - 1);
+    const sIdxFloat = startIdx + frac * (winSamples - 1);
+    const i0 = Math.floor(sIdxFloat) % N;
+    const i1 = (i0 + 1) % N;
+    const t = sIdxFloat - Math.floor(sIdxFloat);
+    const v = ecgBuffer[i0] * (1 - t) + ecgBuffer[i1] * t;
+    const y = h - ((v - mn) / (mx - mn)) * h;
+    if (px === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
+  }
+  ctx.stroke();
+}
+
+async function startEcgStream(server) {
+  try {
+    const sv = await server.getPrimaryService(PMD_SERVICE);
+    ecgCtrlChar = await sv.getCharacteristic(PMD_CONTROL);
+    ecgDataChar = await sv.getCharacteristic(PMD_DATA);
+    await ecgDataChar.startNotifications();
+    ecgDataChar.addEventListener('characteristicvaluechanged', (e) => parseEcgFrame(e.target.value));
+    // Write: request ECG stream at 130Hz, 14-bit resolution
+    // Command: 02 (start measurement), 00 (ECG), 00 01 82 00 (sample rate 130), 01 01 0E 00 (resolution 14)
+    const cmd = new Uint8Array([0x02, 0x00, 0x00, 0x01, 0x82, 0x00, 0x01, 0x01, 0x0E, 0x00]);
+    await ecgCtrlChar.writeValue(cmd);
+    ecgBuffer.fill(0); ecgWriteIdx = 0; ecgTotalWritten = 0;
+    ecgReadHead = 0;
+    ecgLastDrawT = 0;
+    $('ecgWrap').style.display = 'block';
+    ecgAnimating = true;
+    requestAnimationFrame(drawEcg);
+  } catch (e) {
+    console.warn('ECG stream unavailable:', e.message);
+  }
+}
+
+function stopEcgStream() {
+  ecgAnimating = false;
+  $('ecgWrap').style.display = 'none';
+  ecgCtrlChar = null; ecgDataChar = null;
+}
+
 $('bleBtn').addEventListener('click',async()=>{
   if(bleDevice){if(bleDevice.gatt.connected)bleDevice.gatt.disconnect();bleDevice=null;
+    stopEcgStream();
     $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');
     $('bioTitle').textContent='Biofeedback';
     $('hrVal').textContent='--';$('rmssdVal').textContent='--';$('stateVal').textContent='--';return;}
@@ -6371,12 +6666,13 @@ $('bleBtn').addEventListener('click',async()=>{
   }
   try{
     $('bleBtn').textContent='Scanning...';
-    bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:['heart_rate']}],optionalServices:['heart_rate']});
+    bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:['heart_rate']}],optionalServices:['heart_rate', PMD_SERVICE]});
     bleDevice.addEventListener('gattserverdisconnected',()=>{
       const wasName = (bleDevice && bleDevice.name && bleDevice.name.trim()) || 'Heart rate monitor';
       $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');bleDevice=null;
       $('bioTitle').textContent='Biofeedback';
       $('bioIndicator').style.display='none';
+      stopEcgStream();
       logEvent('ble_disconnected');
       if(playing){
         $('status').textContent = wasName + ' disconnected — biofeedback paused';
@@ -6384,9 +6680,14 @@ $('bleBtn').addEventListener('click',async()=>{
         speak(wasName + ' disconnected. Reconnect for biofeedback.');
       }
     });
-    const sv=await(await bleDevice.gatt.connect()).getPrimaryService('heart_rate');
+    const server = await bleDevice.gatt.connect();
+    const sv=await server.getPrimaryService('heart_rate');
     const ch=await sv.getCharacteristic('heart_rate_measurement');
     await ch.startNotifications();ch.addEventListener('characteristicvaluechanged',handleHRM);
+    // If this looks like a Polar H10, also start the ECG stream (visual only)
+    if (bleDevice.name && /polar\s*h10/i.test(bleDevice.name)) {
+      startEcgStream(server);
+    }
     $('bleBtn').textContent='Disconnect';$('bleBtn').classList.add('connected');
     const devName = (bleDevice.name && bleDevice.name.trim()) || 'Heart Rate Monitor';
     $('bioTitle').textContent = 'Biofeedback — ' + devName;
@@ -6603,7 +6904,7 @@ const Breaks = {
     const msg = urgent ? "Your body could use a break" : "Check in — how does your body feel?";
     playAttentionChime('break');
     flashTitle(urgent ? '⚠ Break — Attune' : '· Break check — Attune');
-    speak(msg);
+    speak(msg + '. Check the screen to choose from a few break options.');
 
     // Auto-dismiss after 2 minutes and do breathing intervention instead
     if (Breaks.reminderTimer) clearTimeout(Breaks.reminderTimer);
