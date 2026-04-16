@@ -295,7 +295,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 </div>
 <div id="vizExpandOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,5,15,.92);backdrop-filter:blur(12px);padding:20px;box-sizing:border-box;overflow:auto">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-<span style="color:#aac;font-size:14px;letter-spacing:.05em">Session History</span>
+<span id="vizExpandTitle" style="color:#aac;font-size:14px;letter-spacing:.05em">Session History</span>
 <button id="vizCollapseBtn" style="font-size:13px;padding:4px 12px;background:rgba(80,80,120,.4);border:1px solid rgba(120,120,160,.3);border-radius:4px;color:#aac;cursor:pointer">✕ Close</button>
 </div>
 <canvas id="vizExpandCanvas" style="width:100%;height:calc(100vh - 80px);display:block;background:rgba(10,10,20,.6);border:1px solid rgba(80,80,120,.2);border-radius:8px"></canvas>
@@ -705,7 +705,7 @@ function openHistoryOverlay() {
         <td>${s.avgRmssd != null ? s.avgRmssd.toFixed(0) : '--'}</td>
         <td>${s.focusSpans || 0} spans</td>
         <td>${s.interventions || 0}</td>
-        <td><button class="history-export-btn" data-idx="${idx}">Export</button></td>
+        <td><button class="history-expand-btn" data-idx="${idx}" style="background:none;border:1px solid rgba(138,180,248,0.35);color:#8ab4f8;font-size:10px;padding:2px 8px;border-radius:4px;cursor:pointer;margin-right:4px">Expand</button><button class="history-export-btn" data-idx="${idx}">Export</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -1014,22 +1014,34 @@ function renderSongHistoryList() {
 $('historyBtn').addEventListener('click', openHistoryOverlay);
 $('historyClose').addEventListener('click', () => $('historyOverlay').classList.remove('active'));
 
-// Export individual session from history
+// Expand / Export individual session from history
 $('historyBody').addEventListener('click', (e) => {
-  if (!e.target.classList.contains('history-export-btn')) return;
   const idx = parseInt(e.target.dataset.idx);
+  if (isNaN(idx)) return;
   const sessions = (currentProfile.recentSessions || []).slice().reverse();
   const s = sessions[idx];
   if (!s) return;
-  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const dateStr = new Date(s.date).toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const modeTag = s.jhana ? 'jhana-' : s.shamanic ? 'shaman-' : s.bedtime ? 'bedtime-' : '';
-  a.download = `attune-${modeTag}session-${dateStr}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  if (e.target.classList.contains('history-expand-btn')) {
+    vizExpandSession = s;
+    const d = new Date(s.date);
+    const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const modeLabel = s.jhana ? 'Jhana' : s.shamanic ? 'Shamanic' : s.bedtime ? 'Bedtime' : 'Focus';
+    $('vizExpandTitle').textContent = `${dateStr} · ${modeLabel} · ${(s.durationMin||0).toFixed(0)}m`;
+    $('vizExpandOverlay').style.display = 'block';
+    if (!vizExpandAnim) drawVizExpanded();
+    return;
+  }
+  if (e.target.classList.contains('history-export-btn')) {
+    const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date(s.date).toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const modeTag = s.jhana ? 'jhana-' : s.shamanic ? 'shaman-' : s.bedtime ? 'bedtime-' : '';
+    a.download = `attune-${modeTag}session-${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 });
 
 // Export all sessions as a single JSON array
@@ -5691,6 +5703,17 @@ $('playBtn').addEventListener('click', async()=>{
     stopJhanaJourney();
     stopBedtimeJourney();
     stopEntrainmentCarrier();
+    try { tts.cancel(); } catch(e){}
+    if (inBreathingMode) { try { exitBreathingMode(); } catch(e){} }
+    if (Breaks.inMode) { try { Breaks.exit(); } catch(e){} }
+    if (Breaks.suggestionShown) {
+      Breaks.suggestionShown = false;
+      Breaks.suggestionUrgent = false;
+      if (Breaks.reminderTimer) { clearInterval(Breaks.reminderTimer); Breaks.reminderTimer = null; }
+      $('calOverlay').classList.remove('active');
+      flashTitle(null);
+    }
+    try { tts.cancel(); } catch(e){} // re-cancel after exit handlers in case they queued cues
     if(ac){masterGain.gain.linearRampToValueAtTime(0,ac.currentTime+0.3);setTimeout(()=>ac.suspend(),400);}
   }
 });
@@ -6351,27 +6374,43 @@ $('hrvViz').addEventListener('mouseleave', () => {
 });
 
 let vizExpandAnim = null;
+let vizExpandSession = null; // when set, expand overlay renders this historical session
 $('vizExpandBtn').addEventListener('click', () => {
+  vizExpandSession = null;
+  $('vizExpandTitle').textContent = 'Session History';
   $('vizExpandOverlay').style.display = 'block';
   if (!vizExpandAnim) drawVizExpanded();
 });
 $('vizCollapseBtn').addEventListener('click', () => {
   $('vizExpandOverlay').style.display = 'none';
   if (vizExpandAnim) { cancelAnimationFrame(vizExpandAnim); vizExpandAnim = null; }
+  vizExpandSession = null;
 });
 
 function drawVizExpanded() {
   if ($('vizExpandOverlay').style.display === 'none') { vizExpandAnim = null; return; }
   vizExpandAnim = requestAnimationFrame(drawVizExpanded);
+  const hist = vizExpandSession;
   const cv = $('vizExpandCanvas'), c = cv.getContext('2d'), dpr = window.devicePixelRatio || 1;
   cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr; c.scale(dpr, dpr);
   const w = cv.clientWidth, h = cv.clientHeight;
   const pad = { top: 12, bottom: 18, left: 42, right: 12 };
   const plotW = w - pad.left - pad.right;
-  const now = Date.now();
-  const sessionElapsed = songStartedAt ? (now - songStartedAt) : 5 * 60 * 1000;
-  const windowMs = Math.max(5 * 60 * 1000, sessionElapsed + 30000);
-  const tStart = now - windowMs;
+
+  let now, tStart, windowMs, useRelativeTicks;
+  if (hist) {
+    const durMs = Math.max((hist.durationMin || 1) * 60000, 60000);
+    now = durMs;
+    tStart = 0;
+    windowMs = durMs;
+    useRelativeTicks = true;
+  } else {
+    now = Date.now();
+    const sessionElapsed = songStartedAt ? (now - songStartedAt) : 5 * 60 * 1000;
+    windowMs = Math.max(5 * 60 * 1000, sessionElapsed + 30000);
+    tStart = now - windowMs;
+    useRelativeTicks = false;
+  }
   function tx(t) { return pad.left + Math.max(0, Math.min(1, (t - tStart) / windowMs)) * plotW; }
 
   c.clearRect(0, 0, w, h);
@@ -6389,18 +6428,28 @@ function drawVizExpanded() {
   function drawTicks(row) {
     c.font = '10px sans-serif'; c.fillStyle = 'rgba(150,150,180,0.4)';
     c.strokeStyle = 'rgba(150,150,180,0.08)'; c.lineWidth = 0.5;
-    for (let m = tickStep; m <= totalMin; m += tickStep) {
-      const t = now - m * 60000; if (t < tStart) continue;
-      const x = tx(t);
-      c.fillText('-' + m + 'm', x - 10, row.top + row.h + 14);
-      c.beginPath(); c.moveTo(x, row.top); c.lineTo(x, row.top + row.h); c.stroke();
+    if (useRelativeTicks) {
+      for (let m = tickStep; m <= totalMin + 0.01; m += tickStep) {
+        const t = m * 60000; if (t > now + 1) continue;
+        const x = tx(t);
+        c.fillText(m + 'm', x - 8, row.top + row.h + 14);
+        c.beginPath(); c.moveTo(x, row.top); c.lineTo(x, row.top + row.h); c.stroke();
+      }
+    } else {
+      for (let m = tickStep; m <= totalMin; m += tickStep) {
+        const t = now - m * 60000; if (t < tStart) continue;
+        const x = tx(t);
+        c.fillText('-' + m + 'm', x - 10, row.top + row.h + 14);
+        c.beginPath(); c.moveTo(x, row.top); c.lineTo(x, row.top + row.h); c.stroke();
+      }
     }
   }
 
   // Break bands
   function drawBreaks(row) {
-    for (const bp of breakPeriods) {
-      if (!bp.start) continue;
+    const bps = hist ? (hist.breakPeriodsList || []) : breakPeriods;
+    for (const bp of bps) {
+      if (bp.start == null) continue;
       const end = bp.end || now; if (end < tStart) continue;
       const x1 = tx(Math.max(bp.start, tStart)), x2 = tx(Math.min(end, now));
       c.fillStyle = 'rgba(138,180,248,0.06)'; c.fillRect(x1, row.top, x2 - x1, row.h);
@@ -6414,89 +6463,113 @@ function drawVizExpanded() {
     c.fillText(label, pad.left + 4, row.top + 16);
     c.fillStyle = color.replace(/[\d.]+\)$/, '0.25)');
     c.font = '13px sans-serif';
-    c.fillText('Waiting for data...', pad.left + plotW / 2 - 50, row.top + row.h / 2 + 5);
+    const msg = hist ? 'No data recorded' : 'Waiting for data...';
+    c.fillText(msg, pad.left + plotW / 2 - 50, row.top + row.h / 2 + 5);
     c.strokeStyle = color.replace(/[\d.]+\)$/, '0.08)'); c.lineWidth = 1;
     c.strokeRect(pad.left, row.top, plotW, row.h);
     drawTicks(row);
   }
 
-  // RMSSD
-  if (rmssdHistory.length > 1) {
-    const r = rows[0];
-    const data = rmssdHistory.map((v, i, arr) => ({ time: now - (arr.length - 1 - i) * 1000, val: v }));
-    const visible = data.filter(d => d.time >= tStart);
-    if (visible.length > 1) {
-      const vals = visible.map(d => d.val);
-      const mn = Math.min(...vals) * 0.85, mx = Math.max(...vals) * 1.1;
-      const range = Math.max(mx - mn, 5);
-      function ry(v) { return r.top + r.h - (v - mn) / range * r.h; }
-      drawBreaks(r);
-      if (rmssdBaseline) {
-        const by = ry(rmssdBaseline);
-        if (by > r.top && by < r.top + r.h) {
-          c.strokeStyle = 'rgba(255,255,100,0.3)'; c.lineWidth = 1; c.setLineDash([4, 4]);
-          c.beginPath(); c.moveTo(pad.left, by); c.lineTo(pad.left + plotW, by); c.stroke();
-          c.setLineDash([]);
-          c.fillStyle = 'rgba(255,255,100,0.6)'; c.font = '10px sans-serif';
-          c.fillText('baseline ' + rmssdBaseline.toFixed(0) + 'ms', pad.left + plotW - 90, by - 3);
-        }
-      }
-      c.strokeStyle = 'rgba(138,248,180,0.8)'; c.lineWidth = 2; c.beginPath();
-      for (let i = 0; i < visible.length; i++) {
-        const x = tx(visible[i].time), y = ry(visible[i].val);
-        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
-      }
-      c.stroke();
-      drawTicks(r);
-      c.fillStyle = 'rgba(138,248,180,0.7)'; c.font = '12px sans-serif';
-      c.fillText('RMSSD (ms)', pad.left + 4, r.top + 14);
+  // Prepare data sources
+  let rmssdVisible = null, baselineForRow = null;
+  if (hist) {
+    baselineForRow = hist.rmssdBaseline;
+    const series = hist.rmssdSeries;
+    if (series && series.length > 1) {
+      const step = windowMs / Math.max(series.length - 1, 1);
+      rmssdVisible = series.map((v, i) => ({ time: i * step, val: v }));
     }
+  } else {
+    baselineForRow = rmssdBaseline;
+    if (rmssdHistory.length > 1) {
+      const data = rmssdHistory.map((v, i, arr) => ({ time: now - (arr.length - 1 - i) * 1000, val: v }));
+      rmssdVisible = data.filter(d => d.time >= tStart);
+    }
+  }
+
+  let hrVisible = null;
+  if (hist) {
+    const series = hist.hrSeries;
+    if (series && series.length > 1) hrVisible = series.map(([t, hr]) => ({ time: t, hr }));
+  } else if (hrHistory.length > 1) {
+    hrVisible = hrHistory.filter(d => d.time >= tStart);
+  }
+
+  let fatigueVisible = null;
+  if (hist) {
+    const series = hist.fatigueSeries;
+    if (series && series.length > 1) fatigueVisible = series.map(([t, score]) => ({ time: t, score }));
+  } else if (fatigueHistory.length > 1) {
+    fatigueVisible = fatigueHistory.filter(d => d.time >= tStart);
+  }
+
+  // RMSSD
+  if (rmssdVisible && rmssdVisible.length > 1) {
+    const r = rows[0];
+    const vals = rmssdVisible.map(d => d.val);
+    const mn = Math.min(...vals) * 0.85, mx = Math.max(...vals) * 1.1;
+    const range = Math.max(mx - mn, 5);
+    function ry(v) { return r.top + r.h - (v - mn) / range * r.h; }
+    drawBreaks(r);
+    if (baselineForRow) {
+      const by = ry(baselineForRow);
+      if (by > r.top && by < r.top + r.h) {
+        c.strokeStyle = 'rgba(255,255,100,0.3)'; c.lineWidth = 1; c.setLineDash([4, 4]);
+        c.beginPath(); c.moveTo(pad.left, by); c.lineTo(pad.left + plotW, by); c.stroke();
+        c.setLineDash([]);
+        c.fillStyle = 'rgba(255,255,100,0.6)'; c.font = '10px sans-serif';
+        c.fillText('baseline ' + baselineForRow.toFixed(0) + 'ms', pad.left + plotW - 90, by - 3);
+      }
+    }
+    c.strokeStyle = 'rgba(138,248,180,0.8)'; c.lineWidth = 2; c.beginPath();
+    for (let i = 0; i < rmssdVisible.length; i++) {
+      const x = tx(rmssdVisible[i].time), y = ry(rmssdVisible[i].val);
+      i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+    }
+    c.stroke();
+    drawTicks(r);
+    c.fillStyle = 'rgba(138,248,180,0.7)'; c.font = '12px sans-serif';
+    c.fillText('RMSSD (ms)', pad.left + 4, r.top + 14);
   } else {
     drawExpandedEmpty(rows[0], 'RMSSD (ms)', 'rgba(138,248,180,1)');
   }
 
   // Heart Rate
-  if (hrHistory.length > 1) {
+  if (hrVisible && hrVisible.length > 1) {
     const r = rows[1];
-    const visible = hrHistory.filter(d => d.time >= tStart);
-    if (visible.length > 1) {
-      const vals = visible.map(d => d.hr);
-      const mn = Math.min(...vals) - 5, mx = Math.max(...vals) + 5;
-      const range = Math.max(mx - mn, 10);
-      function hy(v) { return r.top + r.h - (v - mn) / range * r.h; }
-      drawBreaks(r);
-      c.strokeStyle = 'rgba(248,138,138,0.7)'; c.lineWidth = 2; c.beginPath();
-      for (let i = 0; i < visible.length; i++) {
-        const x = tx(visible[i].time), y = hy(visible[i].hr);
-        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
-      }
-      c.stroke();
-      drawTicks(r);
-      c.fillStyle = 'rgba(248,138,138,0.6)'; c.font = '12px sans-serif';
-      c.fillText('Heart Rate (bpm)', pad.left + 4, r.top + 14);
+    const vals = hrVisible.map(d => d.hr);
+    const mn = Math.min(...vals) - 5, mx = Math.max(...vals) + 5;
+    const range = Math.max(mx - mn, 10);
+    function hy(v) { return r.top + r.h - (v - mn) / range * r.h; }
+    drawBreaks(r);
+    c.strokeStyle = 'rgba(248,138,138,0.7)'; c.lineWidth = 2; c.beginPath();
+    for (let i = 0; i < hrVisible.length; i++) {
+      const x = tx(hrVisible[i].time), y = hy(hrVisible[i].hr);
+      i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
     }
+    c.stroke();
+    drawTicks(r);
+    c.fillStyle = 'rgba(248,138,138,0.6)'; c.font = '12px sans-serif';
+    c.fillText('Heart Rate (bpm)', pad.left + 4, r.top + 14);
   } else {
     drawExpandedEmpty(rows[1], 'Heart Rate (bpm)', 'rgba(248,138,138,1)');
   }
 
   // Fatigue
-  if (fatigueHistory.length > 1) {
+  if (fatigueVisible && fatigueVisible.length > 1) {
     const r = rows[2];
-    const visible = fatigueHistory.filter(d => d.time >= tStart);
-    if (visible.length > 1) {
-      const mn = 0, mx = 100, range = 100;
-      function fy(v) { return r.top + r.h - (v - mn) / range * r.h; }
-      drawBreaks(r);
-      c.strokeStyle = 'rgba(248,180,138,0.7)'; c.lineWidth = 2; c.beginPath();
-      for (let i = 0; i < visible.length; i++) {
-        const x = tx(visible[i].time), y = fy(visible[i].score);
-        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
-      }
-      c.stroke();
-      drawTicks(r);
-      c.fillStyle = 'rgba(248,180,138,0.6)'; c.font = '12px sans-serif';
-      c.fillText('Fatigue Score', pad.left + 4, r.top + 14);
+    const mn = 0, mx = 100, range = 100;
+    function fy(v) { return r.top + r.h - (v - mn) / range * r.h; }
+    drawBreaks(r);
+    c.strokeStyle = 'rgba(248,180,138,0.7)'; c.lineWidth = 2; c.beginPath();
+    for (let i = 0; i < fatigueVisible.length; i++) {
+      const x = tx(fatigueVisible[i].time), y = fy(fatigueVisible[i].score);
+      i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
     }
+    c.stroke();
+    drawTicks(r);
+    c.fillStyle = 'rgba(248,180,138,0.6)'; c.font = '12px sans-serif';
+    c.fillText('Fatigue Score', pad.left + 4, r.top + 14);
   } else {
     drawExpandedEmpty(rows[2], 'Fatigue Score', 'rgba(248,180,138,1)');
   }
@@ -8135,9 +8208,15 @@ function exitBreathingMode() {
   $('calPhase').textContent = '';
   recoveryCount = 0;
   flashTitle(null);
-  // Suppress stress detection for 60s post-breathing (RMSSD drops back from elevated breathing levels)
+  // Post-breathing cooldown — wider than 60s, because during high-stress work
+  // (e.g. a rough day) RMSSD can drop again almost immediately and we don't
+  // want to fire breathing interventions back-to-back every few minutes.
   stressCount = 0;
-  hrSpikeSuppress = Date.now() + 60000;
+  hrSpikeSuppress = Date.now() + 240000; // 4 min suppression before stress can count again
+  // Drain fatigue score so an URGENT break suggestion doesn't immediately
+  // follow the breathing intervention the user just completed.
+  Breaks.fatigueScore = Math.min(Breaks.fatigueScore, 30);
+  Breaks.suggestionShown = false;
 
   // Compute summary
   const intervention = sessionLog.interventions[sessionLog.interventions.length-1];
@@ -8803,8 +8882,9 @@ function buildCurrentSession() {
     spans.push({ start: sessionLog.currentFocusStart, end: now, duration: now - sessionLog.currentFocusStart });
   }
   const totalMs = sessionLog.started ? now - sessionLog.started : 0;
+  const sStart = sessionLog.started || now;
   return {
-    date: new Date(sessionLog.started || now).toISOString(),
+    date: new Date(sStart).toISOString(),
     durationMin: +(totalMs / 60000).toFixed(1),
     focusSpans: spans.length,
     interventions: sessionLog.interventions.length,
@@ -8818,6 +8898,14 @@ function buildCurrentSession() {
       initial: sessionLog.initialParams || null,
       final: captureSongParams(),
     },
+    rmssdBaseline: rmssdBaseline != null ? +rmssdBaseline.toFixed(1) : null,
+    rmssdSeries: rmssdHistory.map(v => +v.toFixed(1)),
+    hrSeries: hrHistory.map(h => [h.time - sStart, h.hr]),
+    fatigueSeries: fatigueHistory.filter((_, i) => i % 5 === 0).map(f => [f.time - sStart, +f.score.toFixed(1)]),
+    breakPeriodsList: breakPeriods.filter(b => b.start).map(b => ({
+      start: b.start - sStart,
+      end: (b.end || now) - sStart,
+    })),
   };
 }
 
