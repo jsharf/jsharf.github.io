@@ -300,7 +300,6 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="history-toolbar">
 <button id="historyExportAll">Export All</button>
 </div>
-<button class="overlay-close" id="historyClose" title="Close" aria-label="Close">✕</button>
 <div class="history-title" style="font-size:16px;margin-top:24px">Music Taste Map</div>
 <div style="font-size:11px;color:#6a6a8a;margin-bottom:8px">Songs projected by similarity. <span style="color:#6d6">&#9679;</span> liked <span style="color:#d66">&#9679;</span> disliked <span style="color:#666">&#9679;</span> neutral. Click a dot to select.</div>
 <canvas class="pca-canvas" id="pcaCanvas" width="700" height="300"></canvas>
@@ -332,8 +331,41 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div style="margin-bottom:12px">
 <span id="vizExpandTitle" style="color:#aac;font-size:14px;letter-spacing:.05em">This Session</span>
 </div>
-<button class="overlay-close" id="vizCollapseBtn" title="Close" aria-label="Close">✕</button>
 <canvas id="vizExpandCanvas" style="width:100%;height:calc(100vh - 80px);display:block;background:rgba(10,10,20,.6);border:1px solid rgba(80,80,120,.2);border-radius:8px"></canvas>
+</div>
+<!-- Close buttons live OUTSIDE the overlays so position:fixed anchors to the
+     viewport. Inside the overlay, backdrop-filter creates a new containing
+     block that makes position:fixed behave like position:absolute, which
+     scrolls with the overlay content. -->
+<button class="overlay-close" id="historyClose" title="Close" aria-label="Close" style="display:none">✕</button>
+<button class="overlay-close" id="vizCollapseBtn" title="Close" aria-label="Close" style="display:none">✕</button>
+<!-- Jhana scaffolding selector — appears when entering jhana mode, lets the user
+     commit to a single scaffolding for the sit (Jhourney antipattern #4: bouncing
+     between meditation objects). -->
+<div id="jhanaScaffoldingOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(5,5,15,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:480px;width:100%;background:rgba(20,20,40,.92);border:1px solid rgba(112,184,208,.4);border-radius:18px;padding:28px 24px;box-shadow:0 10px 50px rgba(112,184,208,.12)">
+    <div style="font-size:22px;font-weight:600;color:#e8eef8;letter-spacing:.1em;text-transform:uppercase;text-align:center;margin-bottom:6px">Pick your scaffolding</div>
+    <div style="font-size:13px;color:#9aaac0;text-align:center;margin-bottom:20px;line-height:1.5">What feels right today? We'll stay with this one for the whole sit — no bouncing between techniques.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="jhana-scaff-btn" data-scaff="smile" style="background:rgba(112,184,208,.1);border:1px solid rgba(112,184,208,.35);color:#d0e4f0;padding:12px 16px;border-radius:10px;cursor:pointer;font-size:14px;text-align:left;font-family:inherit;transition:all .2s"><strong>Smile</strong> <span style="color:#8aa8c0;font-size:12px">— a slight smile as the anchor</span></button>
+      <button class="jhana-scaff-btn" data-scaff="loved" style="background:rgba(112,184,208,.1);border:1px solid rgba(112,184,208,.35);color:#d0e4f0;padding:12px 16px;border-radius:10px;cursor:pointer;font-size:14px;text-align:left;font-family:inherit;transition:all .2s"><strong>A loved one</strong> <span style="color:#8aa8c0;font-size:12px">— wish someone well</span></button>
+      <button class="jhana-scaff-btn" data-scaff="phrase" style="background:rgba(112,184,208,.1);border:1px solid rgba(112,184,208,.35);color:#d0e4f0;padding:12px 16px;border-radius:10px;cursor:pointer;font-size:14px;text-align:left;font-family:inherit;transition:all .2s"><strong>Phrases</strong> <span style="color:#8aa8c0;font-size:12px">— "May I be happy, may I be at ease"</span></button>
+      <button class="jhana-scaff-btn" data-scaff="memory" style="background:rgba(112,184,208,.1);border:1px solid rgba(112,184,208,.35);color:#d0e4f0;padding:12px 16px;border-radius:10px;cursor:pointer;font-size:14px;text-align:left;font-family:inherit;transition:all .2s"><strong>A warm memory</strong> <span style="color:#8aa8c0;font-size:12px">— a time you felt happy</span></button>
+      <button class="jhana-scaff-btn" data-scaff="curiosity" style="background:rgba(112,184,208,.1);border:1px solid rgba(112,184,208,.35);color:#d0e4f0;padding:12px 16px;border-radius:10px;cursor:pointer;font-size:14px;text-align:left;font-family:inherit;transition:all .2s"><strong>Just curiosity</strong> <span style="color:#8aa8c0;font-size:12px">— find what pleasantness is already here</span></button>
+    </div>
+  </div>
+</div>
+<!-- Post-jhana journal prompt — one text field for a brief note. -->
+<div id="jhanaJournalOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(5,5,15,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:480px;width:100%;background:rgba(20,20,40,.92);border:1px solid rgba(112,184,208,.4);border-radius:18px;padding:28px 24px;box-shadow:0 10px 50px rgba(112,184,208,.12)">
+    <div style="font-size:20px;font-weight:600;color:#e8eef8;letter-spacing:.08em;text-align:center;margin-bottom:6px">How was the sit?</div>
+    <div style="font-size:13px;color:#9aaac0;text-align:center;margin-bottom:16px;line-height:1.5">One thing that felt different today — a sensation, an insight, or a moment. Just a line. (Optional.)</div>
+    <textarea id="jhanaJournalInput" rows="3" style="width:100%;padding:12px 14px;background:rgba(10,10,25,.8);border:1px solid rgba(112,184,208,.3);border-radius:10px;color:#d8e4f0;font-size:14px;outline:none;margin-bottom:14px;font-family:inherit;resize:vertical" placeholder="e.g. felt a warmth around my chest that stayed…"></textarea>
+    <div style="display:flex;gap:8px">
+      <button id="jhanaJournalSkip" style="flex:1;background:none;border:1px solid rgba(120,140,180,.3);color:#8aa8c0;font-size:13px;padding:11px 14px;border-radius:10px;cursor:pointer;font-family:inherit;transition:all .2s">Skip</button>
+      <button id="jhanaJournalSave" style="flex:1;background:rgba(112,184,208,.18);border:1px solid rgba(112,184,208,.5);color:#d0e4f0;font-size:14px;padding:11px 14px;border-radius:10px;cursor:pointer;font-weight:500;font-family:inherit;transition:all .2s">Save</button>
+    </div>
+  </div>
 </div>
 <div class="cal-overlay" id="calOverlay">
 <div class="breath-circle" id="calCircle"><span class="breath-circle-text" id="calCircleText"></span></div>
@@ -429,29 +461,32 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <button class="song-btn active" data-song="shuffle" title="Randomly switches styles between songs">Shuffle</button>
 <button class="song-btn" data-song="silence" title="No music — biofeedback, interventions, and break suggestions still active">Silence</button>
 <button class="song-btn" data-song="entrainment" title="No instruments — just a soft carrier with brainwave-rate amplitude modulation">Entrainment</button>
-<button class="song-btn" data-song="jazz" title="Upbeat jazzy chords, swung rhythm">Cafe Jazz</button>
+<!-- Calm / chill genres first — easier to settle into at session start -->
+<button class="song-btn" data-song="ambient" title="Spacious minimal, very slow">Ambient</button>
+<button class="song-btn" data-song="chillwave" title="Dreamy washed-out chords">Chillwave</button>
 <button class="song-btn" data-song="lofi" title="Warm mellow chords, head-nod groove">Lo-fi</button>
+<button class="song-btn" data-song="darkambient" title="Cryo Chamber-style, ominous and slow">Dark Ambient</button>
+<button class="song-btn" data-song="jazz" title="Upbeat jazzy chords, swung rhythm">Cafe Jazz</button>
+<button class="song-btn" data-song="bossa" title="Brazilian harmony, light swing">Bossa Nova</button>
+<button class="song-btn" data-song="classical" title="Classical-inspired voicings, flowing">Classical</button>
+<button class="song-btn" data-song="impressionist" title="Debussy/Satie, dreamy suspended chords">Impressionist</button>
+<button class="song-btn" data-song="romantic" title="Chopin-inspired, lush arpeggios">Romantic</button>
 <button class="song-btn" data-song="soul" title="Rich extended chords, smooth groove">Neo Soul</button>
 <button class="song-btn" data-song="rnb" title="Silky progressions, laid-back feel">R&B</button>
-<button class="song-btn" data-song="funk" title="Punchy rhythms, bright chords">Funk</button>
-<button class="song-btn" data-song="bossa" title="Brazilian harmony, light swing">Bossa Nova</button>
-<button class="song-btn" data-song="romantic" title="Chopin-inspired, lush arpeggios">Romantic</button>
-<button class="song-btn" data-song="impressionist" title="Debussy/Satie, dreamy suspended chords">Impressionist</button>
+<button class="song-btn" data-song="cinematic" title="Film score, emotive simple progressions">Cinematic</button>
+<!-- Mid-energy -->
 <button class="song-btn" data-song="waltz" title="3/4 feel, dance-like flow">Waltz</button>
 <button class="song-btn" data-song="tango" title="Dramatic minor, rhythmic intensity">Tango</button>
-<button class="song-btn" data-song="cinematic" title="Film score, emotive simple progressions">Cinematic</button>
-<button class="song-btn" data-song="classical" title="Classical-inspired voicings, flowing">Classical</button>
+<button class="song-btn" data-song="funk" title="Punchy rhythms, bright chords">Funk</button>
+<button class="song-btn" data-song="synthwave" title="80s retro synth, neon vibes">Synthwave</button>
+<!-- High-energy last -->
 <button class="song-btn" data-song="house" title="Four-on-the-floor, uplifting chords">House</button>
 <button class="song-btn" data-song="techno" title="Minimal, driving, hypnotic">Techno</button>
-<button class="song-btn" data-song="synthwave" title="80s retro synth, neon vibes">Synthwave</button>
+<button class="song-btn" data-song="futurebass" title="Big emotional chords, syncopated">Future Bass</button>
 <button class="song-btn" data-song="dnb" title="Fast breakbeats, atmospheric pads">Drum & Bass</button>
 <button class="song-btn" data-song="dubstep" title="Aggressive minor keys, half-time drops">Dubstep</button>
-<button class="song-btn" data-song="futurebass" title="Big emotional chords, syncopated">Future Bass</button>
 <button class="song-btn" data-song="complextro" title="Fast chord changes, Savant-style energy">Complextro</button>
 <button class="song-btn" data-song="chiptune" title="8-bit game music, bright and bouncy">Chiptune</button>
-<button class="song-btn" data-song="chillwave" title="Dreamy washed-out chords">Chillwave</button>
-<button class="song-btn" data-song="darkambient" title="Cryo Chamber-style, ominous and slow">Dark Ambient</button>
-<button class="song-btn" data-song="ambient" title="Spacious minimal, very slow">Ambient</button>
 </div>
 
 <div class="song-label">Focus Mode</div>
@@ -622,6 +657,8 @@ function loadSelectedProfile() {
       rmssdBaseline = currentProfile.rmssdBaseline;
       $('status').textContent = '';
     }
+    // Compute EWMA long-term baseline from session history
+    if (typeof refreshLongTermBaseline === 'function') refreshLongTermBaseline();
     localStorage.setItem('vibefib-lastProfile', name);
   };
 }
@@ -779,6 +816,7 @@ function openHistoryOverlay() {
   clearSongSelection();
 
   $('historyOverlay').classList.add('active');
+  $('historyClose').style.display = 'flex';
 }
 
 let pcaData = null; // cached for click interaction
@@ -891,6 +929,7 @@ function selectSongInMap(idx) {
   $('pcaLoadBtn').onclick = () => {
     applySongParams(song.params);
     $('historyOverlay').classList.remove('active');
+    $('historyClose').style.display = 'none';
   };
 
   // Highlight dot
@@ -1049,6 +1088,7 @@ function renderSongHistoryList() {
     loadBtn.onclick = () => {
       applySongParams(p);
       $('historyOverlay').classList.remove('active');
+      $('historyClose').style.display = 'none';
     };
 
     const exportBtn = document.createElement('button');
@@ -1074,7 +1114,10 @@ function renderSongHistoryList() {
 }
 
 $('historyBtn').addEventListener('click', openHistoryOverlay);
-$('historyClose').addEventListener('click', () => $('historyOverlay').classList.remove('active'));
+$('historyClose').addEventListener('click', () => {
+  $('historyOverlay').classList.remove('active');
+  $('historyClose').style.display = 'none';
+});
 
 // Expand / Export individual session from history
 $('historyBody').addEventListener('click', (e) => {
@@ -1090,6 +1133,7 @@ $('historyBody').addEventListener('click', (e) => {
     const modeLabel = s.jhana ? 'Jhana' : s.shamanic ? 'Shamanic' : s.bedtime ? 'Bedtime' : 'Focus';
     $('vizExpandTitle').textContent = `${dateStr} · ${modeLabel} · ${(s.durationMin||0).toFixed(0)}m`;
     $('vizExpandOverlay').style.display = 'block';
+    $('vizCollapseBtn').style.display = 'flex';
     if (!vizExpandAnim) drawVizExpanded();
     return;
   }
@@ -2203,78 +2247,92 @@ let jhanaRmssdTrend = []; // track RMSSD during jhana for biofeedback
 let jhanaPitiPivotDone = false; // true once biofeedback triggers the piti pivot cue
 let jhanaStableChecks = 0; // consecutive stable CV checks for access concentration detection
 
+// Cue fields:
+//   at: seconds into session
+//   say: what to speak
+//   essential: true → always spoken (PMR commands, opening, closing)
+//   skipIfCalm: true → skip if user has been stably CALM/FLOW for ~30s (silence is the reward)
+//   bowlPause/end: existing special markers
+// Guidance woven in from the Jhourney Retreat v4.6 framework: expectations release,
+// commit-to-one-scaffolding (antipattern #4), bracing-vs-embracing litmus, three
+// gradients naming, awareness-and-love, use-the-fading, body-location hints,
+// emotional arc welcome, forgiveness phrases, joy-without-reason antidote.
 const JHANA_JOURNEY = [
-  // Phase 0: Breath cue intro (0-15s) — just breath sound, no bowls yet
-  { at: 2, say: "Close your eyes. Listen to the wave sound. That's your breath guide." },
-  { at: 8, say: "Breathe with it. Short breath in. Long, slow breath out." },
+  // Phase 0: Breath cue intro (0-30s)
+  { at: 2,  essential: true, say: "Close your eyes. Listen to the wave sound. That's your breath guide." },
+  { at: 8,  essential: true, say: "Breathe with it. Short breath in. Long, slow breath out." },
+  { at: 18, say: "Notice any wish you have for how this session should go. Even the wish for jhana is a wish. See if you can soften it now. We're not trying to get anywhere." },
 
-  // Phase 1: Settling (15s-1 min)
-  { at: 20, say: "Find a comfortable position. Let your body settle." },
-  { at: 45, say: "Keep breathing with the wave. Let it carry you." },
+  // Phase 1: Settling (30s-1 min)
+  { at: 35, essential: true, say: "Find a comfortable position. Let your body settle." },
+  { at: 50, say: "Keep breathing with the wave. Let it carry you." },
 
-  // Phase 1.5: Progressive Muscle Relaxation (1 min - 4:30)
-  // Tense each group ~5-7s, release, notice the contrast
-  { at: 65, say: "We'll release tension from your body now. Starting with your hands." },
-  { at: 80, say: "Make fists. Squeeze them tight. Feel the tension." },
-  { at: 88, say: "And let go. Open your fingers. Feel the difference — that warmth spreading." },
-  { at: 110, say: "Now your arms and shoulders. Shrug your shoulders up toward your ears. Squeeze." },
-  { at: 118, say: "And drop them. Let your arms go completely heavy. Sinking." },
-  { at: 145, say: "Your face. Scrunch everything — forehead, eyes, jaw. Hold it." },
-  { at: 153, say: "And smooth it all out. Jaw loose. Tongue soft. Forehead wide." },
-  { at: 180, say: "Your belly. Tighten your core. Pull in." },
-  { at: 188, say: "And release. Let your belly be soft. Breathe into the space you just created." },
-  { at: 215, say: "Your legs. Press your heels down, tighten your thighs. Hold." },
-  { at: 223, say: "And let go. Feel your whole body now — heavy, warm, open." },
+  // Phase 1.5: Progressive Muscle Relaxation (1 min - 4:30) — all essential
+  { at: 65,  essential: true, say: "We'll release tension from your body now. Starting with your hands." },
+  { at: 80,  essential: true, say: "Make fists. Squeeze them tight. Feel the tension." },
+  { at: 88,  essential: true, say: "And let go. Open your fingers. Feel the difference — that warmth spreading." },
+  { at: 110, essential: true, say: "Now your arms and shoulders. Shrug your shoulders up toward your ears. Squeeze." },
+  { at: 118, essential: true, say: "And drop them. Let your arms go completely heavy. Sinking." },
+  { at: 145, essential: true, say: "Your face. Scrunch everything — forehead, eyes, jaw. Hold it." },
+  { at: 153, essential: true, say: "And smooth it all out. Jaw loose. Tongue soft. Forehead wide." },
+  { at: 180, essential: true, say: "Your belly. Tighten your core. Pull in." },
+  { at: 188, essential: true, say: "And release. Let your belly be soft. Breathe into the space you just created." },
+  { at: 215, essential: true, say: "Your legs. Press your heels down, tighten your thighs. Hold." },
+  { at: 223, essential: true, say: "And let go. Feel your whole body now — heavy, warm, open." },
   { at: 250, say: "Notice how different your body feels from a few minutes ago. This is what releasing tension feels like." },
   { at: 270, say: "This same skill — noticing tension and letting it go — is the whole game of meditation. Physical tension first. Then subtler tension." },
 
   // Phase 2: Scaffolding — finding a pleasant feeling (4:30-8 min)
-  { at: 300, say: "Now, gently smile. Just a slight smile. Notice how it feels." },
-  { at: 340, say: "Think of someone you care about. Wish them well. May they be happy." },
-  { at: 380, say: "Notice any warmth or pleasant feeling that arises. It might be very subtle." },
-  { at: 410, say: "Notice if the bowls give you any tingling, any goosebumps. That feeling is the spark." },
-  { at: 440, say: "You're not trying to create a big feeling. Just find something small and pleasant." },
-  { at: 470, say: "Where in your body do you feel it most? Rest your attention there, gently." },
+  // (When a scaffolding has been pre-selected, scaffoldingCue() rewrites the "say" text
+  // at runtime to match — smile / loved one / phrase / memory / curiosity.)
+  { at: 300, scaffolding: true, say: "Now, gently smile. Just a slight smile. Notice how it feels." },
+  { at: 340, scaffolding: true, say: "Think of someone you care about. Wish them well. May they be happy." },
+  { at: 380, say: "Whichever of these lands most — the smile, a loved one, a phrase, a memory — pick one and stay with it. Don't bounce between them. Commit." },
+  { at: 410, say: "Notice any warmth or pleasant feeling that arises. It might be very subtle. That's the spark." },
+  { at: 440, say: "You don't need a good reason to feel good right now. See what happens if you just let yourself." },
+  { at: 470, say: "You're not trying to create a big feeling. Just find something small and pleasant. Where in your body do you feel it most? Rest your attention there, gently." },
 
   // Phase 3: Attending & pulsing with explicit cadence (8-13 min)
   { at: 510, say: "Gently rest your attention on this pleasant feeling. Like warming your hands by a fire." },
-  { at: 550, say: "Is your smile still there? Even a tiny one. Let it feed the warmth." },
-  { at: 590, say: "If the feeling faded, smile gently. Hold it for one breath. Then release the smile and just rest. Let the feeling come back on its own." },
-  { at: 640, say: "Don't chase the feeling. Don't try to make it bigger. Just enjoy it as it is." },
+  { at: 550, skipIfCalm: true, say: "Is your smile still there? Even a tiny one. Let it feed the warmth." },
+  { at: 590, say: "When the feeling fades, relax into the fading itself. Don't reach for the next pulse. The glide between is where it lives." },
+  { at: 640, skipIfCalm: true, say: "Don't chase the feeling. Don't try to make it bigger. Just enjoy it as it is." },
   { at: 680, say: "Pulse again if needed. Smile or repeat your wish — just for a moment. Then let go and watch." },
-  { at: 720, say: "Any tingling, any pleasant buzz — that's piti. Rest your attention right there." },
-  { at: 760, say: "Think of it like swimming. Each pulse is a stroke. But the glide between strokes — that's where the magic is. Enjoy the glide." },
-  { at: 800, say: "The feeling may grow on its own. Let it. Sink into it." },
+  { at: 720, skipIfCalm: true, say: "Any tingling, any pleasant buzz — that's piti. Rest your attention right there." },
+  { at: 760, say: "Swimming with breaststroke. Each pulse is a stroke. The glide between strokes — that's where the magic is." },
+  { at: 800, skipIfCalm: true, say: "The feeling may grow on its own. Let it. Sink into it." },
 
-  // Phase 4: Deepening — relaxation, enjoyment, curiosity (13-21 min)
-  { at: 850, say: "If your mind wanders, that's fine. Welcome the distraction with kindness. Then gently return." },
-  { at: 900, say: "Here's the secret: you're not building the feeling bigger. You're noticing tiny braces you didn't know you had. What are you holding onto? Let it go." },
-  { at: 960, say: "How might you enjoy this even more? Get curious about the feeling." },
-  { at: 1020, say: "Your smile can be much softer now. Almost invisible. The feeling knows what to do." },
-  { at: 1080, say: "How might you relax even further? What subtle effort are you still making? Can you cut it in half?" },
-  { at: 1140, say: "Let the feeling fill more of your awareness. Don't push. Just allow." },
-  { at: 1200, say: "Are you bracing against anything? Even something subtle — an expectation, a hope, a plan? See if you can soften around it." },
+  // Phase 4: Deepening — three gradients explicit (13-21 min)
+  { at: 850, say: "If your mind wanders, welcome it. No correction needed." },
+  { at: 900, say: "At any moment, three questions. How might I relax into this more? How might I enjoy it more? How might I get more curious about it?" },
+  { at: 960, say: "Ask yourself: am I bracing, or am I embracing? That's the whole question." },
+  { at: 1020, skipIfCalm: true, say: "Your smile can be much softer now. Almost invisible. The feeling knows what to do." },
+  { at: 1080, say: "What subtle effort are you still making? Can you cut it in half? Then in half again." },
+  { at: 1140, skipIfCalm: true, say: "Let the feeling fill more of your awareness. Don't push. Just allow." },
+  { at: 1200, say: "Again: bracing or embracing? If there's a small tension, welcome it like an old friend." },
   { at: 1260, say: "The feeling doesn't need your help to grow. It just needs you to stop getting in its way." },
+  { at: 1320, say: "If a memory arises with a sting, try this gently: 'I forgive you for not understanding.' Or just 'I forgive myself.' See if anything shifts." },
 
-  // Phase 5: Surrender — approaching jhana (21-31 min)
-  { at: 1320, say: "If the pleasant feeling starts pulling you in, let it. Surrender to it.", bowlPause: true },
-  { at: 1400, say: "You don't do the jhana. The jhana does you. Just keep relaxing into the feeling." },
-  { at: 1480, say: "Notice: are you still efforting? Can you let go even more? Cut your effort in half. Then half again." },
-  { at: 1560, say: "Whatever you're experiencing — whether it feels big or subtle, dramatic or quiet — trust it. There's no wrong experience here." },
-  { at: 1640, say: "The feeling may feel self-sustaining now. Like a wave carrying you. Let it." },
-  { at: 1720, say: "This may already be closer to jhana than you think. Don't look for something different. Rest in what's here." },
-  { at: 1800, say: "Rest here. Just be with what's here. We'll keep going for a while longer." },
+  // Phase 5: Surrender — approaching jhana (22-31 min)
+  { at: 1380, say: "If the pleasant feeling starts pulling you in, let it. Surrender to it.", bowlPause: true },
+  { at: 1460, say: "You don't do the jhana. The jhana does you. Just keep relaxing into the feeling." },
+  { at: 1540, say: "It's awareness and love all the way down. That's the whole game." },
+  { at: 1620, skipIfCalm: true, say: "Are you still efforting? Can you let go even more? Cut your effort in half again." },
+  { at: 1700, say: "Whatever you're experiencing — big or subtle, dramatic or quiet — trust it. There's no wrong experience." },
+  { at: 1780, skipIfCalm: true, say: "The feeling may feel self-sustaining now. Like a wave carrying you. Let it." },
 
-  // Phase 6: Abiding (31-43 min) — very sparse cues
-  { at: 1920, say: "You're doing beautifully. About twelve more minutes of deepening." },
-  { at: 2100, say: "If you notice the feeling changing, just let it change. Follow it with curiosity." },
-  { at: 2340, say: "Whatever you're experiencing right now is perfect. Trust it." },
+  // Phase 6: Abiding (31-42 min) — very sparse
+  { at: 1860, skipIfCalm: true, say: "Notice where the feeling lives. Head, heart, belly. If the energy shifts to a quieter place, follow it." },
+  { at: 1980, say: "If grief, fear, or something heavy arises, welcome it like a friend at the door. It's information moving through. Feeling it is the whole technique." },
+  { at: 2100, skipIfCalm: true, say: "If the feeling is changing, let it change. Follow it with curiosity." },
+  { at: 2220, say: "Am I bracing, or embracing? One more check." },
+  { at: 2340, skipIfCalm: true, say: "Whatever you're experiencing right now is perfect. Trust it." },
 
-  // Phase 7: Closing (43-45 min)
-  { at: 2520, say: "We're approaching the end of the session. Begin to notice the room around you." },
-  { at: 2550, say: "Take a few easy breaths. Feel your body." },
-  { at: 2580, say: "Gently open your eyes. Take a moment before moving." },
-  { at: 2610, say: "The session is complete, but your nervous system is still integrating this. Go slow for the next hour. The deepening continues.", end: true },
+  // Phase 7: Closing (42-45 min) — all essential
+  { at: 2520, essential: true, say: "We're approaching the end of the session. Begin to notice the room around you." },
+  { at: 2550, essential: true, say: "Take a few easy breaths. Feel your body." },
+  { at: 2580, essential: true, say: "Gently open your eyes. Take a moment before moving." },
+  { at: 2610, essential: true, end: true, say: "The session is complete, but your nervous system is still integrating this. Go slow for the next hour. The deepening continues." },
 ];
 
 // Bedtime meditation — very soft, sleep-oriented, designed to fade out
@@ -2699,10 +2757,14 @@ function startNewSong() {
   rollSongPalette();
   // Randomize energy curve and section lengths for this song
   rollSongEnergy();
-  // Shuffle: pick a random style for this song
+  // Shuffle: pick a random style for this song.
+  // First song of a session: bias to a chill pool so the user has a natural
+  // settle window for today-baseline detection. After song 1, the full pool.
   if (shuffleMode) {
-    currentSongStyle = pick(STYLE_KEYS);
-    logEvent('song_change', { style: currentSongStyle });
+    const CHILL_STYLES = ['ambient','chillwave','lofi','jazz','bossa','classical','impressionist','soul'];
+    const pool = (sessionSongCount === 0) ? CHILL_STYLES.filter(s => STYLE_KEYS.includes(s)) : STYLE_KEYS;
+    currentSongStyle = pick(pool.length ? pool : STYLE_KEYS);
+    logEvent('song_change', { style: currentSongStyle, firstSong: sessionSongCount === 0 });
     const style = SONG_STYLES[currentSongStyle];
     currentSwing = style.swing;
     const [lo, hi] = style.tempoRange;
@@ -2715,6 +2777,7 @@ function startNewSong() {
   }
   if (typeof rollTimbres === 'function') rollTimbres();
   songStartedAt = Date.now();
+  sessionSongCount++;
   // Record this song in history after timbres are rolled
   setTimeout(() => recordSongInHistory(), 50);
   currentSongForm = pick(SONG_FORMS);
@@ -2795,26 +2858,14 @@ function enterSection() {
     }
   }
 
-  // Per-visit instrument mutation: on 2nd+ visit, drop or add one
-  // non-essential instrument to create arrangement variation. Essentials
-  // (drums, bass, keys) are never touched.
-  if (currentSectionVisit >= 2 && !shamanicMode && !jhanaMode && !bedtimeMode) {
-    const essentials = new Set(['drums','bass','keys']);
-    const optional = ['guitar','vibes','strings','synth'];
-    const present = optional.filter(i => activeInstruments.has(i));
-    const absent  = optional.filter(i => !activeInstruments.has(i));
-    // 2nd visit: drop one present, 3rd+: add one absent if any
-    if (currentSectionVisit === 2 && present.length > 0) {
-      const drop = present[Math.floor(Math.random() * present.length)];
-      activeInstruments.delete(drop);
-    } else if (currentSectionVisit >= 3) {
-      if (absent.length > 0 && Math.random() < 0.6) {
-        activeInstruments.add(absent[Math.floor(Math.random() * absent.length)]);
-      } else if (present.length > 0) {
-        activeInstruments.delete(present[Math.floor(Math.random() * present.length)]);
-      }
-    }
-  }
+  // Previously we mutated the color-instrument lineup on repeat visits to the
+  // same section (drop one, or add a different one on 3rd+ visit). That created
+  // "same song, different vibe" whiplash within a single song — strings would
+  // leave and vibes would join mid-song without musical preparation.
+  // Now: the instrument lineup comes entirely from the section template, and
+  // only changes via the natural section-type variation (verse/chorus/bridge).
+  // Per-visit variation comes from voicing inversions, energy curve, and
+  // harmonic rhythm mutations — not from swapping instruments.
 
   // Modulation — transpose late choruses up by a whole/major 3rd.
   // 1st chorus = home key, 2nd = +2, 3rd+ = +4. Modulation is monotonic
@@ -2882,6 +2933,18 @@ function mutateBarForVariety() {
   const isLastBar = section && (barInSection === section.bars - 1);
   const isSecondToLast = section && (barInSection === section.bars - 2);
 
+  // Is the NEXT section a modulating chorus? If so, we want a guaranteed
+  // drum fill on this (the last) bar, so the key change lands with a proper
+  // lead-in rather than a hard cut. Modulation happens on chorus #2 (+2st)
+  // and chorus #3+ (+4st) — i.e. when chorusesSeenInSong is already ≥ 1.
+  let nextSectionModulates = false;
+  if (isLastBar && currentSongForm && currentSectionIdx + 1 < currentSongForm.length) {
+    const nextName = currentSongForm[currentSectionIdx + 1];
+    if (nextName && nextName.startsWith('chorus') && chorusesSeenInSong >= 1) {
+      nextSectionModulates = true;
+    }
+  }
+
   // Per-bar micro-mutations: randomly flip 1-2 steps in the current pattern
   // so no two bars sound exactly the same even with the same base pattern
   const patMut = curDrumPat ? {
@@ -2897,8 +2960,11 @@ function mutateBarForVariety() {
     extraSnareAt: Math.random() < 0.12 ? (6 + Math.floor(Math.random()*7)) : -1,
     extraKickAt2: Math.random() < 0.06 ? (2 + Math.floor(Math.random()*12)) : -1,
     ghostHatProb: 0.04 + Math.random()*0.08,
-    // Drum fill on last bar of section (50% chance) — busier hat + extra snare hits
-    fill: isLastBar && Math.random() < 0.5,
+    // Drum fill on last bar of section (50% chance normally, 100% when the
+    // next section will modulate — a key change wants a musical lead-in).
+    fill: isLastBar && (nextSectionModulates || Math.random() < 0.5),
+    // Tag bigger fills before modulations for extra density.
+    bigFill: nextSectionModulates,
     // Half-bar drop: strip drums for first 8 steps of a bar (15% on 2nd-to-last)
     halfDrop: isSecondToLast && Math.random() < 0.15,
     // Instrument thin-out: randomly mute one non-essential instrument for this bar (8%)
@@ -2936,6 +3002,15 @@ function mutateBarForVariety() {
     barMutation.ghostHatProb = 0.35;
     // Extra kicks in fill bars
     barMutation.extraKickAt = 10 + Math.floor(Math.random()*4);
+    // Bigger fill before a modulation: denser hat, extra snare hits late in
+    // the bar so it builds toward the new key change instead of just being
+    // "slightly busier."
+    if (barMutation.bigFill) {
+      barMutation.extraSnareAt = 12 + Math.floor(Math.random()*3); // late snare roll
+      barMutation.extraSnareAt2 = 14 + Math.floor(Math.random()*2);
+      barMutation.ghostHatProb = 0.6;
+      barMutation.extraKickAt = 14 + Math.floor(Math.random()*2);
+    }
   }
 }
 
@@ -3428,46 +3503,75 @@ function playBass(midi, time, dur) {
 // ---- GUITAR PRESETS (Karplus-Strong variations) ----
 const GUITAR_PRESETS = {
   'steel': (midi, time, dur) => {
-    // Bright steel-string acoustic — crisp attack, rich harmonics
+    // Bright steel-string acoustic — crisp attack, rich harmonics, body resonance.
+    // Body resonance is THE defining feature of an acoustic: the hollow chamber's
+    // air resonance (~100 Hz) and wood resonances (~200, ~450 Hz) color every note.
+    // Without it, Karplus-Strong sounds like a synthesized plucked string, not a guitar.
     const f=midiToFreq(midi), sr=ac.sampleRate;
     const period=Math.round(sr/f);
     const bufLen=Math.max(sr*(dur+1),period*2);
     const buf=ac.createBuffer(1,bufLen,sr);
     const d=buf.getChannelData(0);
-    // Bright excitation: mix of noise + impulse for pick attack
-    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.55;
-    // Minimal pre-smoothing — keeps brightness
-    for(let i=period;i<bufLen;i++) d[i]=0.997*(0.5*d[i-period]+0.5*d[i-period+1]);
+    // Pluck-shaped excitation — exponentially decaying noise, like a pick
+    // that displaces the string and releases. Max energy at contact, fades.
+    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.6*Math.exp(-i/(period*0.35));
+    for(let i=period;i<bufLen;i++) d[i]=0.9975*(0.5*d[i-period]+0.5*d[i-period+1]);
     const src=ac.createBufferSource(); src.buffer=buf;
     const vel = 0.85 + Math.random()*0.3*styleDyn();
+    // Body resonance chain — steel-string spruce-top acoustic has these modes.
+    const air = ac.createBiquadFilter(); air.type='peaking';
+    air.frequency.value = hitJit(105, 0.08); air.Q.value = 3; air.gain.value = 5;
+    const top = ac.createBiquadFilter(); top.type='peaking';
+    top.frequency.value = hitJit(200, 0.08); top.Q.value = 2.5; top.gain.value = 4;
+    const mid = ac.createBiquadFilter(); mid.type='peaking';
+    mid.frequency.value = hitJit(450, 0.1); mid.Q.value = 1.8; mid.gain.value = 2.5;
     const amp=ac.createGain();
-    amp.gain.setValueAtTime(0.19 * vel, time);
+    amp.gain.setValueAtTime(0.16 * vel, time);
     amp.gain.setTargetAtTime(0.001,time+dur*0.8,dur*0.15);
     const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
     lpf.frequency.value=hitJit(5000, 0.2); lpf.Q.value=hitJit(0.5, 0.2);
-    src.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
+    src.connect(air); air.connect(top); top.connect(mid); mid.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
     src.start(time); src.stop(time+dur+1);
+    // Pick click — brief high-passed noise burst simulating the attack transient
+    // of a pick contacting the string. Very quiet but adds air.
+    const click = ac.createBufferSource();
+    const clickBuf = ac.createBuffer(1, Math.floor(sr*0.01), sr);
+    const cd = clickBuf.getChannelData(0);
+    for (let i = 0; i < cd.length; i++) cd[i] = (Math.random()*2-1) * Math.exp(-i/(cd.length*0.3));
+    click.buffer = clickBuf;
+    const chp = ac.createBiquadFilter(); chp.type='highpass'; chp.frequency.value = 2500;
+    const ca = ac.createGain(); ca.gain.setValueAtTime(0.04 * vel, time); ca.gain.exponentialRampToValueAtTime(0.001, time+0.008);
+    click.connect(chp); chp.connect(ca); ca.connect(instruments.guitar.gain);
+    click.start(time); click.stop(time+0.015);
   },
   'nylon': (midi, time, dur) => {
-    // Warm nylon classical guitar — rounder, softer attack, darker tone
+    // Warm nylon classical guitar — rounder body, softer fingertip attack.
+    // Nylon bodies have slightly lower air resonance and a warmer top than
+    // steel-strings; that's what gives classical guitar its mellow voice.
     const f=midiToFreq(midi), sr=ac.sampleRate;
     const period=Math.round(sr/f);
     const bufLen=Math.max(sr*(dur+1),period*2);
     const buf=ac.createBuffer(1,bufLen,sr);
     const d=buf.getChannelData(0);
-    // Softer excitation
-    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.4;
-    // More pre-smoothing for warmer tone
+    // Softer excitation — gentler decay curve reflecting fingertip, not pick
+    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.45*Math.exp(-i/(period*0.5));
     for(let i=1;i<period;i++) d[i]=d[i]*0.4+d[i-1]*0.6;
     for(let i=period;i<bufLen;i++) d[i]=0.998*(0.45*d[i-period]+0.55*d[i-period+1]);
     const src=ac.createBufferSource(); src.buffer=buf;
     const vel = 0.82 + Math.random()*0.3*styleDyn();
+    // Body resonance — nylon classical. Lower air, rounder mids, less presence.
+    const air = ac.createBiquadFilter(); air.type='peaking';
+    air.frequency.value = hitJit(92, 0.08); air.Q.value = 3; air.gain.value = 5;
+    const top = ac.createBiquadFilter(); top.type='peaking';
+    top.frequency.value = hitJit(180, 0.08); top.Q.value = 2.2; top.gain.value = 3.5;
+    const wood = ac.createBiquadFilter(); wood.type='peaking';
+    wood.frequency.value = hitJit(400, 0.1); wood.Q.value = 1.6; wood.gain.value = 2;
     const amp=ac.createGain();
-    amp.gain.setValueAtTime(0.20 * vel, time);
+    amp.gain.setValueAtTime(0.18 * vel, time);
     amp.gain.setTargetAtTime(0.001,time+dur*0.85,dur*0.18);
     const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
     lpf.frequency.value=hitJit(2400, 0.2); lpf.Q.value=hitJit(0.7, 0.15);
-    src.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
+    src.connect(air); air.connect(top); top.connect(wood); wood.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
     src.start(time); src.stop(time+dur+1);
   },
   'muted': (midi, time, dur) => {
@@ -3493,28 +3597,33 @@ const GUITAR_PRESETS = {
     src.start(time); src.stop(time+shortDur+0.5);
   },
   'fingerpick': (midi, time, dur) => {
-    // Fingerpicked acoustic — gentler attack, longer sustain, body resonance
+    // Fingerpicked acoustic — gentler attack, longer sustain, full body resonance.
+    // Fingers (vs pick) produce a rounder, darker excitation with less high-freq
+    // noise. Full body modeling: Helmholtz + top + wood resonances.
     const f=midiToFreq(midi), sr=ac.sampleRate;
     const period=Math.round(sr/f);
     const bufLen=Math.max(sr*(dur+1.5),period*2);
     const buf=ac.createBuffer(1,bufLen,sr);
     const d=buf.getChannelData(0);
-    // Soft finger excitation with less high-frequency noise
-    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.35;
+    // Soft finger excitation — slower decay than pick
+    for(let i=0;i<period;i++) d[i]=(Math.random()*2-1)*0.4*Math.exp(-i/(period*0.6));
     for(let i=1;i<period;i++) d[i]=d[i]*0.45+d[i-1]*0.55;
-    // Longer sustain
     for(let i=period;i<bufLen;i++) d[i]=0.9985*(0.48*d[i-period]+0.52*d[i-period+1]);
     const src=ac.createBufferSource(); src.buffer=buf;
     const vel = 0.80 + Math.random()*0.3*styleDyn();
+    // Body resonance chain — fingerpicked acoustic voice
+    const air = ac.createBiquadFilter(); air.type='peaking';
+    air.frequency.value = hitJit(100, 0.08); air.Q.value = 3; air.gain.value = 4.5;
+    const top = ac.createBiquadFilter(); top.type='peaking';
+    top.frequency.value = hitJit(220, 0.12); top.Q.value = 2; top.gain.value = 3.5;
+    const wood = ac.createBiquadFilter(); wood.type='peaking';
+    wood.frequency.value = hitJit(430, 0.1); wood.Q.value = 1.6; wood.gain.value = 2;
     const amp=ac.createGain();
-    amp.gain.setValueAtTime(0.17 * vel, time);
+    amp.gain.setValueAtTime(0.15 * vel, time);
     amp.gain.setTargetAtTime(0.001,time+dur*0.9,dur*0.2);
-    // Body resonance — gentle boost around 200Hz
-    const body=ac.createBiquadFilter(); body.type='peaking';
-    body.frequency.value=hitJit(220, 0.15); body.Q.value=1.5; body.gain.value=3;
     const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
     lpf.frequency.value=hitJit(3800, 0.2); lpf.Q.value=hitJit(0.5, 0.15);
-    src.connect(body); body.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
+    src.connect(air); air.connect(top); top.connect(wood); wood.connect(lpf); lpf.connect(amp); amp.connect(instruments.guitar.gain);
     src.start(time); src.stop(time+dur+1.5);
   },
   'electric-clean': (midi, time, dur) => {
@@ -4498,14 +4607,19 @@ const BASS_PRESETS = {
     o.start(t); o.stop(t+dur+0.05);
   },
   'fm-wob': (f,t,dur,j) => {
-    // FM bass with slow wobble on mod depth
-    const modRatio = hitJit(2, 0.08); // subtle mod ratio variation — keeps bass tonal
+    // FM bass with a short wobble-in on modulation depth.
+    // Tuned down from the original (which had FM index up to 3.25 and detuned
+    // modulator ratio — that produces inharmonic sidebands that read as "pitch-
+    // shifted synth screaming", especially on slow notes). Keep modRatio
+    // locked at exactly 2 so all sidebands are harmonic. Keep the wobble
+    // short so it feels like an attack character, not a slow sweep.
     const car=ac.createOscillator(); car.type='sine'; car.frequency.value=f;
-    const mod=ac.createOscillator(); mod.type='sine'; mod.frequency.value=f*modRatio;
+    const mod=ac.createOscillator(); mod.type='sine'; mod.frequency.value=f*2; // exact 2:1 for harmonic sidebands
     const mG=ac.createGain();
-    const fmDepth = hitJit(2.5, 0.3);
+    const fmDepth = hitJit(1.2, 0.15); // 1.02–1.38 — tamer than before
     mG.gain.setValueAtTime(f*fmDepth,t);
-    mG.gain.exponentialRampToValueAtTime(f*hitJit(0.3, 0.3),t+dur*hitJit(0.6, 0.2));
+    // Fast settle: bright for ~0.12s then down to a clean sub-ish tone
+    mG.gain.exponentialRampToValueAtTime(f*0.2, t + Math.min(dur*0.3, 0.12));
     mod.connect(mG); mG.connect(car.frequency);
     const amp=ac.createGain();
     amp.gain.setValueAtTime(0,t); amp.gain.linearRampToValueAtTime(0.24,t+0.015);
@@ -4771,12 +4885,15 @@ function rollTimbres() {
     darkambient:['sloshy'],
     chillwave:['sloshy','tight'],
   };
+  // fm-wob is a wobble-bass built for dubstep/DnB/synthwave where the wobble
+  // IS the style. In smoother genres (R&B, soul, lofi, ambient, impressionist)
+  // it reads as synthy and off-beat, so it's removed from those pools.
   const bassPool = {
-    lofi:['sub-saw','sub','fm-wob'],
+    lofi:['sub-saw','sub','pluck'],
     jazz:['sub','pluck','sub-saw'],
     bossa:['sub','pluck'],
-    soul:['sub-saw','pluck','fm-wob'],
-    rnb:['sub','sub-saw','fm-wob'],
+    soul:['sub-saw','pluck','sub'],
+    rnb:['sub','sub-saw','pluck'],
     funk:['pluck','sub-saw'],
     house:['sub-saw','pluck','reese'],
     techno:['reese','sub-saw','pluck'],
@@ -4786,12 +4903,12 @@ function rollTimbres() {
     chiptune:['pluck','sub-saw'],
     futurebass:['fm-wob','reese','sub-saw'],
     complextro:['reese','pluck','fm-wob'],
-    ambient:['sub','fm-wob'],
-    darkambient:['sub','fm-wob','reese'],
+    ambient:['sub','sub-saw'],
+    darkambient:['sub','reese','sub-saw'],
     chillwave:['sub','sub-saw'],
     classical:['sub'],
     romantic:['sub'],
-    impressionist:['sub','fm-wob'],
+    impressionist:['sub','sub-saw'],
     tango:['pluck','sub'],
     waltz:['sub'],
     cinematic:['sub','sub-saw','reese'],
@@ -5326,6 +5443,7 @@ function tick(time) {
     if (m.extraKickAt === step) playKick(time, 0.7);
     if (m.extraKickAt2 === step) playKick(time, 0.6);
     if (m.extraSnareAt === step) playSnare(time, 0.65);
+    if (m.extraSnareAt2 === step) playSnare(time, 0.7); // second snare hit during big fills (pre-modulation)
 
     // Ghost hats — always quiet
     const ghostProb = (m.ghostHatProb ?? 0.05) * (0.5 + sectionEnergy);
@@ -6032,6 +6150,45 @@ function exitShamanicMode() {
 // JHANA MEDITATION MODE
 // =====================================================
 
+// True when the user has been stably CALM or FLOW for the last ~30 readings.
+// Used to decide whether to skip non-essential jhana cues — the deeper the user
+// is settled, the more the cue track gets out of their way.
+function isJhanaCalmStable() {
+  if (!rmssdBaseline) return false;
+  if (rmssdHistory.length < 30) return false;
+  const recent = rmssdHistory.slice(-30);
+  return recent.every(r => {
+    const ratio = r / rmssdBaseline;
+    // CALM = ratio > 1.2 and r > 40; FLOW = ratio > 1.0. We want at least FLOW.
+    return ratio > 1.0;
+  });
+}
+
+// Rewrites a scaffolding cue line to match the user's pre-selected scaffolding.
+// If no selection was made, returns the original line.
+// jhanaScaffolding ∈ {null, 'smile', 'loved', 'phrase', 'memory', 'curiosity'}.
+const JHANA_SCAFFOLDING_CUES = {
+  smile:     ["Gently smile. Just a slight smile. Notice how it feels.",
+              "Keep that small smile. Let it be the source of the warmth."],
+  loved:     ["Think of someone you care about. Wish them well. May they be happy.",
+              "Hold that person in mind. Send them warmth again. May they be at ease."],
+  phrase:    ["Repeat gently: 'May I be happy. May I be at ease. May I live in love.'",
+              "Repeat the phrases again. Let the words do the work. May I be happy."],
+  memory:    ["Bring to mind a moment you felt warmly happy. Let it come back vividly.",
+              "Return to that moment. Feel what you felt then. Let it bloom again."],
+  curiosity: ["Open to this moment with real curiosity. What subtle pleasantness is already here?",
+              "Look again. What small pleasant sensation can you find right now?"],
+};
+function scaffoldingCue(original, choice, step) {
+  if (!choice) return original;
+  const arr = JHANA_SCAFFOLDING_CUES[choice];
+  if (!arr) return original;
+  // Alternate between the two variants so it doesn't feel repetitive on a long sit.
+  return arr[step % arr.length];
+}
+
+let jhanaScaffolding = null; // set by the scaffolding selector UI before the journey starts
+
 function startJhanaJourney() {
   jhanaJourneyStep = 0;
   jhanaStartTime = Date.now();
@@ -6099,13 +6256,30 @@ function startJhanaJourney() {
     // Fire any cues whose time has come
     while (jhanaJourneyStep < JHANA_JOURNEY.length && elapsed >= JHANA_JOURNEY[jhanaJourneyStep].at) {
       const cue = JHANA_JOURNEY[jhanaJourneyStep];
-      speak(cue.say);
-      $('sectionInfo').textContent = '\u2728 ' + cue.say;
-      $('sectionInfo').style.color = '#70b8d0';
+      // Adaptive silence: if the user has been stably CALM/FLOW for the last ~30s
+      // and this cue is marked skipIfCalm, skip it entirely. Silence is the reward
+      // of being settled — we don't want to be chatty during deep states. Essential
+      // cues (PMR commands, opening, closing, key transitions) always speak.
+      const shouldSpeak = cue.essential || !cue.skipIfCalm || !isJhanaCalmStable();
+      if (shouldSpeak) {
+        // If this is a scaffolding cue and the user pre-selected a scaffolding,
+        // rewrite the line to match — so we don't bounce between smile/metta/phrase.
+        const line = (cue.scaffolding && typeof scaffoldingCue === 'function')
+          ? scaffoldingCue(cue.say, jhanaScaffolding, jhanaJourneyStep)
+          : cue.say;
+        speak(line);
+        $('sectionInfo').textContent = '\u2728 ' + line;
+        $('sectionInfo').style.color = '#70b8d0';
+      }
       jhanaJourneyStep++;
       if (cue.end) {
-        // Auto-stop after a short delay to let the final speech finish
-        setTimeout(() => { if (playing && jhanaMode) $('playBtn').click(); }, 5000);
+        // Auto-stop after a short delay to let the final speech finish.
+        // Then show the post-session journal prompt — captures subjective notes
+        // that the HRV data alone can't (insights, moods, milestones).
+        setTimeout(() => {
+          if (playing && jhanaMode) $('playBtn').click();
+          setTimeout(showJhanaJournalPrompt, 1500);
+        }, 5000);
         return;
       }
     }
@@ -6173,11 +6347,59 @@ function enterJhanaMode() {
   $('sectionInfo').textContent = '\u2728 Jhana Meditation';
   $('sectionInfo').style.color = '#70b8d0';
   logEvent('jhana_mode_on');
-  if (playing) {
-    startNewSong();
-    startJhanaJourney();
-    updateUI(); // mute normal pad immediately
-  }
+  // Show the scaffolding selector before starting — antipattern #4 in the
+  // Jhourney framework is bouncing between meditation objects. Pre-committing
+  // to one scaffolding at session start structurally prevents that.
+  showJhanaScaffoldingSelector(() => {
+    if (playing) {
+      startNewSong();
+      startJhanaJourney();
+      updateUI();
+    }
+  });
+}
+
+function showJhanaScaffoldingSelector(onDone) {
+  const overlay = $('jhanaScaffoldingOverlay');
+  overlay.style.display = 'flex';
+  const btns = overlay.querySelectorAll('.jhana-scaff-btn');
+  const handler = (e) => {
+    jhanaScaffolding = e.currentTarget.dataset.scaff;
+    logEvent('jhana_scaffolding_selected', { scaffolding: jhanaScaffolding });
+    overlay.style.display = 'none';
+    btns.forEach(b => b.removeEventListener('click', handler));
+    if (typeof onDone === 'function') onDone();
+  };
+  btns.forEach(b => b.addEventListener('click', handler));
+}
+
+// Post-jhana journal — one brief subjective note per session, appended to
+// profile.jhanaNotes. Complements the HRV data with human reports (insights,
+// moods, milestones that numeric data can't capture).
+function showJhanaJournalPrompt() {
+  const overlay = $('jhanaJournalOverlay');
+  const input = $('jhanaJournalInput');
+  const saveBtn = $('jhanaJournalSave');
+  const skipBtn = $('jhanaJournalSkip');
+  input.value = '';
+  overlay.style.display = 'flex';
+  setTimeout(() => input.focus(), 100);
+  const close = () => { overlay.style.display = 'none'; saveBtn.onclick = null; skipBtn.onclick = null; };
+  saveBtn.onclick = async () => {
+    const text = (input.value || '').trim();
+    if (text && currentProfile) {
+      if (!currentProfile.jhanaNotes) currentProfile.jhanaNotes = [];
+      currentProfile.jhanaNotes.push({
+        date: new Date().toISOString(),
+        scaffolding: jhanaScaffolding,
+        text,
+      });
+      await saveProfile(currentProfile);
+      logEvent('jhana_note_saved');
+    }
+    close();
+  };
+  skipBtn.onclick = close;
 }
 
 // =====================================================
@@ -6623,10 +6845,12 @@ $('vizExpandBtn').addEventListener('click', () => {
   vizExpandSession = null;
   $('vizExpandTitle').textContent = 'This Session';
   $('vizExpandOverlay').style.display = 'block';
+  $('vizCollapseBtn').style.display = 'flex';
   if (!vizExpandAnim) drawVizExpanded();
 });
 $('vizCollapseBtn').addEventListener('click', () => {
   $('vizExpandOverlay').style.display = 'none';
+  $('vizCollapseBtn').style.display = 'none';
   if (vizExpandAnim) { cancelAnimationFrame(vizExpandAnim); vizExpandAnim = null; }
   vizExpandSession = null;
 });
@@ -6843,6 +7067,94 @@ let hrHistory=[];       // {time, hr} — heart rate over time
 let fatigueHistory=[];  // {time, score} — fatigue score over time
 let breakPeriods=[];    // {start, end} — for highlighting on timeline
 
+// ---- ADAPTIVE BASELINE SYSTEM ----
+// Three baseline sources, used in priority order by stress detection:
+//   1. todayBaseline     — fresh this-session estimate (opportunistic / post-intervention)
+//   2. longTermBaseline  — EWMA of past session averages, half-life 14 days
+//   3. absolute norms    — RMSSD < 20 = stress, > 50 = calm (always a ground-floor fallback)
+// This replaces the single "rmssdBaseline" which required an explicit calibration ritual.
+let todayBaseline = null;      // {rmssd, source: 'window'|'post-intervention'|'firstSession'}
+let longTermBaseline = null;   // number in ms, or null if no history
+let longTermBaselineWeight = 0;// sum of time-decay weights — serves as a confidence signal
+const BASELINE_HALF_LIFE_DAYS = 14; // older sessions decay exponentially with this half-life
+
+// Absolute HRV norms (population ground-floor) — used when personal baselines unavailable
+// or as a secondary check. RMSSD values from Shaffer & Ginsberg 2017 (population norms).
+const ABSOLUTE_STRESS_RMSSD = 20;  // below this = stressed regardless of baseline
+const ABSOLUTE_CALM_RMSSD   = 50;  // above this = calm regardless of baseline
+
+// Opportunistic today-baseline detection state
+let baselineWindowStart = 0;    // when the current stable window started (0 = no window active)
+let baselineWindowHrSamples = []; // HR samples in the current candidate window
+let baselineWindowRmssdSamples = []; // RMSSD samples in the current window
+
+function computeLongTermBaseline() {
+  // Time-decayed EWMA over past sessions' avgRmssd.
+  // Returns { value, weight } where weight serves as a confidence indicator
+  // (weight ≈ number of recent sessions with full weight).
+  if (!currentProfile || !currentProfile.recentSessions) return { value: null, weight: 0 };
+  const now = Date.now();
+  const halfLifeMs = BASELINE_HALF_LIFE_DAYS * 24 * 60 * 60 * 1000;
+  let sum = 0, totalWeight = 0;
+  for (const s of currentProfile.recentSessions) {
+    if (s.avgRmssd == null) continue;
+    const sessionTime = new Date(s.date).getTime();
+    const ageMs = now - sessionTime;
+    if (ageMs < 0) continue;
+    const weight = Math.pow(0.5, ageMs / halfLifeMs);
+    sum += weight * s.avgRmssd;
+    totalWeight += weight;
+  }
+  return totalWeight > 0 ? { value: sum / totalWeight, weight: totalWeight } : { value: null, weight: 0 };
+}
+
+function refreshLongTermBaseline() {
+  const { value, weight } = computeLongTermBaseline();
+  longTermBaseline = value;
+  longTermBaselineWeight = weight;
+  return { value, weight };
+}
+
+// Opportunistic today-baseline update: detect a 60-second window where the
+// user's HR is steady (sd < 2 bpm) and RMSSD is stable (CV < 0.15). Such a
+// window indicates a settled physiological state suitable for baselining.
+// Called from the per-second HRV tick. Updates todayBaseline if a window is
+// found and we don't already have one from a more reliable source.
+function checkForStableBaselineWindow(currentRmssd, currentHr) {
+  // Don't overwrite post-intervention (higher-quality) baseline
+  if (todayBaseline && todayBaseline.source === 'post-intervention') return;
+  baselineWindowRmssdSamples.push(currentRmssd);
+  baselineWindowHrSamples.push(currentHr);
+  // Trim to 60 samples (~60s at 1 sample/sec)
+  if (baselineWindowRmssdSamples.length > 60) {
+    baselineWindowRmssdSamples = baselineWindowRmssdSamples.slice(-60);
+    baselineWindowHrSamples = baselineWindowHrSamples.slice(-60);
+  }
+  if (baselineWindowRmssdSamples.length < 60) return;
+  // Compute stability metrics
+  const rAvg = baselineWindowRmssdSamples.reduce((a,b)=>a+b, 0) / 60;
+  const rSd  = Math.sqrt(baselineWindowRmssdSamples.reduce((s,v)=>s+(v-rAvg)**2,0) / 60);
+  const rCv  = rAvg > 0 ? rSd / rAvg : 99;
+  const hAvg = baselineWindowHrSamples.reduce((a,b)=>a+b, 0) / 60;
+  const hSd  = Math.sqrt(baselineWindowHrSamples.reduce((s,v)=>s+(v-hAvg)**2,0) / 60);
+  if (hSd < 2 && rCv < 0.15 && rAvg > 10) {
+    todayBaseline = { rmssd: +rAvg.toFixed(1), source: 'window' };
+    logEvent('today_baseline_update', { source: 'window', rmssd: +rAvg.toFixed(1), hrSd: +hSd.toFixed(2), rmssdCv: +rCv.toFixed(3) });
+    // Clear buffer so we don't re-detect the same window
+    baselineWindowRmssdSamples = [];
+    baselineWindowHrSamples = [];
+  }
+}
+
+// Returns the baseline to use right now, preferring the freshest/most-relevant source.
+function effectiveBaseline() {
+  if (todayBaseline && todayBaseline.rmssd) return { value: todayBaseline.rmssd, source: todayBaseline.source };
+  if (longTermBaseline) return { value: longTermBaseline, source: 'long-term' };
+  // Last resort: the legacy rmssdBaseline (from explicit calibration, if present).
+  if (rmssdBaseline) return { value: rmssdBaseline, source: 'calibration' };
+  return { value: null, source: null };
+}
+
 // ---- POLAR H10 ECG STREAMING ----
 // Uses Polar's proprietary Measurement Data (PMD) service. Stream is 130Hz, 14-bit.
 // Purely visual — not logged or analyzed.
@@ -7037,6 +7349,7 @@ let sessionLog = {
   breaks: [],
   events: [],         // [{time, type, ...details}] — all notable events
 };
+let sessionSongCount = 0; // incremented on each startNewSong; first song of session triggers chill-shuffle bias
 
 let sessionTimerInterval = null;
 function startSessionTimer() {
@@ -7068,7 +7381,18 @@ function startSessionLog() {
   sessionLog.currentFocusStart = Date.now();
   sessionLog.initialParams = captureSongParams();
   hrHistory=[];fatigueHistory=[];breakPeriods=[];
-  logEvent('session_start', { songStyle: currentSongStyle, preset: getActivePreset() });
+  sessionSongCount = 0; // first song of session gets chill-bias when in shuffle
+  // Reset today's adaptive baseline state; refresh long-term from history.
+  todayBaseline = null;
+  baselineWindowRmssdSamples = [];
+  baselineWindowHrSamples = [];
+  if (typeof refreshLongTermBaseline === 'function') refreshLongTermBaseline();
+  logEvent('session_start', {
+    songStyle: currentSongStyle,
+    preset: getActivePreset(),
+    longTermBaseline: longTermBaseline ? +longTermBaseline.toFixed(1) : null,
+    longTermWeight: +longTermBaselineWeight.toFixed(2),
+  });
   Breaks.fatigueScore = 0;
   sessionBreathingInterventions = 0;
 }
@@ -8453,6 +8777,18 @@ function exitBreathingMode() {
   $('calPhase').textContent = '';
   recoveryCount = 0;
   flashTitle(null);
+  // Post-intervention is the most reliable calibration moment for users who
+  // don't settle naturally — we've actively brought them down; their HRV here
+  // reveals what their system can reach today. Take the last ~25 seconds of
+  // RMSSD during the intervention as today's baseline.
+  if (rmssdHistory.length >= 25) {
+    const tail = rmssdHistory.slice(-25);
+    const avg = tail.reduce((a,b)=>a+b, 0) / tail.length;
+    if (avg > 10) {
+      todayBaseline = { rmssd: +avg.toFixed(1), source: 'post-intervention' };
+      logEvent('today_baseline_update', { source: 'post-intervention', rmssd: +avg.toFixed(1) });
+    }
+  }
   // Post-breathing cooldown — wider than 60s, because during high-stress work
   // (e.g. a rough day) RMSSD can drop again almost immediately and we don't
   // want to fire breathing interventions back-to-back every few minutes.
@@ -8517,7 +8853,11 @@ function handleHRM(ev){
     if(rr>300&&rr<2000){rrIntervals.push({time:Date.now(),rr});rrIntervals=rrIntervals.filter(r=>r.time>Date.now()-120000);}}}
   $('hrVal').textContent=hr;
   hrHistory.push({time:Date.now(),hr});
-  if(hrHistory.length>600) hrHistory=hrHistory.slice(-600);
+  // 7200 samples ≈ 2 hours at 1 sample/sec. The old cap of 600 (~10 min) was
+  // truncating most of a session's HR data from the export — a long session
+  // would only preserve the last 10 minutes. Memory cost of the larger cap
+  // is trivial (~150 KB at 20 bytes per sample).
+  if(hrHistory.length>7200) hrHistory=hrHistory.slice(-7200);
   // Detect postural HR spike: if HR jumped 15+ bpm in last 5 seconds, suppress stress for 15s
   if(hrHistory.length>=3){
     const recent5s=hrHistory.filter(h=>h.time>Date.now()-5000);
@@ -8534,6 +8874,10 @@ function handleHRM(ev){
     const df=[];for(let i=1;i<rec.length;i++)df.push(rec[i].rr-rec[i-1].rr);
     const rmssd=Math.sqrt(df.reduce((s,d)=>s+d*d,0)/df.length);
     rmssdHistory.push(rmssd);
+    // Opportunistic today-baseline detection — look for a 60s stable window.
+    if (playing && !inBreathingMode && !Breaks.inMode) {
+      checkForStableBaselineWindow(rmssd, hr);
+    }
     // Feed calibration if active
     if(calibrating) calRmssdSamples.push(rmssd);
     // Auto-baseline fallback (if no profile calibration)
@@ -8558,20 +8902,45 @@ function handleHRM(ev){
       }
     }
     $('rmssdVal').textContent=rmssd.toFixed(0);
-    if(rmssdBaseline){
-      const ratio=rmssd/rmssdBaseline;
+    // Dual-ratio stress detection: prefer today-baseline when we have one,
+    // otherwise long-term (EWMA over past sessions), otherwise legacy
+    // calibration rmssdBaseline. Absolute floor/ceiling always active.
+    const baseInfo = (typeof effectiveBaseline === 'function') ? effectiveBaseline() : { value: rmssdBaseline, source: 'calibration' };
+    const bVal = baseInfo.value;
+    if(bVal){
+      const ratio = rmssd / bVal;
+      // Secondary ratio against long-term baseline (if different source) so a
+      // depressed today-baseline can't mask systemic stress.
+      const longRatio = (longTermBaseline && baseInfo.source !== 'long-term') ? rmssd / longTermBaseline : null;
       let st,cl;
-      // Absolute floor: RMSSD below 25ms is objectively stressed regardless of baseline
-      // Absolute ceiling: RMSSD above 60ms is genuinely calm
-      if(rmssd<20){st='STRESS';cl='bad';}
+      // Absolute floor: RMSSD below 20ms is objectively stressed regardless of baseline
+      if(rmssd < ABSOLUTE_STRESS_RMSSD){st='STRESS';cl='bad';}
       else if(rmssd<30 && ratio<1.0){st='ALERT';cl='warn';}
       else if(ratio<0.7){st='STRESS';cl='bad';}
+      // Systemic check: if long-term-ratio is well below, also stress
+      else if(longRatio != null && longRatio < 0.55){st='STRESS';cl='bad';}
       else if(ratio<0.9){st='ALERT';cl='warn';}
+      else if(longRatio != null && longRatio < 0.7){st='ALERT';cl='warn';}
       else if(ratio>1.2 && rmssd>40){st='CALM';cl='good';}
+      else if(rmssd > ABSOLUTE_CALM_RMSSD){st='CALM';cl='good';}
       else if(ratio>1.0){st='FLOW';cl='good';}
       else {st='OK';cl='good';}
       $('stateVal').textContent=st;$('stateVal').className='hrv-stat-value '+cl;$('rmssdVal').className='hrv-stat-value '+cl;
       $('bioIndicator').className='bio-indicator '+cl;$('bioIndicatorText').textContent=st;
+    } else {
+      // No personal baseline at all yet (brand-new user, first few seconds).
+      // Classify state using absolute HRV norms only — population ground-floor.
+      let st, cl;
+      if (rmssd < ABSOLUTE_STRESS_RMSSD) { st='STRESS'; cl='bad'; }
+      else if (rmssd < 30) { st='ALERT'; cl='warn'; }
+      else if (rmssd > ABSOLUTE_CALM_RMSSD) { st='CALM'; cl='good'; }
+      else { st='OK'; cl='good'; }
+      $('stateVal').textContent=st; $('stateVal').className='hrv-stat-value '+cl; $('rmssdVal').className='hrv-stat-value '+cl;
+      $('bioIndicator').className='bio-indicator '+cl; $('bioIndicatorText').textContent=st;
+    }
+    if (bVal) {
+      const ratio = rmssd / bVal;
+      const st = $('stateVal').textContent;
       if(rmssdHistory.length % 30 === 0) logEvent('hrv_snapshot', { hr: +$('hrVal').textContent, rmssd: +rmssd.toFixed(1), state: st, ratio: +ratio.toFixed(2), fatigueScore: +Breaks.fatigueScore.toFixed(1), tempo: +$('bpm').value });
 
       // Fatigue score for break suggestions
@@ -8579,7 +8948,7 @@ function handleHRM(ev){
       else if(st==='ALERT') Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 0.05);
       else Breaks.fatigueScore = Math.max(0, Breaks.fatigueScore - 0.1);
     fatigueHistory.push({time:Date.now(),score:Breaks.fatigueScore,state:st});
-    if(fatigueHistory.length>600) fatigueHistory=fatigueHistory.slice(-600);
+    if(fatigueHistory.length>7200) fatigueHistory=fatigueHistory.slice(-7200);
       if(rmssdHistory.length >= 40){
         const recent20 = rmssdHistory.slice(-20);
         const prev20 = rmssdHistory.slice(-40, -20);
@@ -8622,8 +8991,14 @@ function handleHRM(ev){
           $('sectionInfo').textContent = '⟡ ' + nudge;
           $('sectionInfo').style.color = '#f8d88a';
         }
-        // Phase 2: Breathing intervention if calm didn't help
-        if(stressCount>=STRESS_THRESHOLD && bleDevice && playing && !inBreathingMode && !Breaks.inMode && !shamanicMode && !jhanaMode && !bedtimeMode){
+        // Phase 2: Breathing intervention if calm didn't help.
+        // Conservative first-session gate: for a user with no history at all
+        // (lifetime sessions === 0), only fire intervention if RMSSD is at or
+        // below the absolute-stress floor — don't want to aggressively intervene
+        // on a brand-new user whose personal patterns we haven't learned yet.
+        const firstEverSession = currentProfile && (currentProfile.lifetime?.sessions || 0) === 0;
+        const firstSessionGate = firstEverSession ? (rmssd < ABSOLUTE_STRESS_RMSSD) : true;
+        if(stressCount>=STRESS_THRESHOLD && bleDevice && playing && !inBreathingMode && !Breaks.inMode && !shamanicMode && !jhanaMode && !bedtimeMode && firstSessionGate){
           enterBreathingMode();
           sessionBreathingInterventions++;
           Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 15);
@@ -9414,6 +9789,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-16-1825<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-17-1349<!--/VERSION--></div>
 </body>
 </html>
