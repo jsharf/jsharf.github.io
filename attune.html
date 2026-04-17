@@ -11,38 +11,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .container{position:relative;z-index:1;width:100%;max-width:1220px;padding:10px 32px 14px;zoom:1.22}
 h1{font-size:26px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#e8e8f0;text-align:center;margin:4px 0 14px;text-shadow:0 0 30px rgba(138,180,248,.15)}
 .bio-indicator{position:fixed;top:20px;left:22px;z-index:50;display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:14px;background:rgba(20,20,35,.65);backdrop-filter:blur(12px);border:1px solid rgba(60,60,90,.3);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#888}
-/* Companion — soft animated face that reacts to HRV state.
-   Positive psychology angle: a face-like shape increases parasocial warmth,
-   and state-linked expressions (smile on CALM, closed eyes on breathing,
-   soft sparkle on improvement) turn the app from "monitoring tool" into
-   something people want to sit next to. */
-.companion{position:fixed;bottom:18px;right:18px;width:76px;height:76px;z-index:60;pointer-events:none;opacity:0;transition:opacity .8s ease,transform .6s ease;filter:drop-shadow(0 6px 18px rgba(138,180,248,.15))}
-.companion.visible{opacity:.95}
-.companion .face-ring{transform-origin:50% 50%;animation:companion-breath 5s ease-in-out infinite}
-@keyframes companion-breath{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.05);opacity:1}}
-.companion.breathing .face-ring{animation:companion-breath-deep 8s ease-in-out infinite}
-@keyframes companion-breath-deep{0%,100%{transform:scale(.92);opacity:.75}50%{transform:scale(1.12);opacity:1}}
-.companion .face-bg{fill:rgba(32,32,52,.88);stroke:rgba(140,160,220,.45);stroke-width:1.3;transition:fill .8s,stroke .8s}
-.companion.calm .face-bg{fill:rgba(30,60,50,.85);stroke:rgba(138,248,180,.55)}
-.companion.alert .face-bg{fill:rgba(55,50,25,.85);stroke:rgba(248,216,138,.5)}
-.companion.stress .face-bg{fill:rgba(55,30,35,.85);stroke:rgba(248,138,138,.5)}
-.companion.celebrate .face-bg{fill:rgba(40,70,55,.9);stroke:rgba(160,255,200,.85);filter:drop-shadow(0 0 12px rgba(138,248,180,.7))}
-.companion .eye{fill:#d8dcec;transition:cy .5s,rx .5s,ry .5s,opacity .5s}
-.companion.calm .eye{fill:#b8f0d0}
-.companion.alert .eye{fill:#f0d88a}
-.companion.stress .eye{fill:#f0a0a0;cy:48}
-.companion.breathing .eye,.companion.idle .eye{opacity:.25}
-.companion .mouth{fill:none;stroke:#c8ccdc;stroke-width:2.4;stroke-linecap:round;transition:d .6s,stroke .6s}
-.companion.calm .mouth{stroke:#b8f0d0}
-.companion.alert .mouth{stroke:#f0d88a}
-.companion.stress .mouth{stroke:#f0a0a0}
-.companion.celebrate .mouth{stroke:#b8f0d0}
-.companion .sparkle{opacity:0;fill:#f8e88a;transition:opacity .3s}
-.companion.celebrate .sparkle{animation:sparkle-pulse 2.4s ease-out}
-@keyframes sparkle-pulse{0%{opacity:0}25%{opacity:1}75%{opacity:.6}100%{opacity:0}}
-.companion-bubble{position:fixed;bottom:98px;right:18px;max-width:220px;padding:8px 12px;border-radius:12px;background:rgba(20,20,35,.82);backdrop-filter:blur(10px);border:1px solid rgba(138,180,248,.25);font-size:12px;color:#c8d0e0;z-index:60;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .4s,transform .4s;line-height:1.35}
-.companion-bubble.visible{opacity:1;transform:translateY(0)}
-.companion-bubble::after{content:'';position:absolute;bottom:-6px;right:28px;width:10px;height:10px;background:inherit;border-right:1px solid rgba(138,180,248,.25);border-bottom:1px solid rgba(138,180,248,.25);transform:rotate(45deg)}
 /* First-run tutorial — a small todo panel that highlights the real UI
    controls (via a pulsing glow) as the user works through connecting,
    picking a style, and starting. No duplicated controls; the user drives
@@ -57,8 +25,9 @@ h1{font-size:26px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
 .tutorial-step-title{font-size:13px;color:#d8dce8;font-weight:500;margin-bottom:2px}
 .tutorial-step-opt{color:#8a8aaa;font-weight:400;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-left:4px}
 .tutorial-step-hint{color:#8a8aaa;font-size:11px;line-height:1.4}
-.tutorial-step-action{font-size:11px;color:#7a7a98;margin-top:6px;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(100,100,140,.3);text-underline-offset:2px;display:inline-block}
-.tutorial-step-action:hover{color:#aaaacc;text-decoration-color:rgba(160,160,200,.5)}
+.tutorial-step-action{font-size:11px;color:#9a9abc;margin-top:8px;cursor:pointer;display:inline-block;padding:5px 10px;border:1px solid rgba(130,130,160,.4);border-radius:7px;background:rgba(40,42,60,.45);transition:all .2s;font-family:inherit}
+.tutorial-step-action:hover{color:#d8d8ec;border-color:rgba(170,170,210,.65);background:rgba(55,58,80,.6)}
+.tutorial-step-action:active{transform:scale(.96)}
 /* Pulsing glow applied to the real UI target of the active step */
 .tutorial-highlight{animation:tutorial-glow 1.2s ease-in-out infinite;position:relative;z-index:10}
 @keyframes tutorial-glow{
@@ -159,7 +128,7 @@ input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 2px 12px rgba(138,180
 .history-export-btn:hover{border-color:rgba(100,100,150,.6);color:#bbb}
 /* Universal big-X close button for dismissable overlays.
    Positioned absolutely in the top-right corner for easy one-hand tap. */
-.overlay-close{position:fixed;top:14px;right:14px;z-index:10000;width:44px;height:44px;border-radius:50%;background:rgba(20,20,35,.75);border:1px solid rgba(140,140,180,.35);color:#c8ccdc;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all .2s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.overlay-close{position:fixed;top:14px;right:14px;z-index:10000;width:56px;height:56px;border-radius:50%;background:rgba(20,20,35,.78);border:1px solid rgba(140,140,180,.4);color:#d8dcec;font-size:28px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all .2s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .overlay-close:hover{background:rgba(35,35,55,.9);border-color:rgba(180,180,220,.6);color:#e8ecf8;transform:scale(1.06)}
 .overlay-close:active{transform:scale(.96)}
 .history-toolbar{display:flex;gap:8px;margin:0 0 16px;align-items:center;flex-wrap:wrap}
@@ -361,7 +330,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 </div>
 <div id="vizExpandOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,5,15,.92);backdrop-filter:blur(12px);padding:20px;box-sizing:border-box;overflow:auto">
 <div style="margin-bottom:12px">
-<span id="vizExpandTitle" style="color:#aac;font-size:14px;letter-spacing:.05em">Session History</span>
+<span id="vizExpandTitle" style="color:#aac;font-size:14px;letter-spacing:.05em">This Session</span>
 </div>
 <button class="overlay-close" id="vizCollapseBtn" title="Close" aria-label="Close">✕</button>
 <canvas id="vizExpandCanvas" style="width:100%;height:calc(100vh - 80px);display:block;background:rgba(10,10,20,.6);border:1px solid rgba(80,80,120,.2);border-radius:8px"></canvas>
@@ -392,18 +361,6 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="container">
 <h1>Attune</h1>
 <div id="bioIndicator" class="bio-indicator" style="display:none"><span class="bio-dot"></span><span id="bioIndicatorText">CONNECTED</span></div>
-<svg id="companion" class="companion" viewBox="0 0 100 100" aria-hidden="true">
-  <g class="face-ring">
-    <circle class="face-bg" cx="50" cy="50" r="42"/>
-    <ellipse class="eye" cx="38" cy="44" rx="3.2" ry="3.2"/>
-    <ellipse class="eye" cx="62" cy="44" rx="3.2" ry="3.2"/>
-    <path id="companionMouth" class="mouth" d="M 38 62 Q 50 70 62 62"/>
-    <circle class="sparkle" cx="18" cy="22" r="2"/>
-    <circle class="sparkle" cx="82" cy="24" r="2.2"/>
-    <circle class="sparkle" cx="88" cy="60" r="1.8"/>
-  </g>
-</svg>
-<div id="companionBubble" class="companion-bubble"></div>
 <div id="tutorialPanel" class="tutorial-panel">
   <div class="tutorial-header">
     <span class="tutorial-progress" id="tutProgress">1 / 3</span>
@@ -444,7 +401,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 
 <button class="main-btn" id="playBtn"><span id="playLabel">START</span><div class="pulse-ring"></div></button>
 <div id="breakWrap" style="text-align:center;margin:4px 0 10px;display:none;position:relative">
-<button class="song-rate-btn dislike" id="dislikeBtn" title="Dislike — skip this song">&#x1F44E;</button>
+<button class="song-rate-btn dislike" id="dislikeBtn" title="Dislike this song">&#x1F44E;</button>
 <button class="ble-btn" id="prevSongBtn" style="font-size:17px;padding:12px 16px;margin-right:4px" title="Go back to the previous song">⏮</button>
 <button class="ble-btn" id="nextSongBtn" style="font-size:17px;padding:12px 20px;margin-right:8px" title="Skip to the next song with an ending cadence">Next song ⏭</button>
 <button class="song-rate-btn like" id="likeBtn" title="Like this song">&#x1F44D;</button>
@@ -555,8 +512,8 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="toggle-row" style="display:none"><input type="checkbox" id="bioControl"><label for="bioControl">Closed-loop control</label></div>
 <div class="toggle-row" style="margin-top:4px">
 <button class="ble-btn" id="exportBtn" style="font-size:10px;padding:3px 10px">Export Session</button>
-<button class="ble-btn" id="historyBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">History</button>
-<button class="ble-btn" id="vizExpandBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">Session Data</button>
+<button class="ble-btn" id="historyBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">Profile History</button>
+<button class="ble-btn" id="vizExpandBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">This Session</button>
 </div>
 </div>
 <div class="status" id="status">Click START to begin</div>
@@ -765,7 +722,7 @@ function openHistoryOverlay() {
   const sessions = (currentProfile.recentSessions || []).slice().reverse(); // newest first
 
   // Title
-  $('historyTitle').textContent = `${currentProfile.name} - Session History`;
+  $('historyTitle').textContent = `${currentProfile.name} — Profile History`;
 
   // Lifetime stats cards
   const hours = ((lt.durationMin || 0) / 60).toFixed(1);
@@ -1564,192 +1521,6 @@ if (window.speechSynthesis) {
 // Thin facade for existing call sites.
 function speak(text, opts) { tts.say(text, opts); }
 
-// ===================================================================
-// Companion — small animated face that reacts to HRV state.
-// ===================================================================
-// Psych angle: a persistent face-like element creates low-grade parasocial
-// presence ("it's watching out for me"), and state-linked micro-expressions
-// turn abstract HRV numbers into something emotionally legible.
-// Spontaneous warm bubbles on sustained improvement turn the biofeedback
-// loop into a positive-reward loop instead of a nag loop.
-const Companion = {
-  el: null,
-  bubble: null,
-  mouth: null,
-  lastState: null,
-  lastBubbleAt: 0,
-  lastCelebrateAt: 0,
-  recentStates: [], // last ~60s of HRV states, for sustained-improvement detection
-  celebrateTimer: null,
-  bubbleTimer: null,
-  connected: false,
-
-  init() {
-    this.el = $('companion');
-    this.bubble = $('companionBubble');
-    this.mouth = $('companionMouth');
-  },
-
-  show() {
-    if (!this.el) return;
-    this.connected = true;
-    this.el.classList.add('visible');
-  },
-
-  hide() {
-    if (!this.el) return;
-    this.connected = false;
-    this.el.classList.remove('visible');
-    this.bubble.classList.remove('visible');
-  },
-
-  _setClass(mood) {
-    if (!this.el) return;
-    // Keep 'visible' and 'breathing' (breathing is controlled separately); replace mood class.
-    const breathing = this.el.classList.contains('breathing');
-    const celebrate = this.el.classList.contains('celebrate');
-    this.el.className = 'companion';
-    if (this.connected) this.el.classList.add('visible');
-    if (breathing) this.el.classList.add('breathing');
-    if (celebrate) this.el.classList.add('celebrate');
-    if (mood) this.el.classList.add(mood);
-  },
-
-  _setMouth(shape) {
-    if (!this.mouth) return;
-    // Shapes: smile, softSmile, flat, frown, closed
-    const paths = {
-      smile:     'M 34 58 Q 50 74 66 58',
-      softSmile: 'M 38 62 Q 50 70 62 62',
-      flat:      'M 38 64 L 62 64',
-      frown:     'M 38 66 Q 50 58 62 66',
-      closed:    'M 42 64 Q 50 66 58 64',
-    };
-    this.mouth.setAttribute('d', paths[shape] || paths.softSmile);
-  },
-
-  setState(st) {
-    if (!this.el) return;
-    if (!this.connected) this.show();
-    const mood = st === 'STRESS' ? 'stress'
-               : st === 'ALERT'  ? 'alert'
-               : (st === 'CALM' || st === 'FLOW') ? 'calm'
-               : 'calm'; // OK → calm-ish (gentle)
-    const mouth = st === 'STRESS' ? 'frown'
-                : st === 'ALERT'  ? 'flat'
-                : (st === 'CALM' || st === 'FLOW') ? 'smile'
-                : 'softSmile';
-    this._setClass(mood);
-    this._setMouth(mouth);
-    this.lastState = st;
-  },
-
-  setBreathing(on) {
-    if (!this.el) return;
-    if (on) {
-      this.el.classList.add('breathing');
-      this._setMouth('closed');
-    } else {
-      this.el.classList.remove('breathing');
-    }
-  },
-
-  bubbleMsg(msg, ms) {
-    if (!this.bubble) return;
-    const now = Date.now();
-    // Throttle bubbles: at most one every 45s to avoid clutter
-    if (now - this.lastBubbleAt < 45000) return;
-    this.lastBubbleAt = now;
-    this.bubble.textContent = msg;
-    this.bubble.classList.add('visible');
-    if (this.bubbleTimer) clearTimeout(this.bubbleTimer);
-    this.bubbleTimer = setTimeout(() => {
-      this.bubble.classList.remove('visible');
-    }, ms || 5000);
-  },
-
-  celebrate(msg) {
-    if (!this.el) return;
-    const now = Date.now();
-    if (now - this.lastCelebrateAt < 90000) return; // cooldown to keep it special
-    this.lastCelebrateAt = now;
-    this.el.classList.add('celebrate');
-    this._setMouth('smile');
-    if (this.celebrateTimer) clearTimeout(this.celebrateTimer);
-    this.celebrateTimer = setTimeout(() => {
-      this.el.classList.remove('celebrate');
-    }, 2400);
-    if (msg) this.bubbleMsg(msg, 5000);
-  },
-
-  // Watch RMSSD trajectory over a rolling window for sustained improvement.
-  // Triggers a gentle celebration when the user has been meaningfully calmer
-  // than baseline for ~60s — positive reinforcement for doing nothing but
-  // settling into the session.
-  trackImprovement(rmssd, st) {
-    const now = Date.now();
-    this.recentStates.push({ t: now, rmssd, st });
-    // Keep last 120s
-    this.recentStates = this.recentStates.filter(x => x.t > now - 120000);
-    // Need at least 60s of history before firing
-    if (this.recentStates.length < 30) return;
-    const oldest = this.recentStates[0];
-    if (now - oldest.t < 60000) return;
-
-    // Condition 1: coming back from STRESS — any move to OK/CALM/FLOW after recent stress
-    const hadRecentStress = this.recentStates.some(x => x.st === 'STRESS' && (now - x.t) < 90000 && (now - x.t) > 20000);
-    const nowCalm = (st === 'CALM' || st === 'FLOW' || st === 'OK');
-    if (hadRecentStress && nowCalm) {
-      const recent30 = this.recentStates.filter(x => now - x.t < 30000);
-      const stable = recent30.length >= 20 && recent30.every(x => x.st !== 'STRESS');
-      if (stable) {
-        this.celebrate(pickWarmMessage('recovery'));
-        // Clear recent-stress memory so we don't chain-celebrate
-        this.recentStates = this.recentStates.map(x => x.st === 'STRESS' ? { ...x, st: 'OK' } : x);
-        return;
-      }
-    }
-
-    // Condition 2: sustained CALM/FLOW for >60s with no STRESS in window
-    if (nowCalm && rmssdBaseline) {
-      const calmRun = this.recentStates.filter(x => x.st === 'CALM' || x.st === 'FLOW');
-      if (calmRun.length >= 40) {
-        const anyStress = this.recentStates.some(x => x.st === 'STRESS');
-        if (!anyStress) {
-          this.celebrate(pickWarmMessage('sustained'));
-          // Prune history so we don't chain-fire
-          this.recentStates = [];
-        }
-      }
-    }
-  },
-};
-
-function pickWarmMessage(kind) {
-  const pool = {
-    recovery: [
-      'Nice — you settled back in.',
-      'That came back around. Well done.',
-      'You rode that out. Calm returning.',
-      'Your body is finding its way back.',
-    ],
-    sustained: [
-      'Lovely steady stretch.',
-      'You\'re in a good groove.',
-      'This is a really calm window.',
-      'Beautiful — your nervous system is happy here.',
-    ],
-    breathingSuccess: [
-      'That worked. You did that.',
-      'Lovely recovery. You\'ve got this.',
-      'Nice work. Back to baseline.',
-      'Really nice. That was skillful.',
-    ],
-  };
-  const arr = pool[kind] || pool.sustained;
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
 // Init DB on load
 // DB init happens at bottom of script (with compaction)
 
@@ -1775,6 +1546,36 @@ function chordPCs(root, type) {
   return CHORD_INTERVALS[type].map(i => (root + i) % 12);
 }
 
+// Per-style dynamics multiplier — widens or narrows the velocity random spread.
+// Wide (jazz, classical): notes vary a lot in strength → feels human/expressive.
+// Tight (techno, house): nearly uniform velocity → feels mechanical/locked-in.
+// Styles that don't specify get 1.0 (current behavior).
+const STYLE_DYNAMICS = {
+  jazz: 1.6, classical: 1.8, romantic: 1.9, impressionist: 1.6, cinematic: 1.7,
+  soul: 1.3, rnb: 1.2, bossa: 1.3, funk: 1.3, waltz: 1.4, tango: 1.5,
+  lofi: 0.9, chillwave: 0.9, ambient: 0.7, darkambient: 0.7,
+  house: 0.4, techno: 0.3, dubstep: 0.5, dnb: 0.5, futurebass: 0.7,
+  synthwave: 0.6, chiptune: 0.6, complextro: 0.7,
+  shamanic: 1.3, jhana: 0.8, bedtime: 0.6,
+};
+function styleDyn() {
+  return STYLE_DYNAMICS[currentSongStyle] || 1.0;
+}
+
+// Per-style song length — how long a single generated "song" runs before the
+// engine rolls a new one. Ambient / meditative styles want long sustained
+// pieces; upbeat styles want shorter, more varied cycling.
+const SONG_MAX_MS_DEFAULT = 180000; // 3 min (was 2 min)
+const STYLE_SONG_MAX_MS = {
+  ambient: 360000, darkambient: 360000, chillwave: 300000,
+  jhana: 600000, bedtime: 600000, shamanic: 480000,
+  classical: 270000, romantic: 270000, impressionist: 270000,
+  cinematic: 240000, jazz: 240000,
+};
+function songMaxMs() {
+  return STYLE_SONG_MAX_MS[currentSongStyle] || SONG_MAX_MS_DEFAULT;
+}
+
 // Voice leading: move each voice to nearest chord tone
 function voiceLead(currentMidi, targetPCs) {
   const res = [];
@@ -1793,6 +1594,29 @@ function voiceLead(currentMidi, targetPCs) {
     if (best !== null) used.add(best);
   }
   return res;
+}
+
+// Occasional alternative to voiceLead — produces a "fresh" voicing that
+// doesn't track the previous one. Used ~15% of the time to break up the
+// uniform sonic wash that results from always moving to nearest chord tones.
+// Voice leading is elegant but homogenizing: shared pitches between adjacent
+// chords get emphasized, distinctive ones de-emphasized. Occasionally picking
+// a deliberately different register change gives the ear new information.
+function freshVoicing(targetPCs) {
+  const sorted = [...targetPCs].sort((a,b)=>a-b);
+  const strategy = Math.random();
+  if (strategy < 0.5) {
+    // Open voicing: stagger PCs with octave gaps for a wide-spread sound.
+    const base = 48; // C3
+    return sorted.map((pc, i) => base + pc + (i % 2 === 1 ? 12 : 0));
+  } else {
+    // Drop-2: close voicing but with the second-lowest note moved up an
+    // octave. Classic jazz/piano voicing that feels more "arranged".
+    const base = 55; // G3
+    const res = sorted.map(pc => base + pc);
+    if (res.length >= 2) res[1] += 12;
+    return res.sort((a,b) => a-b);
+  }
 }
 
 // =====================================================
@@ -2903,7 +2727,11 @@ function startNewSong() {
   sectionVisitCount = {};
   lastProgIdxBySection = {};
   chorusesSeenInSong = 0;
-  sectionTranspose = 0;
+  // Pick a fresh key for this song. Biases slightly toward lower keys so the
+  // bass doesn't frequently run into the top of its register (36+songRoot+11
+  // can climb past the comfortable range).
+  songRoot = Math.floor(Math.random() * 12);
+  sectionTranspose = songRoot;
   isMelodyChorus = false;
   enterSection();
 }
@@ -2916,7 +2744,8 @@ let sectionVisitCount = {};
 let lastProgIdxBySection = {};
 let chorusesSeenInSong = 0;
 let currentSectionVisit = 1;
-let sectionTranspose = 0;       // semitones — applied to all pitched buses
+let songRoot = 0;               // per-song key center (0-11 semitones from C) — keeps back-to-back songs from all sitting in C major
+let sectionTranspose = 0;       // semitones — applied to all pitched buses. Initialized to songRoot on new song; chorus modulation stacks on top.
 let lastAppliedTranspose = 0;   // tracks what's currently baked into voicedKeys
 let isMelodyChorus = false;     // true on 2nd+ chorus of the song
 
@@ -2952,6 +2781,20 @@ function enterSection() {
   currentProgression = pool[progIdx];
   progBeatPos = 0;
 
+  // Harmonic rhythm mutation — 30% of the time, stretch or compress one chord's
+  // duration so not every bar feels metrically identical. Creates a new local
+  // array; the pool reference is never mutated.
+  if (Math.random() < 0.30 && currentProgression.length >= 2) {
+    const idx = Math.floor(Math.random() * currentProgression.length);
+    const [r, t, d] = currentProgression[idx];
+    const stretch = Math.random() < 0.55;
+    // Stretch: double duration (make the chord linger). Compress: halve, min 2.
+    const newDur = stretch ? Math.min(d * 2, 32) : Math.max(2, Math.floor(d / 2));
+    if (newDur !== d) {
+      currentProgression = currentProgression.map((c, i) => i === idx ? [r, t, newDur] : c);
+    }
+  }
+
   // Per-visit instrument mutation: on 2nd+ visit, drop or add one
   // non-essential instrument to create arrangement variation. Essentials
   // (drums, bass, keys) are never touched.
@@ -2976,11 +2819,12 @@ function enterSection() {
   // Modulation — transpose late choruses up by a whole/major 3rd.
   // 1st chorus = home key, 2nd = +2, 3rd+ = +4. Modulation is monotonic
   // (stays up once raised) so verses between modulated choruses don't
-  // jarringly drop back to the home key.
+  // jarringly drop back to the home key. Base is songRoot, not 0, so we
+  // stack modulation on top of the per-song random key center.
   if (isChorus) {
     const desired = chorusesSeenInSong === 1 ? 0
                   : chorusesSeenInSong === 2 ? 2 : 4;
-    sectionTranspose = Math.max(sectionTranspose, desired);
+    sectionTranspose = Math.max(sectionTranspose, songRoot + desired);
   }
   isMelodyChorus = isChorus && chorusesSeenInSong >= 2;
 
@@ -3024,7 +2868,9 @@ function enterSection() {
   if (typeof renderSongProgress === 'function') renderSongProgress();
 }
 
-const SONG_MAX_MS = 120000; // force a new song every ~2 minutes
+// Legacy constant retained for any external references; actual song-length
+// logic now uses songMaxMs() which is per-style. See STYLE_SONG_MAX_MS above.
+const SONG_MAX_MS = SONG_MAX_MS_DEFAULT;
 let songStartedAt = 0;
 let inSongTransition = false;
 let barPhrase = 0;        // 0..7 — current bar within an 8-bar phrase
@@ -3099,7 +2945,7 @@ function advanceBar() {
   barPhrase = (barPhrase + 1) % 8;
   isFillBar = (barPhrase === 7); // last bar of 8-bar phrase
   // Time-based forced song end at bar boundaries
-  if (!inSongTransition && songStartedAt && (Date.now() - songStartedAt) >= SONG_MAX_MS) {
+  if (!inSongTransition && songStartedAt && (Date.now() - songStartedAt) >= songMaxMs()) {
     if (jhanaMode || bedtimeMode) {
       // No real song structure in these modes — just silently reset the timer
       songStartedAt = Date.now();
@@ -3130,6 +2976,11 @@ function advanceBar() {
 function triggerSongTransition() {
   if (!ac || inSongTransition) return;
   inSongTransition = true;
+  // Clear the like/dislike button state at the start of the fade — otherwise
+  // the old song's rating visually "bleeds through" for the ~5.5s it takes
+  // the transition to complete and the new song to record itself in history.
+  $('likeBtn').classList.remove('active');
+  $('dislikeBtn').classList.remove('active');
   const preVol = masterGain.gain.value;
   const now = ac.currentTime;
 
@@ -3551,7 +3402,7 @@ function createReverb(dur) {
 // ---- ELECTRIC PIANO (FM Rhodes) ----
 function playKeys(notes, time, dur) {
   if (!$('muteKeys').checked || !activeInstruments.has('keys')) return;
-  const v = 0.78 + Math.random()*0.35; // ±17% per chord — expressive
+  const v = 0.78 + Math.random()*0.35*styleDyn(); // ±17% per chord — expressive, scaled by style dynamics
   _playWithVel('keys', v, () => {
     const p = KEYS_PRESETS[currentTimbre.keys] || KEYS_PRESETS['rhodes'];
     // Brightness jitter per chord so tone varies too
@@ -3567,7 +3418,7 @@ function playKeys(notes, time, dur) {
 // ---- BASS ----
 function playBass(midi, time, dur) {
   if (!$('muteBass').checked || !activeInstruments.has('bass')) return;
-  const v = 0.85 + Math.random()*0.28; // ±14% per note
+  const v = 0.85 + Math.random()*0.28*styleDyn(); // ±14% per note, scaled by style dynamics
   _playWithVel('bass', v, () => {
     const p = BASS_PRESETS[currentTimbre.bass] || BASS_PRESETS['sub-saw'];
     p(midiToFreq(midi), time, dur, currentTimbre.jitter);
@@ -3588,7 +3439,7 @@ const GUITAR_PRESETS = {
     // Minimal pre-smoothing — keeps brightness
     for(let i=period;i<bufLen;i++) d[i]=0.997*(0.5*d[i-period]+0.5*d[i-period+1]);
     const src=ac.createBufferSource(); src.buffer=buf;
-    const vel = 0.85 + Math.random()*0.3;
+    const vel = 0.85 + Math.random()*0.3*styleDyn();
     const amp=ac.createGain();
     amp.gain.setValueAtTime(0.19 * vel, time);
     amp.gain.setTargetAtTime(0.001,time+dur*0.8,dur*0.15);
@@ -3610,7 +3461,7 @@ const GUITAR_PRESETS = {
     for(let i=1;i<period;i++) d[i]=d[i]*0.4+d[i-1]*0.6;
     for(let i=period;i<bufLen;i++) d[i]=0.998*(0.45*d[i-period]+0.55*d[i-period+1]);
     const src=ac.createBufferSource(); src.buffer=buf;
-    const vel = 0.82 + Math.random()*0.3;
+    const vel = 0.82 + Math.random()*0.3*styleDyn();
     const amp=ac.createGain();
     amp.gain.setValueAtTime(0.20 * vel, time);
     amp.gain.setTargetAtTime(0.001,time+dur*0.85,dur*0.18);
@@ -3632,7 +3483,7 @@ const GUITAR_PRESETS = {
     // Faster decay from damping — lower feedback coefficient
     for(let i=period;i<bufLen;i++) d[i]=0.985*(0.5*d[i-period]+0.5*d[i-period+1]);
     const src=ac.createBufferSource(); src.buffer=buf;
-    const vel = 0.88 + Math.random()*0.25;
+    const vel = 0.88 + Math.random()*0.25*styleDyn();
     const amp=ac.createGain();
     amp.gain.setValueAtTime(0.22 * vel, time);
     amp.gain.exponentialRampToValueAtTime(0.001, time+shortDur+0.15);
@@ -3654,7 +3505,7 @@ const GUITAR_PRESETS = {
     // Longer sustain
     for(let i=period;i<bufLen;i++) d[i]=0.9985*(0.48*d[i-period]+0.52*d[i-period+1]);
     const src=ac.createBufferSource(); src.buffer=buf;
-    const vel = 0.80 + Math.random()*0.3;
+    const vel = 0.80 + Math.random()*0.3*styleDyn();
     const amp=ac.createGain();
     amp.gain.setValueAtTime(0.17 * vel, time);
     amp.gain.setTargetAtTime(0.001,time+dur*0.9,dur*0.2);
@@ -3682,7 +3533,7 @@ const GUITAR_PRESETS = {
     for(let i=period2;i<bufLen;i++) d2[i]=0.997*(0.5*d2[i-period2]+0.5*d2[i-period2+1]);
     const src1=ac.createBufferSource(); src1.buffer=buf1;
     const src2=ac.createBufferSource(); src2.buffer=buf2;
-    const vel = 0.85 + Math.random()*0.3;
+    const vel = 0.85 + Math.random()*0.3*styleDyn();
     const mix=ac.createGain(); mix.gain.value=0.5;
     src1.connect(mix); src2.connect(mix);
     const amp=ac.createGain();
@@ -3698,7 +3549,7 @@ const GUITAR_PRESETS = {
 
 function playGuitar(midi, time, dur) {
   if (!$('muteGuitar').checked || !activeInstruments.has('guitar')) return;
-  const v = 0.85 + Math.random()*0.3;
+  const v = 0.85 + Math.random()*0.3*styleDyn();
   _playWithVel('guitar', v, () => {
     const p = GUITAR_PRESETS[currentTimbre.guitar] || GUITAR_PRESETS['steel'];
     p(midi, time, dur);
@@ -3708,7 +3559,7 @@ function playGuitar(midi, time, dur) {
 // ---- STRINGS (slow-attack filtered saws) ----
 function playStrings(notes, time, dur) {
   if (!$('muteStrings').checked || !activeInstruments.has('strings')) return;
-  const vel = 0.9 + Math.random()*0.2; // ±10% per chord — subtle for sustained strings
+  const vel = 0.9 + Math.random()*0.2*styleDyn(); // ±10% per chord — subtle for sustained strings, scaled by style dynamics
   const peak = 0.07 * vel;
   for (const midi of notes) {
     const f=midiToFreq(midi), t=time;
@@ -3734,7 +3585,7 @@ function playStrings(notes, time, dur) {
 function playVibes(midi, time, dur) {
   if (!$('muteVibes').checked || !activeInstruments.has('vibes')) return;
   const f=midiToFreq(midi), t=time;
-  const vel = 0.82 + Math.random()*0.3; // ±15% per strike — mallets vary
+  const vel = 0.82 + Math.random()*0.3*styleDyn(); // ±15% per strike — mallets vary, scaled by style dynamics
   const fmRatio = hitJit(3.99, 0.03); // very subtle ratio variation — keeps tone clean
   const car=ac.createOscillator(); car.type='sine'; car.frequency.value=f;
   const mod=ac.createOscillator(); mod.type='sine'; mod.frequency.value=f*fmRatio;
@@ -5337,6 +5188,9 @@ function tick(time) {
     currentBassRoot = 36 + ch.root;
     if(currentBassRoot>48) currentBassRoot-=12;
     currentBassRoot += sectionTranspose;
+    // With random song root + chorus modulation, bass can climb into the upper register.
+    // Drop octaves until it's back in a comfortable bass range.
+    while (currentBassRoot > 52) currentBassRoot -= 12;
 
     if(ch.root !== lastChordRoot || step===0) {
       // Voice-lead in home key: strip any previously-baked-in transpose,
@@ -5347,8 +5201,18 @@ function tick(time) {
         voicedKeys = voicedKeys.map(m => m - lastAppliedTranspose);
         voicedGuitar = voicedGuitar.map(m => m - lastAppliedTranspose);
       }
-      voicedKeys = voiceLead(voicedKeys, pcs);
-      voicedGuitar = voiceLead(voicedGuitar, pcs);
+      // ~15% of chord changes, skip voice leading and pick a fresh voicing
+      // instead. Prevents the monotony of everything being voice-led to
+      // nearest neighbors. Skip on step===0 (song/section start) since the
+      // voicing there was set up fresh already.
+      const breakVoicing = step !== 0 && lastChordRoot >= 0 && Math.random() < 0.15;
+      if (breakVoicing) {
+        voicedKeys = freshVoicing(pcs);
+        voicedGuitar = freshVoicing(pcs);
+      } else {
+        voicedKeys = voiceLead(voicedKeys, pcs);
+        voicedGuitar = voiceLead(voicedGuitar, pcs);
+      }
       voicedGuitar = voicedGuitar.map(m=>{while(m<65)m+=12;while(m>84)m-=12;return m;});
       if (sectionTranspose) {
         voicedKeys = voicedKeys.map(m => m + sectionTranspose);
@@ -5725,11 +5589,27 @@ document.querySelectorAll('.preset-btn').forEach(btn=>{
   });
 });
 
-// Next song — skip to the next song with the ending cadence
+// Next song — if we navigated back via prev, step forward through history
+// instead of generating a fresh song. Only when we're already at the newest
+// song does "next" actually generate a new one.
 $('nextSongBtn').addEventListener('click', () => {
   if (!playing || !ac) return;
   if (inSongTransition || Breaks.inMode || inBreathingMode) return;
-  // Instant visual feedback — the actual transition takes ~5.5s
+
+  // Forward through history if we're not already at the end
+  if (currentProfile && currentProfile.songHistory
+      && currentSongHistoryIdx >= 0
+      && currentSongHistoryIdx < currentProfile.songHistory.length - 1) {
+    const nextEntry = currentProfile.songHistory[currentSongHistoryIdx + 1];
+    if (nextEntry && nextEntry.params) {
+      currentSongHistoryIdx++;
+      replaySongFromParams(nextEntry.params);
+      resetRateButtons();
+      return;
+    }
+  }
+
+  // Otherwise: generate a fresh new song with ending cadence
   const btn = $('nextSongBtn');
   btn.classList.remove('flashing');
   void btn.offsetWidth; // restart animation
@@ -5752,6 +5632,7 @@ $('prevSongBtn').addEventListener('click', () => {
   if (!prevEntry || !prevEntry.params) return;
   currentSongHistoryIdx--;
   replaySongFromParams(prevEntry.params);
+  resetRateButtons();
 });
 
 function replaySongFromParams(params) {
@@ -5763,18 +5644,22 @@ function replaySongFromParams(params) {
   masterGain.gain.setValueAtTime(masterGain.gain.value, now);
   masterGain.gain.linearRampToValueAtTime(0.0001, now + 1.5);
 
+  // Update the style button UI immediately — no reason to wait for the fade.
+  // During history playback, always show the specific style, even if shuffle
+  // mode is active. Shuffle only applies when generating NEW songs; while
+  // browsing history we want unambiguous "this is what's playing."
+  if (params.style && SONG_STYLES[params.style]) {
+    currentSongStyle = params.style;
+    const style = SONG_STYLES[params.style];
+    currentSwing = style.swing;
+    document.querySelectorAll('.song-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.song === params.style);
+    });
+    $('sectionInfo').textContent = style.name.toUpperCase();
+  }
+
   setTimeout(() => {
     rollSongEnergy();
-    // Restore style
-    if (params.style && SONG_STYLES[params.style]) {
-      currentSongStyle = params.style;
-      const style = SONG_STYLES[params.style];
-      currentSwing = style.swing;
-      document.querySelectorAll('.song-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.song === params.style || (shuffleMode && b.dataset.song === 'shuffle'));
-      });
-      $('sectionInfo').textContent = style.name.toUpperCase();
-    }
     // Restore sliders
     if (params.bpm) $('bpm').value = params.bpm;
     if (params.rate) $('rate').value = params.rate;
@@ -5797,6 +5682,9 @@ function replaySongFromParams(params) {
     sectionVisitCount = {};
     lastProgIdxBySection = {};
     chorusesSeenInSong = 0;
+    // Replayed songs re-play in C (same as before the random-root change).
+    // Preserving the original key would require saving songRoot into params.
+    songRoot = 0;
     sectionTranspose = 0;
     isMelodyChorus = false;
     enterSection();
@@ -6673,7 +6561,7 @@ let vizExpandAnim = null;
 let vizExpandSession = null; // when set, expand overlay renders this historical session
 $('vizExpandBtn').addEventListener('click', () => {
   vizExpandSession = null;
-  $('vizExpandTitle').textContent = 'Session History';
+  $('vizExpandTitle').textContent = 'This Session';
   $('vizExpandOverlay').style.display = 'block';
   if (!vizExpandAnim) drawVizExpanded();
 });
@@ -7025,7 +6913,6 @@ $('bleBtn').addEventListener('click',async()=>{
     $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');
     $('bioTitle').textContent='Biofeedback';
     $('hrVal').textContent='--';$('rmssdVal').textContent='--';$('stateVal').textContent='--';
-    Companion.hide();
     return;}
   if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -7043,7 +6930,6 @@ $('bleBtn').addEventListener('click',async()=>{
       $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');bleDevice=null;
       $('bioTitle').textContent='Biofeedback';
       $('bioIndicator').style.display='none';
-      Companion.hide();
       stopEcgStream();
       logEvent('ble_disconnected');
       if(playing){
@@ -7064,7 +6950,6 @@ $('bleBtn').addEventListener('click',async()=>{
     const devName = (bleDevice.name && bleDevice.name.trim()) || 'Heart Rate Monitor';
     $('bioTitle').textContent = 'Biofeedback — ' + devName;
     $('bioIndicator').style.display='flex';$('bioIndicator').className='bio-indicator';
-    Companion.show();
     $('bioIndicatorText').textContent=(currentProfile && currentProfile.rmssdBaseline) ? 'CONNECTED' : 'CALIBRATING';
     rrIntervals=[];rmssdHistory=[];baselinesamples=0;
     // Restore saved profile baseline instead of wiping it
@@ -8406,7 +8291,6 @@ function flashTitle(alert) {
 function enterBreathingMode() {
   if (inBreathingMode || !ac || Breaks.inMode) return;
   inBreathingMode = true;
-  Companion.setBreathing(true);
   playAttentionChime();
   flashTitle('⚠ Breathe — Attune');
   breathingStartTime = Date.now();
@@ -8495,13 +8379,6 @@ function doBreathCycle() {
 function exitBreathingMode() {
   if (!inBreathingMode || !ac) return;
   inBreathingMode = false;
-  Companion.setBreathing(false);
-  // Celebrate if the breathing intervention actually worked (RMSSD climbed meaningfully).
-  const endRmssd = rmssdHistory.length ? rmssdHistory[rmssdHistory.length-1] : 0;
-  const improved = breathingPeakRmssd - breathingStartRmssd;
-  if (improved >= 5 || (breathingStartRmssd > 0 && breathingPeakRmssd / breathingStartRmssd >= 1.2)) {
-    Companion.celebrate(pickWarmMessage('breathingSuccess'));
-  }
   const lastBP2 = breakPeriods[breakPeriods.length-1];
   if(lastBP2 && !lastBP2.end) lastBP2.end = Date.now();
   clearTimeout(breathingInterval);
@@ -8635,8 +8512,6 @@ function handleHRM(ev){
       else {st='OK';cl='good';}
       $('stateVal').textContent=st;$('stateVal').className='hrv-stat-value '+cl;$('rmssdVal').className='hrv-stat-value '+cl;
       $('bioIndicator').className='bio-indicator '+cl;$('bioIndicatorText').textContent=st;
-      Companion.setState(st);
-      Companion.trackImprovement(rmssd, st);
       if(rmssdHistory.length % 30 === 0) logEvent('hrv_snapshot', { hr: +$('hrVal').textContent, rmssd: +rmssd.toFixed(1), state: st, ratio: +ratio.toFixed(2), fatigueScore: +Breaks.fatigueScore.toFixed(1), tempo: +$('bpm').value });
 
       // Fatigue score for break suggestions
@@ -8820,6 +8695,7 @@ function ensureSongData() {
 function songFingerprint() {
   return {
     style: currentSongStyle,
+    root: songRoot,
     bpm: parseInt($('bpm').value),
     swing: currentSwing || 0,
     rate: parseFloat($('rate').value),
@@ -8831,7 +8707,9 @@ function songFingerprint() {
     hat: currentTimbre?.hat || '',
     bass: currentTimbre?.bass || '',
     keys: currentTimbre?.keys || '',
+    // Progression as "root:type" per chord; harmonic rhythm captured as duration sequence.
     progression: currentProgression ? currentProgression.map(([r,t,d]) => r + ':' + t).join(',') : '',
+    rhythm: currentProgression ? currentProgression.map(([r,t,d]) => d).join(',') : '',
     busFx: currentBusFX ? JSON.parse(JSON.stringify(currentBusFX)) : null,
     timbre: currentTimbre ? {
       kick: currentTimbre.kick, snare: currentTimbre.snare,
@@ -8860,29 +8738,35 @@ let currentSongHistoryIdx = -1;
 function rateSong(rating) {
   ensureSongData();
   if (!currentProfile) return;
+
+  // Toggle: if the same rating is already applied to this song, clear it back
+  // to neutral. Prevents getting "stuck" liked with no way to un-like.
+  const existing = (currentSongHistoryIdx >= 0 && currentProfile.songHistory[currentSongHistoryIdx])
+    ? (currentProfile.songHistory[currentSongHistoryIdx].rating || 0) : 0;
+  const newRating = (existing === rating) ? 0 : rating;
+
   const fp = songFingerprint();
-  const entry = { date: new Date().toISOString(), params: fp, rating };
+  const entry = { date: new Date().toISOString(), params: fp, rating: newRating };
   currentProfile.songRatings.push(entry);
 
   // Also update the history entry for this song
   if (currentSongHistoryIdx >= 0 && currentProfile.songHistory[currentSongHistoryIdx]) {
-    currentProfile.songHistory[currentSongHistoryIdx].rating = rating;
+    currentProfile.songHistory[currentSongHistoryIdx].rating = newRating;
   }
 
   // Update button states
-  $('likeBtn').classList.toggle('active', rating === 1);
-  $('dislikeBtn').classList.toggle('active', rating === -1);
+  $('likeBtn').classList.toggle('active', newRating === 1);
+  $('dislikeBtn').classList.toggle('active', newRating === -1);
 
   // Save
   saveProfile(currentProfile);
 
-  if (rating === -1) {
-    // Dislike = skip immediately
-    logEvent('song_disliked', { style: currentSongStyle });
-    startNewSong();
-  } else {
-    logEvent('song_liked', { style: currentSongStyle });
-  }
+  // Log (skip logging on toggle-off / neutral — those aren't interesting)
+  if (newRating === -1) logEvent('song_disliked', { style: currentSongStyle });
+  else if (newRating === 1) logEvent('song_liked', { style: currentSongStyle });
+  // NB: dislike no longer auto-skips. The Next button is right there; this
+  // prevents an accidental double-tap from rocketing you away from a song
+  // you might still want to rescue.
 }
 
 $('likeBtn').addEventListener('click', () => rateSong(1));
@@ -8920,6 +8804,20 @@ function songToVector(params) {
     const root = parseInt(c) || 0;
     return h + root * 7.1;
   }, 0);
+  // Encode song key center on the circle of fifths (so musically-close keys are
+  // geometrically close in the PCA space — C and G adjacent, C and F# opposite).
+  const root = (params.root != null ? params.root : 0) % 12;
+  const cofPos = (root * 7) % 12;   // C=0, G=1, D=2, A=3, E=4, B=5, F#=6, ...
+  const rootX = Math.cos(cofPos * 2 * Math.PI / 12) * 3; // weighted to matter
+  const rootY = Math.sin(cofPos * 2 * Math.PI / 12) * 3;
+  // Harmonic rhythm diversity: std-dev of chord durations (all-8s progression
+  // is uniform → 0; mixed durations → higher). Flags the rhythm-mutation effect.
+  const durs = (params.rhythm || '').split(',').map(s => parseInt(s) || 0).filter(d => d > 0);
+  let rhythmStd = 0;
+  if (durs.length > 1) {
+    const mean = durs.reduce((a, b) => a + b, 0) / durs.length;
+    rhythmStd = Math.sqrt(durs.reduce((s, d) => s + (d - mean) ** 2, 0) / durs.length);
+  }
   return [
     ...styleOH,
     ...kickOH, ...snareOH, ...hatOH, ...bassOH, ...keysOH,
@@ -8930,6 +8828,8 @@ function songToVector(params) {
     params.brightness || 5000,
     params.reverb || 30,
     progHash,
+    rootX, rootY,
+    rhythmStd,
   ];
 }
 
@@ -9289,7 +9189,6 @@ window.addEventListener('beforeunload', () => {
 
 // Init DB
 openDB().then(() => loadProfileList());
-Companion.init();
 
 // Humanhash-style name generator — warm nature-ish compound, e.g. "quiet-fox".
 // Keep the adjective pool gentle; avoid anything that could read as a judgment
@@ -9455,6 +9354,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-16-1642<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-16-1811<!--/VERSION--></div>
 </body>
 </html>
