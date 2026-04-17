@@ -4210,13 +4210,15 @@ const KICK_PRESETS = {
     o.frequency.exponentialRampToValueAtTime(endF,t+sweep);
     const a=ac.createGain();
     a.gain.setValueAtTime(0.30,t); a.gain.exponentialRampToValueAtTime(0.001,t+decay);
-    const clickF = hitJit(800, 0.3);
-    const cl=ac.createOscillator(); cl.type='square'; cl.frequency.value=clickF;
+    // Sharper click: highpass-filtered noise burst instead of a pure square tone.
+    // Feels more like a real beater hitting the head than a synthesized beep.
+    const click=ac.createBufferSource(); click.buffer=makeNoise(0.02);
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(2200, 0.25);
     const ca=ac.createGain();
-    ca.gain.setValueAtTime(hitJit(0.035, 0.3),t); ca.gain.exponentialRampToValueAtTime(0.001,t+0.015);
-    cl.connect(ca); ca.connect(instruments.drums.gain);
+    ca.gain.setValueAtTime(hitJit(0.09, 0.25),t); ca.gain.exponentialRampToValueAtTime(0.001,t+0.012);
+    click.connect(hp); hp.connect(ca); ca.connect(instruments.drums.gain);
     o.connect(a); a.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+decay+0.1); cl.start(t); cl.stop(t+0.05);
+    o.start(t); o.stop(t+decay+0.1); click.start(t); click.stop(t+0.03);
   },
   '808': (t,j) => {
     const decay = hitJit(0.7, 0.25);
@@ -4228,6 +4230,15 @@ const KICK_PRESETS = {
     a.gain.setValueAtTime(0.38,t); a.gain.exponentialRampToValueAtTime(0.001,t+decay);
     o.connect(a); a.connect(instruments.drums.gain);
     o.start(t); o.stop(t+decay+0.1);
+    // Sub-bass layer at half frequency — gives the 808 its characteristic chest weight.
+    // Classic 808 decks have two oscillators for exactly this reason.
+    const sub=ac.createOscillator(); sub.type='sine';
+    sub.frequency.setValueAtTime(startF*0.5,t);
+    sub.frequency.exponentialRampToValueAtTime(hitJit(22, 0.15)*j.kickPitch,t+hitJit(0.16, 0.3));
+    const sa=ac.createGain();
+    sa.gain.setValueAtTime(0.22,t); sa.gain.exponentialRampToValueAtTime(0.001,t+decay*1.2);
+    sub.connect(sa); sa.connect(instruments.drums.gain);
+    sub.start(t); sub.stop(t+decay*1.2+0.1);
   },
   'acoustic': (t,j) => {
     const decay = hitJit(0.18, 0.3);
@@ -4243,6 +4254,15 @@ const KICK_PRESETS = {
     n.connect(bp); bp.connect(na); na.connect(instruments.drums.gain);
     o.connect(a); a.connect(instruments.drums.gain);
     o.start(t); o.stop(t+decay+0.07); n.start(t); n.stop(t+0.08);
+    // Shell resonance — a short low-mid bandpass thump that follows the initial hit.
+    // This is what gives an acoustic kick its "body" feel vs a pure sine sweep.
+    const shell=ac.createBufferSource(); shell.buffer=makeNoise(0.08);
+    const sbp=ac.createBiquadFilter(); sbp.type='bandpass'; sbp.frequency.value=hitJit(80, 0.2); sbp.Q.value=6;
+    const sa=ac.createGain();
+    sa.gain.setValueAtTime(0.001,t); sa.gain.linearRampToValueAtTime(hitJit(0.09, 0.25),t+0.005);
+    sa.gain.exponentialRampToValueAtTime(0.001,t+0.11);
+    shell.connect(sbp); sbp.connect(sa); sa.connect(instruments.drums.gain);
+    shell.start(t); shell.stop(t+0.13);
   },
   'lofi': (t,j) => {
     const decay = hitJit(0.38, 0.25);
@@ -4278,15 +4298,27 @@ const SNARE_PRESETS = {
   '909': (t,j) => {
     const toneF = hitJit(180, 0.15);
     const noiseDecay = hitJit(0.12, 0.3);
+    // Two tonal partials — real snares have complex resonance from the shell
+    // and the rattle of the snare wires. A single triangle tone is too pure.
     const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=toneF;
-    const oa=ac.createGain(); oa.gain.setValueAtTime(0.10,t); oa.gain.exponentialRampToValueAtTime(0.001,t+hitJit(0.08, 0.25));
+    const oa=ac.createGain(); oa.gain.setValueAtTime(0.09,t); oa.gain.exponentialRampToValueAtTime(0.001,t+hitJit(0.08, 0.25));
     o.connect(oa); oa.connect(instruments.drums.gain);
+    const o2=ac.createOscillator(); o2.type='triangle'; o2.frequency.value=toneF*2.51;
+    const oa2=ac.createGain(); oa2.gain.setValueAtTime(0.045,t); oa2.gain.exponentialRampToValueAtTime(0.001,t+hitJit(0.06, 0.25));
+    o2.connect(oa2); oa2.connect(instruments.drums.gain);
     const n=ac.createBufferSource(); n.buffer=makeNoise(noiseDecay+0.05);
     const bp=ac.createBiquadFilter(); bp.type='bandpass';
     bp.frequency.value=hitJit(4000, 0.2)*j.brightness; bp.Q.value=hitJit(1, 0.3);
     const na=ac.createGain(); na.gain.setValueAtTime(0.10,t); na.gain.exponentialRampToValueAtTime(0.001,t+noiseDecay);
     n.connect(bp); bp.connect(na); na.connect(instruments.drums.gain);
-    o.start(t); o.stop(t+0.15); n.start(t); n.stop(t+noiseDecay+0.05);
+    o.start(t); o.stop(t+0.15); o2.start(t); o2.stop(t+0.12); n.start(t); n.stop(t+noiseDecay+0.05);
+    // Crack — a very short highpassed noise transient representing the stick
+    // hitting the head. Gives the snare its attack definition.
+    const crack=ac.createBufferSource(); crack.buffer=makeNoise(0.015);
+    const chp=ac.createBiquadFilter(); chp.type='highpass'; chp.frequency.value=hitJit(6000, 0.2)*j.brightness;
+    const cra=ac.createGain(); cra.gain.setValueAtTime(hitJit(0.07, 0.25),t); cra.gain.exponentialRampToValueAtTime(0.001,t+0.008);
+    crack.connect(chp); chp.connect(cra); cra.connect(instruments.drums.gain);
+    crack.start(t); crack.stop(t+0.02);
   },
   'clap': (t,j) => {
     const numLayers = Math.random() < 0.3 ? 4 : 3; // sometimes 4 layers for fuller clap
@@ -4344,22 +4376,50 @@ const SNARE_PRESETS = {
 };
 
 // ---- HAT PRESETS ----
+// Cymbals have inharmonic metallic spectra — multiple resonant frequencies that
+// don't line up in a harmonic series. Pure filtered white noise has no such
+// character, which is why simple "highpass noise" hats sound synthy. Layering
+// several narrow bandpass filters at inharmonic frequencies gives the ear
+// metallic partials to latch onto. The frequencies (6.3k, 9.1k, 11.7k) are
+// loosely based on real hi-hat spectrograms — not exact, but more plausible
+// than a single white-noise band.
 const HAT_PRESETS = {
   'tight': (t,open,j) => {
     const dur=open?hitJit(0.22,0.25):hitJit(0.05,0.3);
     const n=ac.createBufferSource(); n.buffer=makeNoise(dur+0.05);
-    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(7000,0.15)*j.brightness; hp.Q.value=hitJit(1,0.3);
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(7000,0.15)*j.brightness;
+    // Two bandpass resonances on top of the highpass — metallic ring.
+    const bp1=ac.createBiquadFilter(); bp1.type='bandpass'; bp1.frequency.value=hitJit(9100,0.1)*j.brightness; bp1.Q.value=6;
+    const bp2=ac.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=hitJit(11700,0.1)*j.brightness; bp2.Q.value=5;
+    const mix=ac.createGain(); mix.gain.value=1.0;
+    const gHp=ac.createGain(); gHp.gain.value=0.7;
+    const gBp1=ac.createGain(); gBp1.gain.value=0.5;
+    const gBp2=ac.createGain(); gBp2.gain.value=0.4;
+    n.connect(hp); hp.connect(gHp); gHp.connect(mix);
+    n.connect(bp1); bp1.connect(gBp1); gBp1.connect(mix);
+    n.connect(bp2); bp2.connect(gBp2); gBp2.connect(mix);
     const a=ac.createGain(); a.gain.setValueAtTime(open?0.05:0.04,t); a.gain.exponentialRampToValueAtTime(0.001,t+dur);
-    n.connect(hp); hp.connect(a); a.connect(instruments.drums.gain);
+    mix.connect(a); a.connect(instruments.drums.gain);
     n.start(t); n.stop(t+dur+0.05);
   },
   'sloshy': (t,open,j) => {
     const dur=open?hitJit(0.35,0.25):hitJit(0.08,0.3);
     const n=ac.createBufferSource(); n.buffer=makeNoise(dur+0.05);
-    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(5500,0.15)*j.brightness; hp.Q.value=hitJit(1.2,0.25);
-    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=hitJit(9000,0.15); bp.Q.value=hitJit(0.7,0.3);
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hitJit(5500,0.15)*j.brightness;
+    const bp1=ac.createBiquadFilter(); bp1.type='bandpass'; bp1.frequency.value=hitJit(6300,0.12)*j.brightness; bp1.Q.value=7;
+    const bp2=ac.createBiquadFilter(); bp2.type='bandpass'; bp2.frequency.value=hitJit(9000,0.1); bp2.Q.value=6;
+    const bp3=ac.createBiquadFilter(); bp3.type='bandpass'; bp3.frequency.value=hitJit(12800,0.1); bp3.Q.value=5;
+    const mix=ac.createGain(); mix.gain.value=1.0;
+    const gHp=ac.createGain(); gHp.gain.value=0.5;
+    const gBp1=ac.createGain(); gBp1.gain.value=0.55;
+    const gBp2=ac.createGain(); gBp2.gain.value=0.45;
+    const gBp3=ac.createGain(); gBp3.gain.value=0.35;
+    n.connect(hp); hp.connect(gHp); gHp.connect(mix);
+    n.connect(bp1); bp1.connect(gBp1); gBp1.connect(mix);
+    n.connect(bp2); bp2.connect(gBp2); gBp2.connect(mix);
+    n.connect(bp3); bp3.connect(gBp3); gBp3.connect(mix);
     const a=ac.createGain(); a.gain.setValueAtTime(open?0.055:0.038,t); a.gain.exponentialRampToValueAtTime(0.001,t+dur);
-    n.connect(hp); hp.connect(bp); bp.connect(a); a.connect(instruments.drums.gain);
+    mix.connect(a); a.connect(instruments.drums.gain);
     n.start(t); n.stop(t+dur+0.05);
   },
   'chip': (t,open,j) => {
@@ -9354,6 +9414,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-16-1811<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-16-1825<!--/VERSION--></div>
 </body>
 </html>
