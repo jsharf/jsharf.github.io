@@ -1223,6 +1223,7 @@ let calibrating = false;
 let calRmssdSamples = [];
 let calTimer = null;
 let calPhaseTimer = null;
+let calibrationResolver = null; // fired by finish/skip so first-run flow can await
 const CAL_DURATION = 30000; // 30 seconds
 
 function startCalibration() {
@@ -1320,6 +1321,7 @@ async function finishCalibration() {
   }
 
   setTimeout(() => $('calOverlay').classList.remove('active'), 2500);
+  if (calibrationResolver) { const r = calibrationResolver; calibrationResolver = null; r('done'); }
 }
 
 $('calSkip').addEventListener('click', (e) => {
@@ -1334,6 +1336,7 @@ $('calSkip').addEventListener('click', (e) => {
       rmssdBaseline = currentProfile.rmssdBaseline;
       $('status').textContent = '';
     }
+    if (calibrationResolver) { const r = calibrationResolver; calibrationResolver = null; r('skip'); }
   } else if (Breaks.suggestionShown) {
     // Only dismiss if click was directly on calSkip, not on child buttons
     Breaks.dismissSuggestion();
@@ -6636,6 +6639,15 @@ $('playBtn').addEventListener('click', async()=>{
     if (typeof ensureProfileBeforeStart === 'function') await ensureProfileBeforeStart();
     if(!ac) initAudio();
     if(ac.state==='suspended') await ac.resume();
+    // First-run baseline calibration. If this profile has never been
+    // calibrated and the Polar is connected, offer a 30s guided breathing
+    // baseline before music starts. The adaptive (opportunistic) baseline
+    // still exists, but an explicit calibration gives an immediate reference
+    // point — stress interventions start working from second 91 of the first
+    // session instead of waiting for a stable window to happen to appear.
+    if (typeof maybeFirstRunCalibration === 'function') {
+      await maybeFirstRunCalibration();
+    }
     playing=true;
     $('songProgress').style.display = (silenceMode || entrainmentMode) ? 'none' : '';
     $('breakWrap').style.display='';
@@ -10502,6 +10514,31 @@ async function ensureProfileBeforeStart() {
     return;
   }
   await promptCreateProfile();
+}
+
+// First-start baseline calibration. Run once per new profile, only if the
+// Polar strap is actually connected (we need real HRV data to measure). The
+// user can skip — subsequent sessions won't re-prompt unless they hit the
+// Recalibrate button. Stored on profile.rmssdBaseline + calibrationHistory.
+async function maybeFirstRunCalibration() {
+  if (!currentProfile) return;
+  if (currentProfile.rmssdBaseline) return;
+  if ((currentProfile.calibrationHistory || []).length > 0) return;
+  try { if (localStorage.getItem('attune-cal-declined-' + currentProfile.name) === '1') return; } catch(e){}
+  if (!bleDevice) return; // no sensor → nothing to measure; fall back to adaptive baseline
+  const go = confirm(
+    "First time with this profile — set your baseline?\n\n" +
+    "30 seconds of guided breathing. We measure your HRV while you're calm so the system can tell when you're under stress later.\n\n" +
+    "OK to start · Cancel to skip"
+  );
+  if (!go) {
+    try { localStorage.setItem('attune-cal-declined-' + currentProfile.name, '1'); } catch(e){}
+    return;
+  }
+  await new Promise(resolve => {
+    calibrationResolver = resolve;
+    startCalibration();
+  });
 }
 
 // First-run tutorial — compact single-step panel with X/3 progress counter.
