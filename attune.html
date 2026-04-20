@@ -1622,6 +1622,8 @@ let calTokenClient = null;
 let calAccessToken = null;
 let calTokenExpiresAt = 0;
 let calPollTimer = null;
+let meetingPreWarned = new Set(); // keys of upcoming blocks we've already pre-announced
+let meetingHrvSnapshot = null;    // captured stats across the current meeting
 let meetingPaused = false;          // true while auto-paused by calendar
 let calCurrentBusy = null;          // {start, end, summary} for display
 let preMeetingMasterVol = null;     // to restore on resume
@@ -1673,8 +1675,7 @@ function ensureCalTokenClient() {
       calStatus('Connected');
       $('calConnectBtn').textContent = 'Disconnect';
       pollFreeBusy();
-      if (calPollTimer) clearInterval(calPollTimer);
-      calPollTimer = setInterval(pollFreeBusy, 60*1000);
+      schedulePoll();
     },
   });
   return true;
@@ -1729,18 +1730,40 @@ async function pollFreeBusy() {
       return s <= nowMs && nowMs < e;
     });
     if (active && $('calAutoPause').checked) {
-      if (!meetingPaused) startMeetingPause(active);
+      if (!meetingPaused) {
+        startMeetingPause(active);
+      } else {
+        // Already paused — the user may have shortened/extended the meeting.
+        // Refresh the cached block + the "In meeting until HH:MM" status so
+        // the UI reflects the current end time instead of the one we cached
+        // when the pause started.
+        calCurrentBusy = active;
+        const endTime = new Date(Date.parse(active.end));
+        const endStr = endTime.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+        calStatus(`\u23F8 In meeting until ${endStr}`);
+      }
     } else if (meetingPaused) {
       endMeetingPause();
     }
-    // Update status with next upcoming block
+    // Update status with next upcoming block + pre-announce 3 min before
     if (!active) {
       const next = busy.find(b => Date.parse(b.start) > nowMs);
       if (next) {
-        const mins = Math.round((Date.parse(next.start) - nowMs) / 60000);
-        calStatus(`Connected · next in ${mins}m`);
+        const startMs = Date.parse(next.start);
+        const mins = Math.round((startMs - nowMs) / 60000);
+        calStatus(`Connected \u00B7 next in ${mins}m`);
+        // Pre-announce once: meeting within 3 min → speak + flash, only if
+        // auto-pause is on (matches the behavior the user will see).
+        const key = next.start + '|' + next.end;
+        const warnWindow = 3 * 60 * 1000;
+        if ((startMs - nowMs) <= warnWindow && (startMs - nowMs) > 0 &&
+            $('calAutoPause').checked && !meetingPreWarned.has(key)) {
+          meetingPreWarned.add(key);
+          announcePreMeeting(Math.max(1, mins));
+        }
       } else {
-        calStatus('Connected · clear for 1h');
+        calStatus('Connected \u00B7 clear for 1h');
+        meetingPreWarned.clear(); // reset for future blocks
       }
     }
   } catch (e) {
@@ -1749,12 +1772,86 @@ async function pollFreeBusy() {
   }
 }
 
+// Dynamic poll interval — tighter while paused so shortened/extended meetings
+// update within ~30s instead of waiting the full minute.
+function schedulePoll() {
+  if (calPollTimer) { clearInterval(calPollTimer); calPollTimer = null; }
+  const interval = meetingPaused ? 30*1000 : 60*1000;
+  calPollTimer = setInterval(pollFreeBusy, interval);
+}
+
+function announcePreMeeting(mins) {
+  const msg = `You have a meeting in ${mins} minute${mins===1?'':'s'}. Session will pause and auto-resume 5 minutes after.`;
+  if (typeof speak === 'function') { try { speak(msg); } catch(_){} }
+  // Brief banner in the section info line
+  try {
+    const el = $('sectionInfo');
+    if (el) {
+      el.textContent = '\u{1F4C5} ' + msg;
+      el.style.color = '#f8c864';
+      setTimeout(() => { if (el.textContent.startsWith('\u{1F4C5}')) el.textContent = ''; }, 15000);
+    }
+  } catch(_) {}
+  logEvent && logEvent('meeting_pre_warn', { minutesAhead: mins });
+}
+
+// Compute HR/RMSSD stats over the meeting window. hrHistory is timestamped,
+// so we filter by time. rmssdHistory is a flat array — we snapshot its length
+// at meeting start so we can slice the portion recorded during the meeting.
+function summarizeMeetingHrv(snapshot) {
+  if (!snapshot) return null;
+  const { startTime, endTime, rmssdStartIdx } = snapshot;
+  const hrSlice = (typeof hrHistory !== 'undefined' ? hrHistory : [])
+    .filter(h => h.time >= startTime && h.time <= endTime)
+    .map(h => h.hr);
+  const rmssdSlice = (typeof rmssdHistory !== 'undefined' ? rmssdHistory : [])
+    .slice(rmssdStartIdx);
+  if (!hrSlice.length && !rmssdSlice.length) return null;
+  const mean = a => a.reduce((s,v)=>s+v,0) / a.length;
+  const pct = (a, pred) => a.length ? (a.filter(pred).length / a.length) * 100 : 0;
+  return {
+    durationMin: Math.round((endTime - startTime) / 60000),
+    hrMean: hrSlice.length ? +mean(hrSlice).toFixed(0) : null,
+    hrMax:  hrSlice.length ? Math.max(...hrSlice) : null,
+    hrMin:  hrSlice.length ? Math.min(...hrSlice) : null,
+    rmssdMean: rmssdSlice.length ? +mean(rmssdSlice).toFixed(0) : null,
+    rmssdMin:  rmssdSlice.length ? +Math.min(...rmssdSlice).toFixed(0) : null,
+    stressPct: +pct(rmssdSlice, v => v < (typeof ABSOLUTE_STRESS_RMSSD !== 'undefined' ? ABSOLUTE_STRESS_RMSSD : 20)).toFixed(0),
+  };
+}
+
+function showMeetingRecap(stats) {
+  if (!stats) return;
+  const parts = [];
+  if (stats.hrMean != null) parts.push(`HR avg ${stats.hrMean} bpm (${stats.hrMin}\u2013${stats.hrMax})`);
+  if (stats.rmssdMean != null) parts.push(`RMSSD avg ${stats.rmssdMean} ms (low ${stats.rmssdMin})`);
+  if (stats.rmssdMean != null) parts.push(`${stats.stressPct}% of time in stress zone`);
+  const line = `Meeting recap \u00B7 ${stats.durationMin} min \u00B7 ` + parts.join(' \u00B7 ');
+  try {
+    const el = $('sectionInfo');
+    if (el) {
+      el.textContent = '\u{1F4CA} ' + line;
+      el.style.color = '#90a8c8';
+      setTimeout(() => { if (el.textContent.startsWith('\u{1F4CA}')) { el.textContent = ''; el.style.color = ''; } }, 30000);
+    }
+  } catch(_) {}
+  logEvent && logEvent('meeting_recap', stats);
+}
+
 function startMeetingPause(block) {
   meetingPaused = true;
   calCurrentBusy = block;
   const endTime = new Date(Date.parse(block.end));
   const endStr = endTime.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
-  calStatus(`⏸ In meeting until ${endStr}`);
+  calStatus(`\u23F8 In meeting until ${endStr}`);
+  // Snapshot HRV history indices so we can compute a post-meeting summary.
+  // BLE streaming continues while paused, so rmssdHistory/hrHistory accumulate
+  // silently — we just need the starting position.
+  meetingHrvSnapshot = {
+    startTime: Date.now(),
+    endTime: null,
+    rmssdStartIdx: (typeof rmssdHistory !== 'undefined') ? rmssdHistory.length : 0,
+  };
   // Mute master gain via the existing updateUI path (it checks meetingPaused)
   if (typeof updateUI === 'function') updateUI();
   // Also ramp down immediately so the pause is snappy
@@ -1763,6 +1860,8 @@ function startMeetingPause(block) {
   }
   // Cancel any in-flight TTS
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch(_) {}
+  // Switch to tighter poll cadence so shortened/extended meetings update fast
+  schedulePoll();
   logEvent && logEvent('meeting_pause_start', { until: block.end });
 }
 
@@ -1770,7 +1869,16 @@ function endMeetingPause() {
   meetingPaused = false;
   calCurrentBusy = null;
   calStatus('Connected');
+  // Finalize + display HRV recap for the meeting that just ended
+  if (meetingHrvSnapshot) {
+    meetingHrvSnapshot.endTime = Date.now();
+    const stats = summarizeMeetingHrv(meetingHrvSnapshot);
+    meetingHrvSnapshot = null;
+    if (stats) showMeetingRecap(stats);
+  }
   if (typeof updateUI === 'function') updateUI();
+  // Back to the relaxed poll cadence
+  schedulePoll();
   logEvent && logEvent('meeting_pause_end', {});
 }
 
