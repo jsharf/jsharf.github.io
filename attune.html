@@ -8410,6 +8410,22 @@ const Breaks = {
 
     const typeRow = document.createElement('div');
     typeRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
+    // Other guided breaks — same rotation set we pick the primary from, minus
+    // the one currently featured as the primary suggestion. Previously only
+    // non-guided categories (bathroom/walk/etc) were offered as alternates,
+    // which meant if the primary was "Eye rest" the user had no way to pick
+    // stretch without dismissing the suggestion and digging through the menu.
+    const otherGuided = SUGGESTED_BREAKS.filter(b =>
+      b.type !== 'stretch10' && b.type !== next.type
+    );
+    for (const brk of otherGuided) {
+      const b = document.createElement('button');
+      b.className = 'ble-btn';
+      b.style.cssText = 'font-size:13px;padding:8px 16px';
+      b.textContent = `${brk.label} ${brk.durMin}m`;
+      b.onclick = () => { $('calOverlay').classList.remove('active'); Breaks.accept(brk); };
+      typeRow.appendChild(b);
+    }
     const breakTypes = [
       {key:'bathroom',label:'Bathroom'},{key:'walk',label:'Walk'},
       {key:'snack',label:'Snack / Water'},{key:'phone',label:'Phone / Social'},{key:'other',label:'Other'}
