@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Attune</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0a0a0f;color:#c8c8d0;min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-y:auto}
@@ -565,6 +567,19 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <button class="ble-btn" id="exportBtn" style="font-size:10px;padding:3px 10px">Export Session</button>
 <button class="ble-btn" id="historyBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">Profile History</button>
 <button class="ble-btn" id="vizExpandBtn" style="font-size:10px;padding:3px 10px;margin-left:4px">This Session</button>
+</div>
+<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(100,100,150,.15)">
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<span style="font-size:12px;color:#9999bb">Calendar:</span>
+<span id="calStatus" style="font-size:12px;color:#7a8a9a">Not connected</span>
+<button class="ble-btn" id="calConnectBtn" style="font-size:10px;padding:3px 10px">Connect</button>
+<button class="ble-btn" id="calSettingsBtn" style="font-size:10px;padding:3px 8px">⚙</button>
+</div>
+<div id="calSettings" style="display:none;margin-top:6px">
+<div style="font-size:11px;color:#888">Google OAuth Client ID (Web app, origin: this page's URL):</div>
+<input type="text" id="calClientId" placeholder="xxxxx.apps.googleusercontent.com" style="width:100%;padding:4px 6px;font-size:11px;background:rgba(30,30,50,.6);border:1px solid rgba(100,100,150,.3);border-radius:4px;color:#ddd;margin-top:3px">
+<label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:#9999bb"><input type="checkbox" id="calAutoPause" checked> Auto-pause during meetings</label>
+</div>
 </div>
 </div>
 <div class="status" id="status">Click START to begin</div>
@@ -1362,6 +1377,9 @@ const tts = {
   _id: 0,
 
   say(text, opts) {
+    // Calendar auto-pause: suppress all TTS while the user is in a meeting.
+    // Prevents the app from speaking cues / interventions over a video call.
+    if (typeof meetingPaused !== 'undefined' && meetingPaused) return;
     if (!window.speechSynthesis || !text) return;
     opts = opts || {};
     const interrupt = opts.queue !== true;
@@ -1583,6 +1601,176 @@ if (window.speechSynthesis) {
 
 // Thin facade for existing call sites.
 function speak(text, opts) { tts.say(text, opts); }
+
+// =====================================================
+// GOOGLE CALENDAR INTEGRATION — auto-pause during meetings
+// =====================================================
+// Runs fully in the browser using Google Identity Services for the OAuth
+// token flow. No backend and no client secret. The user must create an
+// OAuth client (Web application) with this page's origin whitelisted and
+// paste the client ID into the settings. Scope is calendar.readonly —
+// narrowest that allows freebusy.query.
+const CAL_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+let calTokenClient = null;
+let calAccessToken = null;
+let calTokenExpiresAt = 0;
+let calPollTimer = null;
+let meetingPaused = false;          // true while auto-paused by calendar
+let calCurrentBusy = null;          // {start, end, summary} for display
+let preMeetingMasterVol = null;     // to restore on resume
+function calStatus(s) { const el = $('calStatus'); if (el) el.textContent = s; }
+
+function initCalendar() {
+  // Restore saved settings
+  const savedId = localStorage.getItem('attune_cal_client_id');
+  const savedAuto = localStorage.getItem('attune_cal_autopause');
+  if (savedId) $('calClientId').value = savedId;
+  if (savedAuto !== null) $('calAutoPause').checked = savedAuto === '1';
+  $('calClientId').addEventListener('change', () => {
+    localStorage.setItem('attune_cal_client_id', $('calClientId').value.trim());
+    // Re-init with new client ID if user edits it
+    calTokenClient = null; calAccessToken = null;
+  });
+  $('calAutoPause').addEventListener('change', () => {
+    localStorage.setItem('attune_cal_autopause', $('calAutoPause').checked ? '1' : '0');
+    // If user turns it off mid-meeting, resume immediately
+    if (!$('calAutoPause').checked && meetingPaused) endMeetingPause();
+  });
+  $('calSettingsBtn').addEventListener('click', () => {
+    const s = $('calSettings');
+    s.style.display = s.style.display === 'none' ? 'block' : 'none';
+  });
+  $('calConnectBtn').addEventListener('click', () => {
+    if (calAccessToken) { disconnectCalendar(); return; }
+    connectCalendar();
+  });
+  // If a client ID was saved, set up the token client so subsequent Connect
+  // clicks can reuse silent re-auth.
+  if (savedId) calStatus('Not connected');
+}
+
+function ensureCalTokenClient() {
+  if (calTokenClient) return true;
+  const clientId = ($('calClientId').value || '').trim();
+  if (!clientId) { calStatus('Enter Client ID first'); $('calSettings').style.display='block'; return false; }
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    calStatus('Google library loading…'); return false;
+  }
+  calTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: CAL_SCOPE,
+    callback: (resp) => {
+      if (resp.error) { calStatus('Auth error: ' + resp.error); return; }
+      calAccessToken = resp.access_token;
+      calTokenExpiresAt = Date.now() + (resp.expires_in ? resp.expires_in*1000 : 3600*1000);
+      calStatus('Connected');
+      $('calConnectBtn').textContent = 'Disconnect';
+      pollFreeBusy();
+      if (calPollTimer) clearInterval(calPollTimer);
+      calPollTimer = setInterval(pollFreeBusy, 60*1000);
+    },
+  });
+  return true;
+}
+
+function connectCalendar() {
+  if (!ensureCalTokenClient()) return;
+  calStatus('Requesting access…');
+  calTokenClient.requestAccessToken({ prompt: calAccessToken ? '' : 'consent' });
+}
+
+function disconnectCalendar() {
+  if (calAccessToken && window.google && google.accounts && google.accounts.oauth2) {
+    try { google.accounts.oauth2.revoke(calAccessToken, () => {}); } catch(_) {}
+  }
+  calAccessToken = null; calTokenExpiresAt = 0;
+  if (calPollTimer) { clearInterval(calPollTimer); calPollTimer = null; }
+  if (meetingPaused) endMeetingPause();
+  calStatus('Not connected');
+  $('calConnectBtn').textContent = 'Connect';
+}
+
+async function pollFreeBusy() {
+  if (!calAccessToken) return;
+  if (Date.now() > calTokenExpiresAt - 60000) {
+    // Token near expiry — silent refresh
+    if (calTokenClient) calTokenClient.requestAccessToken({ prompt: '' });
+    return;
+  }
+  const now = new Date();
+  const end = new Date(now.getTime() + 60*60*1000); // 1 hour lookahead
+  try {
+    const r = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + calAccessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timeMin: now.toISOString(),
+        timeMax: end.toISOString(),
+        items: [{ id: 'primary' }],
+      }),
+    });
+    if (!r.ok) {
+      if (r.status === 401) { calAccessToken = null; calStatus('Token expired — reconnect'); return; }
+      calStatus('FreeBusy error ' + r.status); return;
+    }
+    const data = await r.json();
+    const busy = (data.calendars && data.calendars.primary && data.calendars.primary.busy) || [];
+    const nowMs = Date.now();
+    // Are we currently in a busy block? (start <= now < end)
+    const active = busy.find(b => {
+      const s = Date.parse(b.start), e = Date.parse(b.end);
+      return s <= nowMs && nowMs < e;
+    });
+    if (active && $('calAutoPause').checked) {
+      if (!meetingPaused) startMeetingPause(active);
+    } else if (meetingPaused) {
+      endMeetingPause();
+    }
+    // Update status with next upcoming block
+    if (!active) {
+      const next = busy.find(b => Date.parse(b.start) > nowMs);
+      if (next) {
+        const mins = Math.round((Date.parse(next.start) - nowMs) / 60000);
+        calStatus(`Connected · next in ${mins}m`);
+      } else {
+        calStatus('Connected · clear for 1h');
+      }
+    }
+  } catch (e) {
+    console.warn('[calendar] poll failed', e);
+    calStatus('Poll error — will retry');
+  }
+}
+
+function startMeetingPause(block) {
+  meetingPaused = true;
+  calCurrentBusy = block;
+  const endTime = new Date(Date.parse(block.end));
+  const endStr = endTime.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+  calStatus(`⏸ In meeting until ${endStr}`);
+  // Mute master gain via the existing updateUI path (it checks meetingPaused)
+  if (typeof updateUI === 'function') updateUI();
+  // Also ramp down immediately so the pause is snappy
+  if (typeof ac !== 'undefined' && ac && typeof masterGain !== 'undefined' && masterGain) {
+    try { masterGain.gain.linearRampToValueAtTime(0, ac.currentTime + 1.2); } catch(_) {}
+  }
+  // Cancel any in-flight TTS
+  try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch(_) {}
+  logEvent && logEvent('meeting_pause_start', { until: block.end });
+}
+
+function endMeetingPause() {
+  meetingPaused = false;
+  calCurrentBusy = null;
+  calStatus('Connected');
+  if (typeof updateUI === 'function') updateUI();
+  logEvent && logEvent('meeting_pause_end', {});
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Wait a moment for the GIS script to finish loading
+  setTimeout(() => { try { initCalendar(); } catch(e) { console.warn('[calendar] init failed', e); } }, 500);
+});
 
 // Init DB on load
 // DB init happens at bottom of script (with compaction)
@@ -6011,8 +6199,9 @@ function updateUI() {
   amLFO2.frequency.linearRampToValueAtTime(parseFloat($('rate2').value),t+0.1);
   amLFO2Gain.gain.linearRampToValueAtTime(depth*mix2/2,t+0.1);
   masterLPF.frequency.linearRampToValueAtTime(parseInt($('brightness').value),t+0.3);
-  // In silence mode the master stays muted regardless of the volume slider.
-  const masterTarget = silenceMode ? 0 : parseInt($('volume').value)/100;
+  // In silence mode — or when auto-paused by calendar (user is in a meeting) —
+  // the master stays muted regardless of the volume slider.
+  const masterTarget = (silenceMode || meetingPaused) ? 0 : parseInt($('volume').value)/100;
   masterGain.gain.linearRampToValueAtTime(masterTarget,t+0.1);
   reverbGain.gain.linearRampToValueAtTime(parseInt($('reverb').value)/100,t+0.3);
   instruments.keys.gain.gain.linearRampToValueAtTime(parseInt($('volKeys').value)/100,t+0.1);
@@ -7308,7 +7497,11 @@ function drawVizExpanded() {
     useRelativeTicks = true;
   } else {
     now = Date.now();
-    const sessionElapsed = songStartedAt ? (now - songStartedAt) : 5 * 60 * 1000;
+    // Expand view should show the WHOLE session so far, not just the current
+    // song — use sessionLog.started (the actual session start), not
+    // songStartedAt which resets every song. Floor at 5 min so short sessions
+    // still have a readable x-axis.
+    const sessionElapsed = sessionLog.started ? (now - sessionLog.started) : 5 * 60 * 1000;
     windowMs = Math.max(5 * 60 * 1000, sessionElapsed + 30000);
     tStart = now - windowMs;
     useRelativeTicks = false;
@@ -7784,7 +7977,12 @@ $('bleBtn').addEventListener('click',async()=>{
     $('bioIndicator').style.display='flex';$('bioIndicator').className='bio-indicator';
     updateAdaptiveLabel();
     $('bioIndicatorText').textContent=(currentProfile && currentProfile.rmssdBaseline) ? 'CONNECTED' : 'CALIBRATING';
-    rrIntervals=[];rmssdHistory=[];baselinesamples=0;bleFirstRrTime=0;rrRejectStreak=0;
+    // Wipe the beat-level RR buffer (it's useless after a reconnect since
+    // the timing gap corrupts inter-beat intervals) but preserve rmssdHistory
+    // if a session is already running — otherwise a mid-session reconnect
+    // loses the first part of the HRV chart.
+    rrIntervals=[];baselinesamples=0;bleFirstRrTime=0;rrRejectStreak=0;
+    if (!(sessionLog && sessionLog.started)) rmssdHistory=[];
     // Restore saved profile baseline instead of wiping it
     if(currentProfile && currentProfile.rmssdBaseline){
       rmssdBaseline = currentProfile.rmssdBaseline;
@@ -9511,7 +9709,7 @@ function handleHRM(ev){
         stressCount++;
         recoveryCount=0;
         // Phase 1: Auto-switch to calm preset
-        if(stressCount>=CALM_THRESHOLD && !inAutoCalmMode && !inBreathingMode && !Breaks.inMode && playing && !shamanicMode && !jhanaMode && !bedtimeMode && sessionWarmupOver && !recoveryDayDefer){
+        if(stressCount>=CALM_THRESHOLD && !inAutoCalmMode && !inBreathingMode && !Breaks.inMode && !meetingPaused && playing && !shamanicMode && !jhanaMode && !bedtimeMode && sessionWarmupOver && !recoveryDayDefer){
           inAutoCalmMode = true;
           logEvent('auto_calm_start', { rmssd: rmssd, ratio: +ratio.toFixed(2), stressCount, previousPreset: preBreathingPreset });
           preBreathingPreset = getActivePreset();
@@ -9536,7 +9734,7 @@ function handleHRM(ev){
         // on a brand-new user whose personal patterns we haven't learned yet.
         const firstEverSession = currentProfile && (currentProfile.lifetime?.sessions || 0) === 0;
         const firstSessionGate = firstEverSession ? (rmssd < ABSOLUTE_STRESS_RMSSD) : true;
-        if(stressCount>=STRESS_THRESHOLD && bleDevice && playing && !inBreathingMode && !Breaks.inMode && !shamanicMode && !jhanaMode && !bedtimeMode && firstSessionGate && sessionWarmupOver && !recoveryDayDefer){
+        if(stressCount>=STRESS_THRESHOLD && bleDevice && playing && !inBreathingMode && !Breaks.inMode && !meetingPaused && !shamanicMode && !jhanaMode && !bedtimeMode && firstSessionGate && sessionWarmupOver && !recoveryDayDefer){
           enterBreathingMode();
           sessionBreathingInterventions++;
           Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 15);
