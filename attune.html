@@ -8409,23 +8409,32 @@ const Breaks = {
     orLabel.textContent = 'or take a different break:';
 
     const typeRow = document.createElement('div');
-    typeRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
-    // Other guided breaks — same rotation set we pick the primary from, minus
-    // the one currently featured as the primary suggestion. Previously only
-    // non-guided categories (bathroom/walk/etc) were offered as alternates,
-    // which meant if the primary was "Eye rest" the user had no way to pick
-    // stretch without dismissing the suggestion and digging through the menu.
-    const otherGuided = SUGGESTED_BREAKS.filter(b =>
-      b.type !== 'stretch10' && b.type !== next.type
-    );
-    for (const brk of otherGuided) {
+    typeRow.style.cssText = 'display:flex;flex-direction:column;gap:8px;align-items:center';
+
+    // Two groups: guided (with cues, timer, HRV tracking) and untracked
+    // (just log the category — user does the break on their own). Previously
+    // we only showed untracked alternatives, so users who wanted a different
+    // guided break had no way to pick one from this overlay.
+    const guidedLabel = document.createElement('div');
+    guidedLabel.style.cssText = 'color:#666688;font-size:11px;margin-top:2px;text-transform:uppercase;letter-spacing:.08em';
+    guidedLabel.textContent = 'Guided';
+    const guidedRow = document.createElement('div');
+    guidedRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
+    const guided = SUGGESTED_BREAKS.filter(b => b.type !== 'stretch10' && b.type !== next.type);
+    for (const brk of guided) {
       const b = document.createElement('button');
       b.className = 'ble-btn';
       b.style.cssText = 'font-size:13px;padding:8px 16px';
       b.textContent = `${brk.label} ${brk.durMin}m`;
       b.onclick = () => { $('calOverlay').classList.remove('active'); Breaks.accept(brk); };
-      typeRow.appendChild(b);
+      guidedRow.appendChild(b);
     }
+
+    const untrackedLabel = document.createElement('div');
+    untrackedLabel.style.cssText = 'color:#666688;font-size:11px;margin-top:6px;text-transform:uppercase;letter-spacing:.08em';
+    untrackedLabel.textContent = 'Untracked';
+    const untrackedRow = document.createElement('div');
+    untrackedRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
     const breakTypes = [
       {key:'bathroom',label:'Bathroom'},{key:'walk',label:'Walk'},
       {key:'snack',label:'Snack / Water'},{key:'phone',label:'Phone / Social'},{key:'other',label:'Other'}
@@ -8442,8 +8451,13 @@ const Breaks = {
         $('calSkip').innerHTML = '';
         Breaks.enter(bt.key, 'user');
       };
-      typeRow.appendChild(b);
+      untrackedRow.appendChild(b);
     }
+
+    typeRow.appendChild(guidedLabel);
+    typeRow.appendChild(guidedRow);
+    typeRow.appendChild(untrackedLabel);
+    typeRow.appendChild(untrackedRow);
 
     const soldierBtn = document.createElement('button');
     soldierBtn.className = 'ble-btn';
