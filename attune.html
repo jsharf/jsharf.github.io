@@ -82,7 +82,14 @@ input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 2px 12px rgba(138,180
 .ble-btn:hover{border-color:#4a4a6a;color:#aaaadd;background:rgba(30,30,50,.5);box-shadow:0 2px 12px rgba(0,0,0,.15)}
 .ble-btn:active{transform:scale(.97)}
 .ble-btn.connected{border-color:#3a8a5a;color:#8af8b4;background:rgba(58,138,90,.08)}
-.hrv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}
+.hrv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.state-spectrum{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:22px 0 0;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.state-spectrum-cell{padding:7px 2px;text-align:center;color:#55557a;background:rgba(40,40,60,.35);border-radius:3px;border:1px solid transparent;transition:all .3s ease}
+.state-spectrum-cell.active{color:#fff;font-weight:600;background:rgba(100,100,160,.25);border-color:rgba(160,160,220,.4);box-shadow:0 0 8px rgba(160,160,220,.15)}
+.state-spectrum-cell.active.good{background:rgba(138,248,180,.15);border-color:rgba(138,248,180,.5);box-shadow:0 0 8px rgba(138,248,180,.2)}
+.state-spectrum-cell.active.warn{background:rgba(248,216,138,.15);border-color:rgba(248,216,138,.5);box-shadow:0 0 8px rgba(248,216,138,.2)}
+.state-spectrum-cell.active.bad{background:rgba(248,138,138,.15);border-color:rgba(248,138,138,.5);box-shadow:0 0 8px rgba(248,138,138,.2)}
+.state-spectrum-axis{display:flex;justify-content:space-between;font-size:9px;color:#4a4a6a;margin:8px 0 18px;padding:0 2px;text-transform:none;letter-spacing:0;font-style:italic}
 .hrv-stat-value{font-size:28px;font-weight:300;color:#8888aa;font-variant-numeric:tabular-nums}
 .hrv-stat-label{font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:#7777a0;margin-top:2px}
 .hrv-stat-value.good{color:#8af8b4}.hrv-stat-value.warn{color:#f8d88a}.hrv-stat-value.bad{color:#f88a8a}
@@ -96,8 +103,8 @@ input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 2px 12px rgba(138,180
 .song-btn.active{border-color:rgba(248,216,138,.3);color:#f8d88a;background:rgba(248,216,138,.07);box-shadow:0 0 12px rgba(248,216,138,.06)}
 .song-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#6a6a8a;text-align:center;margin:4px 0 6px;font-weight:500}
 .hidden{display:none!important}
-.song-btn[data-song="shuffle"]{border-style:dashed}
-.song-btn[data-song="shuffle"].active{border-color:#8a5a9a;color:#d88af8;background:rgba(216,138,248,.06)}
+.song-btn[data-song="adaptive"]{border-style:dashed}
+.song-btn[data-song="adaptive"].active{border-color:#8a5a9a;color:#d88af8;background:rgba(216,138,248,.06)}
 .song-btn[data-song="silence"],.song-btn[data-song="entrainment"]{border-color:rgba(120,150,200,.28);color:#90a8c8}
 .song-btn[data-song="silence"].active{border-color:rgba(170,200,230,.55);color:#cce0f4;background:rgba(150,180,220,.09)}
 .song-btn[data-song="entrainment"].active{border-color:rgba(138,200,180,.5);color:#a8e0c8;background:rgba(138,200,180,.08)}
@@ -405,7 +412,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
   </div>
   <div class="tutorial-step" id="tutStep2" hidden>
     <div class="tutorial-step-title">Pick a style<span class="tutorial-step-opt">optional</span></div>
-    <div class="tutorial-step-hint">Default is Shuffle. Change any time.</div>
+    <div class="tutorial-step-hint">Default auto-picks for you. Change any time.</div>
   </div>
   <div class="tutorial-step" id="tutStep3" hidden>
     <div class="tutorial-step-title">Hit START</div>
@@ -444,7 +451,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="break-menu-item" data-break="stretch10" data-guided="true">Stretch (10m guided)</div>
 <div class="break-menu-item" data-break="eyes" data-guided="true">Eye Rest (3m guided)</div>
 <div class="break-menu-item" data-break="guidedwalk" data-guided="true">Walk (5m guided)</div>
-<div class="break-menu-item" data-break="coherence" data-guided="true">Coherence Breath (4m)</div>
+<div class="break-menu-item" data-break="paced" data-guided="true">Paced Breathing (4m)</div>
 <div class="break-menu-item" data-break="meditation" data-guided="true">Meditation ⚙</div>
 <div class="break-menu-sep"></div>
 <div class="break-menu-item" data-break="bathroom">Bathroom</div>
@@ -458,7 +465,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="song-progress" id="songProgress" style="display:none"><div class="song-progress-track" id="songProgressTrack"></div></div>
 <div class="song-label">Song Style</div>
 <div class="song-select" id="songSelect">
-<button class="song-btn active" data-song="shuffle" title="Randomly switches styles between songs">Shuffle</button>
+<button class="song-btn active" data-song="adaptive" title="Random style selection. Connect a heart rate monitor to enable adaptive selection based on arousal state.">Shuffle</button>
 <button class="song-btn" data-song="silence" title="No music — biofeedback, interventions, and break suggestions still active">Silence</button>
 <button class="song-btn" data-song="entrainment" title="No instruments — just a soft carrier with brainwave-rate amplitude modulation">Entrainment</button>
 <!-- Calm / chill genres first — easier to settle into at session start -->
@@ -505,7 +512,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="ctrl-group"><div class="ctrl-label">Primary Hz <span class="ctrl-val" id="rateVal">16 Hz</span></div><input type="range" id="rate" min="4" max="50" step=".5" value="16" title="Brain rhythm frequency — 16Hz for focus, 40Hz for high cognitive load, 10Hz for calm"></div>
 <div class="ctrl-group"><div class="ctrl-label">Secondary Hz <span class="ctrl-val" id="rate2Val">40 Hz</span></div><input type="range" id="rate2" min="4" max="50" step=".5" value="40"></div>
 <div class="ctrl-group"><div class="ctrl-label">Secondary Blend <span class="ctrl-val" id="rate2MixVal">0%</span></div><input type="range" id="rate2Mix" min="0" max="100" step="1" value="0" title="How much of the secondary frequency to mix in"></div>
-<div class="ctrl-group"><div class="ctrl-label">Pad (entrainment carrier) <span class="ctrl-val" id="volPadVal">12</span></div><input type="range" id="volPad" min="0" max="100" step="1" value="12" title="Volume of the sustained pad tone that carries the brainwave entrainment AM modulation"></div>
+<div class="ctrl-group"><div class="ctrl-label">Pad (ambient layer) <span class="ctrl-val" id="volPadVal">0</span></div><input type="range" id="volPad" min="0" max="100" step="1" value="0" title="Optional sustained pad layer. AM modulation is applied to the whole mix, so this is purely atmospheric — off by default."></div>
 </div>
 </div>
 </div>
@@ -530,7 +537,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="ctrl-group"><div class="ctrl-label">Master<span class="ctrl-val" id="volumeVal">50%</span></div><input type="range" id="volume" min="0" max="100" value="50"></div>
 </div>
 <div class="toggle-row">
-<input type="checkbox" id="breathCue" checked><label for="breathCue">Breath guide (6/min)</label>
+<input type="checkbox" id="breathCue"><label for="breathCue">Breath guide (6/min)</label>
 </div>
 </div>
 </div>
@@ -539,9 +546,18 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="hrv-header"><span class="section-title" style="margin:0" id="bioTitle">Biofeedback</span><button class="ble-btn" id="bleBtn">Connect</button></div>
 <div class="hrv-stats">
 <div><div class="hrv-stat-value" id="hrVal">--</div><div class="hrv-stat-label">HR</div></div>
-<div><div class="hrv-stat-value" id="rmssdVal">--</div><div class="hrv-stat-label">RMSSD</div></div>
+<div><div class="hrv-stat-value" id="rmssdVal">--</div><div class="hrv-stat-label" title="Heart rate variability (RMSSD). Higher = more parasympathetic activity / rest state.">HRV</div></div>
 <div><div class="hrv-stat-value" id="stateVal">--</div><div class="hrv-stat-label">State</div></div>
 </div>
+<div class="state-spectrum" id="stateSpectrum" title="Arousal spectrum — left = rested, right = stressed. Focus/flow is in the middle.">
+<div class="state-spectrum-cell" data-state="CALM">Calm</div>
+<div class="state-spectrum-cell" data-state="OK">OK</div>
+<div class="state-spectrum-cell" data-state="FLOW">Flow</div>
+<div class="state-spectrum-cell" data-state="ALERT">Alert</div>
+<div class="state-spectrum-cell" data-state="STRESS">Stress</div>
+</div>
+<div class="state-spectrum-axis"><span>← under-aroused</span><span>★ optimal ★</span><span>over-aroused →</span></div>
+<div class="hrv-stat-value" id="pnn50Val" style="display:none"></div>
 <div style="position:relative"><canvas class="viz-canvas" id="hrvViz"></canvas><div id="vizTooltip" style="display:none;position:absolute;pointer-events:none;background:rgba(15,15,30,.92);border:1px solid rgba(100,100,150,.4);border-radius:6px;padding:4px 8px;font-size:12px;color:#ddd;white-space:nowrap;z-index:5;backdrop-filter:blur(8px)"></div></div>
 <div id="ecgWrap" style="display:none;position:relative;margin-top:6px"><canvas id="ecgCanvas" style="width:100%;height:80px;display:block;background:rgba(5,15,10,.6);border:1px solid rgba(80,200,120,.2);border-radius:6px"></canvas><div style="position:absolute;top:4px;left:8px;font-size:10px;color:#70b090;letter-spacing:.08em">ECG · 130 Hz</div></div>
 <div class="toggle-row" style="display:none"><input type="checkbox" id="bioControl"><label for="bioControl">Closed-loop control</label></div>
@@ -673,9 +689,11 @@ $('newProfileBtn').addEventListener('click', async () => {
   await loadProfileList();
   $('profileSelect').value = profile.name;
   loadSelectedProfile();
-  // Start calibration
-  if (bleDevice) startCalibration();
-  else $('status').textContent = 'Connect a heart rate monitor to calibrate';
+  // No explicit calibration — baseline is learned opportunistically from the
+  // first settled 60s window, and refined over time via EWMA across sessions.
+  $('status').textContent = bleDevice
+    ? `Profile "${profile.name}" created — baseline will auto-learn from your first session`
+    : `Profile "${profile.name}" created — connect a heart rate monitor to enable biofeedback`;
 });
 
 $('recalibrateBtn').addEventListener('click', () => {
@@ -1196,6 +1214,7 @@ function startCalibration() {
   calibrating = true;
   calRmssdSamples = [];
   $('calOverlay').classList.add('active');
+  $('calSkip').textContent = 'Skip (use previous calibration)';
   $('calTitle').textContent = 'Calibration';
   $('calSub').textContent = 'Sit comfortably and follow the breathing guide. This establishes your relaxed baseline.';
   $('calBar').style.width = '0%';
@@ -1584,6 +1603,9 @@ const CHORD_INTERVALS = {
   add9:  [0,4,7,14],
   min11: [0,3,7,10,17],
   '6':   [0,4,7,9],
+  maj:   [0,4,7],
+  min:   [0,3,7],
+  sus:   [0,5,7],
 };
 
 function chordPCs(root, type) {
@@ -1609,12 +1631,12 @@ function styleDyn() {
 // Per-style song length — how long a single generated "song" runs before the
 // engine rolls a new one. Ambient / meditative styles want long sustained
 // pieces; upbeat styles want shorter, more varied cycling.
-const SONG_MAX_MS_DEFAULT = 180000; // 3 min (was 2 min)
+const SONG_MAX_MS_DEFAULT = 240000; // 4 min
 const STYLE_SONG_MAX_MS = {
-  ambient: 360000, darkambient: 360000, chillwave: 300000,
+  ambient: 480000, darkambient: 480000, chillwave: 420000,
   jhana: 600000, bedtime: 600000, shamanic: 480000,
-  classical: 270000, romantic: 270000, impressionist: 270000,
-  cinematic: 240000, jazz: 240000,
+  classical: 360000, romantic: 360000, impressionist: 360000,
+  cinematic: 300000, jazz: 300000,
 };
 function songMaxMs() {
   return STYLE_SONG_MAX_MS[currentSongStyle] || SONG_MAX_MS_DEFAULT;
@@ -1691,12 +1713,32 @@ const SECTION_TEMPLATES = {
 // Rolled once per song so the arrangement stays cohesive but distinct from other songs.
 let songPalette = new Set();
 
+// Styles that must never use the digital synth pad — they are acoustic by nature.
+const ACOUSTIC_ONLY_STYLES = new Set([
+  'classical','romantic','impressionist','cinematic',
+  'jazz','bossa','lofi','soul','rnb','waltz','tango','folk'
+]);
+// Orchestral/chamber styles: piano is the lead, strings may join as an
+// underlying pad. No bass, no drums, no guitar, no vibes, no synth. The
+// sawtooth "strings" patch with long attack reads close enough to bowed
+// strings when used as a sustained pad behind piano.
+const ORCHESTRAL_STYLES = new Set(['classical','romantic','impressionist']);
 function rollSongPalette() {
-  const allColors = ['guitar','vibes','strings','synth'];
-  // Pick 2 or 3 color instruments (never all 4)
-  const count = Math.random() < 0.4 ? 2 : 3;
-  // Shuffle and take first N
-  const shuffled = allColors.sort(() => Math.random() - 0.5);
+  // currentSongStyle is declared later in the file — at the first boot call,
+  // accessing it directly throws (TDZ). Guard via try/catch.
+  let style = null;
+  try { style = currentSongStyle; } catch (_) { style = null; }
+  if (style && ORCHESTRAL_STYLES.has(style)) {
+    // Strings are always on for orchestral styles — they sit as a pad under
+    // the piano so the arrangement doesn't feel empty, without competing.
+    songPalette = new Set(['strings']);
+    return;
+  }
+  const allColors = (style && ACOUSTIC_ONLY_STYLES.has(style))
+    ? ['guitar','vibes','strings']
+    : ['guitar','vibes','strings','synth'];
+  const count = Math.random() < 0.4 ? 2 : Math.min(3, allColors.length);
+  const shuffled = allColors.slice().sort(() => Math.random() - 0.5);
   songPalette = new Set(shuffled.slice(0, count));
 }
 
@@ -1711,6 +1753,9 @@ function rollSongEnergy() {
   const energySpread = 0.75 + Math.random() * 0.5;   // 0.75–1.25
   const midpoint = 0.6;
 
+  let style = null;
+  try { style = currentSongStyle; } catch (_) { style = null; }
+  const orchestral = style && ORCHESTRAL_STYLES.has(style);
   SECTION_TYPES = {};
   for (const [name, tmpl] of Object.entries(SECTION_TEMPLATES)) {
     // Scale energy around midpoint
@@ -1725,7 +1770,13 @@ function rollSongEnergy() {
     bars = Math.max(4, Math.min(16, bars));
     // Filter color instruments through the song palette
     const colors = (tmpl.colors || []).filter(c => songPalette.has(c));
-    SECTION_TYPES[name] = { bars, energy: +e.toFixed(2), instruments: [...tmpl.instruments, ...colors] };
+    let instruments = [...tmpl.instruments, ...colors];
+    if (orchestral) {
+      // Orchestral: keys + strings only (strings added via palette above).
+      // Strip drums, bass, guitar, vibes, synth.
+      instruments = instruments.filter(i => i === 'keys' || i === 'strings');
+    }
+    SECTION_TYPES[name] = { bars, energy: +e.toFixed(2), instruments };
   }
 }
 
@@ -1833,7 +1884,7 @@ const SONG_STYLES = {
     ],
   },
   bossa: {
-    name: 'Bossa Nova', tempoRange: [115, 130], swing: 0.15,
+    name: 'Bossa Nova', tempoRange: [88, 112], swing: 0.12,
     verse: [
       [[0,'maj9',8],[6,'dom7',8],[5,'maj7',8],[5,'min7',4],[10,'dom7',4]],    // Cmaj9 F#7 Fmaj7 Fm7 Bb7
       [[0,'maj7',8],[2,'min7',4],[7,'dom7',4],[0,'maj7',8],[9,'dom7',8]],
@@ -1890,21 +1941,32 @@ SONG_STYLES.funk = {
   ],
 };
 SONG_STYLES.classical = {
-  name: 'Classical', tempoRange: [60, 78], swing: 0.05,
+  name: 'Classical', tempoRange: [60, 78], swing: 0.0,
+  // Common-practice harmony: triads with dom7 reserved for V (functional cadences).
+  // Targets Mozart/Haydn/early Beethoven vocabulary — no sevenths on I/IV/ii.
   verse: [
-    [[0,'maj7',8],[5,'maj7',8],[7,'dom7',8],[0,'maj7',8]],
-    [[0,'maj7',8],[9,'min7',8],[2,'min7',8],[7,'dom7',8]],
-    [[5,'maj7',8],[0,'maj7',8],[2,'min7',8],[7,'sus4',4],[7,'dom7',4]],
-    [[0,'maj9',8],[4,'min7',8],[9,'min7',8],[7,'dom7',8]],
+    // I–IV–V7–I (authentic cadence)
+    [[0,'maj',8],[5,'maj',8],[7,'dom7',8],[0,'maj',8]],
+    // I–vi–ii–V7
+    [[0,'maj',8],[9,'min',8],[2,'min',8],[7,'dom7',8]],
+    // IV–I–ii–V(sus)–V7 (suspension over dominant)
+    [[5,'maj',8],[0,'maj',8],[2,'min',8],[7,'sus4',4],[7,'dom7',4]],
+    // I–iii–vi–V7
+    [[0,'maj',8],[4,'min',8],[9,'min',8],[7,'dom7',8]],
   ],
   chorus: [
-    [[5,'maj7',8],[2,'min7',8],[7,'dom7',8],[0,'maj7',8]],
-    [[9,'min7',8],[5,'maj7',8],[7,'dom7',8],[0,'maj9',8]],
-    [[0,'maj7',4],[7,'dom7',4],[9,'min7',4],[5,'maj7',4],[2,'min7',8],[7,'dom7',8]],
+    // IV–ii–V7–I
+    [[5,'maj',8],[2,'min',8],[7,'dom7',8],[0,'maj',8]],
+    // vi–IV–V7–I
+    [[9,'min',8],[5,'maj',8],[7,'dom7',8],[0,'maj',8]],
+    // Circle-of-fifths descent: I–V7–vi–IV–ii–V7
+    [[0,'maj',4],[7,'dom7',4],[9,'min',4],[5,'maj',4],[2,'min',8],[7,'dom7',8]],
   ],
   bridge: [
-    [[5,'maj7',16],[7,'dom7',16]],
-    [[9,'min7',8],[5,'maj7',8],[2,'min7',8],[7,'sus4',8]],
+    // Long dominant prolongation (common before a recapitulation)
+    [[7,'sus4',8],[7,'dom7',8],[0,'maj',16]],
+    // vi–iii–IV–V7
+    [[9,'min',8],[4,'min',8],[5,'maj',8],[7,'dom7',8]],
   ],
 };
 SONG_STYLES.chillwave = {
@@ -1926,23 +1988,24 @@ SONG_STYLES.chillwave = {
   ],
 };
 
-// Romantic — Chopin nocturnes, Liszt, lush arpeggios
+// Romantic — Chopin nocturnes, Liszt, lush arpeggios. Mostly triadic with
+// occasional extensions for colour; chromatic motion (iv, bVI, V7sus) drives emotion.
 SONG_STYLES.romantic = {
-  name: 'Romantic', tempoRange: [58, 72], swing: 0.08,
+  name: 'Romantic', tempoRange: [58, 72], swing: 0.05,
   verse: [
-    [[0,'maj7',8],[5,'min7',8],[7,'dom7',8],[0,'maj7',8]],
-    [[9,'min7',8],[5,'maj7',8],[2,'min7',8],[7,'dom7',8]],
-    [[0,'maj9',8],[8,'maj7',8],[5,'maj7',8],[7,'sus4',4],[7,'dom7',4]],
-    [[4,'min7',8],[9,'dom7',8],[2,'min7',8],[7,'dom7',8]],
+    [[0,'maj',8],[5,'min',8],[7,'dom7',8],[0,'maj',8]],        // borrowed iv (F minor)
+    [[9,'min',8],[5,'maj',8],[2,'min',8],[7,'dom7',8]],
+    [[0,'maj',8],[8,'maj',8],[5,'min',8],[7,'sus4',4],[7,'dom7',4]], // bVI borrowed
+    [[4,'min',8],[9,'min',8],[2,'min',8],[7,'dom7',8]],
   ],
   chorus: [
-    [[5,'maj7',8],[0,'maj9',8],[9,'min7',8],[7,'dom7',8]],
-    [[8,'maj7',8],[5,'maj7',8],[7,'dom7',8],[0,'maj9',8]],
-    [[2,'min7',4],[7,'dom7',4],[0,'maj7',8],[5,'maj7',4],[9,'min7',4]],
+    [[5,'maj',8],[0,'maj7',8],[9,'min',8],[7,'dom7',8]],
+    [[8,'maj',8],[5,'maj',8],[7,'dom7',8],[0,'maj',8]],         // bVI–IV–V7–I
+    [[2,'min',4],[7,'dom7',4],[0,'maj',8],[5,'min',4],[9,'min',4]],
   ],
   bridge: [
-    [[5,'maj7',16],[7,'sus4',8],[7,'dom7',8]],
-    [[8,'maj7',8],[5,'maj7',8],[2,'min7',8],[7,'dom7',8]],
+    [[5,'maj',16],[7,'sus4',8],[7,'dom7',8]],
+    [[8,'maj',8],[5,'min',8],[2,'min',8],[7,'dom7',8]],
   ],
 };
 // Impressionist — Debussy, Satie, dreamy suspended chords
@@ -2397,12 +2460,92 @@ const BEDTIME_JOURNEY = [
 
 let currentSongStyle = 'jazz';
 let currentSwing = 0.4;
-let shuffleMode = true;
+let adaptiveMode = true;
 let silenceMode = false;
 let entrainmentMode = false;
 let entrainmentCarrier = null; // {src, gain} — lives for the duration of entrainmentMode
 
-const STYLE_KEYS = Object.keys(SONG_STYLES).filter(k => k !== 'shamanic' && k !== 'jhana' && k !== 'bedtime'); // exclude secret modes from shuffle
+// Adaptive-mode quadrant stickiness — once a quadrant drives a song choice, we
+// stay in it for at least ADAPTIVE_MIN_HOLD_MS before reconsidering. Prevents
+// genre whiplash from transient HR/RMSSD swings between songs.
+let lastAdaptiveQuadrant = null;           // 'entrain' | 'soothe' | 'sustain' | 'match' | null
+let lastAdaptiveQuadrantTime = 0;          // ms timestamp when it was set
+const ADAPTIVE_MIN_HOLD_MS = 240000;       // 4 min
+
+// Per-quadrant style pools. Quadrants describe the user's current arousal:
+//   entrain  — low HR + low RMSSD: tired/under-aroused. Fast rhythmic music
+//              entrains attention and can paradoxically lift focus.
+//   soothe   — high HR + low RMSSD: acute stress. Slow, low-arousal music.
+//   sustain  — low HR + high RMSSD: deep rest. Long-form, low-energy.
+//   match    — anything + high RMSSD (and not deep rest): engaged/flow. No constraint.
+const ADAPTIVE_QUADRANT_POOLS = {
+  entrain: ['dnb','house','techno','funk','complextro','chiptune','synthwave','futurebass'],
+  soothe:  ['ambient','classical','impressionist','cinematic','lofi','romantic','chillwave'],
+  sustain: ['ambient','darkambient','impressionist','chillwave','cinematic'],
+  match:   null, // sentinel: use full STYLE_KEYS
+};
+
+function classifyArousalQuadrant() {
+  // Pull the last 60s of each signal (stable window, less noisy than instantaneous).
+  const now = Date.now();
+  const recentHr = hrHistory.filter(h => h.time > now - 60000).map(h => h.hr);
+  const recentRmssd = rmssdHistory.slice(-60);
+  if (recentHr.length < 10 || recentRmssd.length < 10) return null;  // not enough data
+  const avgHr = recentHr.reduce((a, b) => a + b, 0) / recentHr.length;
+  const avgRmssd = recentRmssd.reduce((a, b) => a + b, 0) / recentRmssd.length;
+  // RMSSD reference: any available baseline; otherwise the absolute norm midpoint.
+  const baseInfo = (typeof effectiveBaseline === 'function') ? effectiveBaseline() : { value: null };
+  const rmssdRef = baseInfo.value || 35;
+  // HR reference: long-term baseline if we have one, else a reasonable absolute.
+  // Using 72 as a generic resting-adult default when no personal baseline exists.
+  const hrRef = longTermHrBaseline || 72;
+  const rmssdHigh = avgRmssd > rmssdRef * 1.10;
+  const rmssdLow  = avgRmssd < rmssdRef * 0.85;
+  const hrHigh    = avgHr    > hrRef * 1.08;
+  const hrLow     = avgHr    < hrRef * 0.95;
+  let quadrant;
+  if (rmssdLow && hrLow)       quadrant = 'entrain';
+  else if (rmssdLow && hrHigh) quadrant = 'soothe';
+  else if (rmssdHigh && hrLow) quadrant = 'sustain';
+  else                          quadrant = 'match';
+  return quadrant;
+}
+
+function adaptivePoolForCurrentState() {
+  const now = Date.now();
+  // Stickiness: if we set a quadrant recently, keep using it.
+  let quadrant;
+  if (lastAdaptiveQuadrant && (now - lastAdaptiveQuadrantTime) < ADAPTIVE_MIN_HOLD_MS) {
+    quadrant = lastAdaptiveQuadrant;
+  } else {
+    quadrant = classifyArousalQuadrant();
+    if (quadrant) {
+      lastAdaptiveQuadrant = quadrant;
+      lastAdaptiveQuadrantTime = now;
+    }
+  }
+  if (!quadrant) return STYLE_KEYS; // no biofeedback — fall back to full pool
+  const pool = ADAPTIVE_QUADRANT_POOLS[quadrant];
+  if (!pool) return STYLE_KEYS;     // 'match' sentinel
+  return pool.filter(s => STYLE_KEYS.includes(s));
+}
+
+// Adaptive button becomes plain "Shuffle" when no biofeedback is connected —
+// with no HR/RMSSD signal, we can't do quadrant-driven selection, so it's just
+// random. "Adaptive" only promises smart behavior when the sensor is live.
+function updateAdaptiveLabel() {
+  const btn = document.querySelector('.song-btn[data-song="adaptive"]');
+  if (!btn) return;
+  if (bleDevice) {
+    btn.textContent = 'Adaptive';
+    btn.title = 'Picks styles that match your current arousal state — fast music when tired, slow when stressed, varied in flow';
+  } else {
+    btn.textContent = 'Shuffle';
+    btn.title = 'Random style selection. Connect a heart rate monitor to enable adaptive selection based on arousal state.';
+  }
+}
+
+const STYLE_KEYS = Object.keys(SONG_STYLES).filter(k => k !== 'shamanic' && k !== 'jhana' && k !== 'bedtime'); // exclude secret modes from adaptive selection
 
 function getProgressions() {
   return SONG_STYLES[currentSongStyle];
@@ -2630,8 +2773,15 @@ STYLE_DRUM_PATTERNS.chiptune = {
 STYLE_DRUM_PATTERNS.rnb = STYLE_DRUM_PATTERNS.soul;
 STYLE_DRUM_PATTERNS.chillwave = STYLE_DRUM_PATTERNS.ambient;
 STYLE_DRUM_PATTERNS.darkambient = STYLE_DRUM_PATTERNS.ambient;
-STYLE_DRUM_PATTERNS.classical = STYLE_DRUM_PATTERNS.waltz;
-STYLE_DRUM_PATTERNS.romantic = STYLE_DRUM_PATTERNS.waltz;
+// Classical/Romantic: essentially drumless — orchestral/piano music has no kit.
+// A lone soft rim on the downbeat is the most we want; ambient's low pattern
+// accomplishes this (kick only on beat 1, everything else empty).
+STYLE_DRUM_PATTERNS.classical = {
+  low:  [{kick:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],
+  mid:  [{kick:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],
+  high: [{kick:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],hat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],rim:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}],
+};
+STYLE_DRUM_PATTERNS.romantic = STYLE_DRUM_PATTERNS.classical;
 STYLE_DRUM_PATTERNS.impressionist = STYLE_DRUM_PATTERNS.ambient;
 STYLE_DRUM_PATTERNS.cinematic = STYLE_DRUM_PATTERNS.ambient;
 STYLE_DRUM_PATTERNS.futurebass = STYLE_DRUM_PATTERNS.house;
@@ -2678,6 +2828,20 @@ const BASS_PATTERNS = [
   [1,0,0,0,0,0,1,0,5,0,0,0,1,0,0,0],
 ];
 
+// Style-specific bass patterns. When a style appears here, these patterns
+// replace the generic BASS_PATTERNS for that style's songs. 1 = root, 5 = fifth.
+const STYLE_BASS_PATTERNS = {
+  // Bossa nova: classic surdo-style root/fifth on beats 1 and 3 — sparse,
+  // uncluttered, lets the guitar clave and syncopated chords breathe. No
+  // walking lines, no mid-bar activity. The fifth can go up or the bass can
+  // anticipate the next chord at the very end of a bar.
+  bossa: [
+    [1,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0],
+    [1,0,0,0,0,0,0,0,5,0,0,0,0,0,1,0],   // anticipation on "and of 4"
+    [1,0,0,0,0,0,0,0,5,0,0,0,0,0,5,0],
+  ],
+};
+
 const GUITAR_PATTERNS = [
   [0,-1,2,-1,1,-1,3,-1,0,-1,2,-1,3,-1,1,-1],
   [-1,0,-1,2,-1,1,-1,3,-1,0,-1,2,-1,3,-1,1],
@@ -2697,6 +2861,38 @@ const GUITAR_PATTERNS = [
   [-1,-1,0,-1,-1,1,-1,-1,-1,-1,2,-1,-1,3,-1,-1],
 ];
 
+// Style-specific guitar patterns override the generic pool when set.
+// Values index into the voiced chord tones (root/3rd/5th/7th = 0/1/2/3).
+const STYLE_GUITAR_PATTERNS = {
+  // Bossa nova: signature João Gilberto pattern — bass root on downbeat of
+  // each beat group, syncopated chord stabs on the "and-of" and anticipations.
+  // These are 1-bar reductions of the classic 2-bar bossa clave feel.
+  bossa: [
+    [0,-1,-1,2,-1,3,-1,-1, 0,-1,-1,2,-1,3,-1,-1],
+    [0,-1,-1,2,-1,-1,3,-1, 0,-1,2,-1,-1,3,-1,-1],
+    [0,-1,2,-1,-1,3,-1,-1, 0,-1,-1,2,-1,-1,3,-1],
+  ],
+  // Classical: gentle Alberti-style broken chord (root-5th-3rd-5th), piano-friendly.
+  classical: [
+    [0,-1,2,-1,1,-1,2,-1, 0,-1,2,-1,1,-1,2,-1],
+    [0,-1,-1,-1,2,-1,-1,-1, 1,-1,-1,-1,2,-1,-1,-1],
+  ],
+  romantic: [
+    [0,-1,2,-1,1,-1,2,-1, 0,-1,2,-1,1,-1,2,-1],
+    [0,-1,1,-1,2,-1,1,-1, 0,-1,1,-1,2,-1,1,-1],
+  ],
+  // Funk: percussive 16th chord stabs on off-beats.
+  funk: [
+    [-1,1,-1,-1,-1,1,-1,1, -1,1,-1,-1,-1,1,-1,1],
+    [-1,-1,1,-1,-1,1,-1,-1, -1,1,-1,-1,-1,1,-1,1],
+  ],
+  // Reggae/soul off-beat stab (beat 2 and 4 "ands")
+  soul: [
+    [-1,-1,-1,-1,1,-1,-1,-1, -1,-1,-1,-1,1,-1,-1,-1],
+    [-1,-1,1,-1,-1,-1,1,-1, -1,-1,1,-1,-1,-1,1,-1],
+  ],
+};
+
 const KEYS_PATTERNS_SPARSE = [
   [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
@@ -2706,6 +2902,15 @@ const KEYS_PATTERNS_BUSY = [
   [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1],
   [1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0],
   [0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,1],
+];
+// Classical/orchestral keys: continuous flowing 8th notes — each hit is one
+// chord tone (see Alberti branch in the keys playback). Block chord anchors
+// on beats 1 and 3 (marked with 1), arpeggio passing tones on the other 8ths
+// (marked with 1 as well — the playback distinguishes by step index).
+const KEYS_PATTERNS_CLASSICAL = [
+  [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  [1,0,0,0,1,0,1,0,1,0,0,0,1,0,1,0],
+  [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
 ];
 
 const VIBES_PATTERNS = [
@@ -2735,46 +2940,58 @@ function pickPatternsForEnergy(energy) {
   }
   // Use style-specific drum patterns if available, else generic
   const stylePats = STYLE_DRUM_PATTERNS[currentSongStyle];
+  const isOrchestral = ORCHESTRAL_STYLES.has(currentSongStyle);
   if (energy < 0.4) {
     curDrumPat = pick(stylePats ? stylePats.low : DRUM_PATTERNS_LOW);
-    curKeysPat = pick(KEYS_PATTERNS_SPARSE);
+    curKeysPat = isOrchestral ? pick(KEYS_PATTERNS_CLASSICAL) : pick(KEYS_PATTERNS_SPARSE);
   } else if (energy < 0.7) {
     curDrumPat = pick(stylePats ? stylePats.mid : DRUM_PATTERNS_MID);
-    curKeysPat = pick(KEYS_PATTERNS_SPARSE.concat(KEYS_PATTERNS_BUSY));
+    curKeysPat = isOrchestral ? pick(KEYS_PATTERNS_CLASSICAL) : pick(KEYS_PATTERNS_SPARSE.concat(KEYS_PATTERNS_BUSY));
   } else {
     curDrumPat = pick(stylePats ? stylePats.high : DRUM_PATTERNS_HIGH);
-    curKeysPat = pick(KEYS_PATTERNS_BUSY);
+    curKeysPat = isOrchestral ? pick(KEYS_PATTERNS_CLASSICAL) : pick(KEYS_PATTERNS_BUSY);
   }
-  curBassPat = pick(BASS_PATTERNS);
-  curGuitarPat = pick(GUITAR_PATTERNS);
+  const styleBass = STYLE_BASS_PATTERNS[currentSongStyle];
+  curBassPat = pick(styleBass || BASS_PATTERNS);
+  const styleGuitar = STYLE_GUITAR_PATTERNS[currentSongStyle];
+  curGuitarPat = pick(styleGuitar || GUITAR_PATTERNS);
   curVibesPat = pick(VIBES_PATTERNS);
 }
 
 function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 
 function startNewSong() {
-  // Pick which color instruments this song uses (2-3 of guitar/vibes/strings/synth)
-  rollSongPalette();
   // Randomize energy curve and section lengths for this song
   rollSongEnergy();
-  // Shuffle: pick a random style for this song.
+  // Adaptive: pick a style that matches the user's current arousal quadrant.
   // First song of a session: bias to a chill pool so the user has a natural
-  // settle window for today-baseline detection. After song 1, the full pool.
-  if (shuffleMode) {
+  // settle window for today-baseline detection. After song 1, quadrant-driven.
+  if (adaptiveMode) {
     const CHILL_STYLES = ['ambient','chillwave','lofi','jazz','bossa','classical','impressionist','soul'];
-    const pool = (sessionSongCount === 0) ? CHILL_STYLES.filter(s => STYLE_KEYS.includes(s)) : STYLE_KEYS;
+    let pool;
+    if (sessionSongCount === 0) {
+      pool = CHILL_STYLES.filter(s => STYLE_KEYS.includes(s));
+    } else if (bleDevice) {
+      pool = adaptivePoolForCurrentState();
+    } else {
+      // No biofeedback — can't be adaptive. Just shuffle across all styles.
+      pool = STYLE_KEYS;
+    }
     currentSongStyle = pick(pool.length ? pool : STYLE_KEYS);
-    logEvent('song_change', { style: currentSongStyle, firstSong: sessionSongCount === 0 });
+    logEvent('song_change', { style: currentSongStyle, firstSong: sessionSongCount === 0, quadrant: bleDevice ? lastAdaptiveQuadrant : null, ble: !!bleDevice });
     const style = SONG_STYLES[currentSongStyle];
     currentSwing = style.swing;
     const [lo, hi] = style.tempoRange;
     $('bpm').value = Math.round(lo + Math.random() * (hi - lo));
     // Highlight the active style button
     document.querySelectorAll('.song-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.song === 'shuffle');
+      b.classList.toggle('active', b.dataset.song === 'adaptive');
     });
     $('sectionInfo').textContent = style.name.toUpperCase();
   }
+  // Pick this song's color palette *after* the style is locked, so acoustic
+  // styles get acoustic-only colors (no digital synth pad on a classical piece).
+  rollSongPalette();
   if (typeof rollTimbres === 'function') rollTimbres();
   songStartedAt = Date.now();
   sessionSongCount++;
@@ -3668,25 +3885,56 @@ function playGuitar(midi, time, dur) {
 // ---- STRINGS (slow-attack filtered saws) ----
 function playStrings(notes, time, dur) {
   if (!$('muteStrings').checked || !activeInstruments.has('strings')) return;
-  const vel = 0.9 + Math.random()*0.2*styleDyn(); // ±10% per chord — subtle for sustained strings, scaled by style dynamics
-  const peak = 0.07 * vel;
+  const vel = 0.9 + Math.random()*0.2*styleDyn();
+  const peak = 0.055 * vel;
   for (const midi of notes) {
     const f=midiToFreq(midi), t=time;
+    // 3-string ensemble: one on pitch, two spread ±7¢. Mix of sawtooth +
+    // triangle harmonic content reads more like bowed strings than pure saws.
     const o1=ac.createOscillator(); o1.type='sawtooth'; o1.frequency.value=f;
-    const o2=ac.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f*Math.pow(2,3/1200);
-    const mix=ac.createGain(); mix.gain.value=0.3;
-    o1.connect(mix); o2.connect(mix);
-    const lpf=ac.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=hitJit(2200, 0.25); lpf.Q.value=hitJit(0.5, 0.3);
-    mix.connect(lpf);
+    const o2=ac.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f*Math.pow(2, 7/1200);
+    const o3=ac.createOscillator(); o3.type='triangle'; o3.frequency.value=f*Math.pow(2,-7/1200);
+    // Vibrato: 5Hz sine, ±8 cents — gentle expressive bow vibrato, not synth LFO
+    const vib=ac.createOscillator(); vib.type='sine'; vib.frequency.value=hitJit(5.0, 0.15);
+    const vibG=ac.createGain(); vibG.gain.value=f*0.0046; // ~8 cents
+    vib.connect(vibG);
+    vibG.connect(o1.detune); vibG.connect(o2.detune); vibG.connect(o3.detune);
+    const mix=ac.createGain(); mix.gain.value=0.22;
+    o1.connect(mix); o2.connect(mix); o3.connect(mix);
+    // Body resonance (cello/viola-ish): two peaks around 220Hz and 440Hz
+    const bodyLo=ac.createBiquadFilter(); bodyLo.type='peaking';
+    bodyLo.frequency.value=220; bodyLo.Q.value=1.2; bodyLo.gain.value=3.5;
+    const bodyHi=ac.createBiquadFilter(); bodyHi.type='peaking';
+    bodyHi.frequency.value=440; bodyHi.Q.value=1.6; bodyHi.gain.value=2.5;
+    // Tame the saw buzz — lower cutoff than before
+    const lpf=ac.createBiquadFilter(); lpf.type='lowpass';
+    lpf.frequency.value=hitJit(1700, 0.2); lpf.Q.value=hitJit(0.4, 0.3);
+    // Slight HP to remove rumble
+    const hpf=ac.createBiquadFilter(); hpf.type='highpass';
+    hpf.frequency.value=80; hpf.Q.value=0.5;
+    mix.connect(hpf); hpf.connect(bodyLo); bodyLo.connect(bodyHi); bodyHi.connect(lpf);
+    // Bow-noise burst on attack: filtered pink noise, quickly fades
+    const bowBuf = ac.createBuffer(1, ac.sampleRate*0.25, ac.sampleRate);
+    const bowData = bowBuf.getChannelData(0);
+    for (let i=0;i<bowData.length;i++) bowData[i]=(Math.random()*2-1)*(1-i/bowData.length);
+    const bow = ac.createBufferSource(); bow.buffer = bowBuf;
+    const bowBp = ac.createBiquadFilter(); bowBp.type='bandpass';
+    bowBp.frequency.value=f*4; bowBp.Q.value=2;
+    const bowG = ac.createGain(); bowG.gain.value=0;
+    bowG.gain.setValueAtTime(0, t);
+    bowG.gain.linearRampToValueAtTime(0.012*vel, t+0.02);
+    bowG.gain.exponentialRampToValueAtTime(0.0005, t+0.2);
+    bow.connect(bowBp); bowBp.connect(bowG); bowG.connect(instruments.strings.gain);
     const amp=ac.createGain();
-    const atkTime = hitJit(0.8, 0.35); // vary attack per note (0.52-1.08s)
+    const atkTime = hitJit(0.45, 0.35);
     amp.gain.setValueAtTime(0,t);
-    amp.gain.linearRampToValueAtTime(peak,t+atkTime); // slow attack with variation
+    amp.gain.linearRampToValueAtTime(peak,t+atkTime);
     amp.gain.setValueAtTime(peak,t+dur-0.5);
     amp.gain.linearRampToValueAtTime(0.001,t+dur);
     lpf.connect(amp); amp.connect(instruments.strings.gain);
-    o1.start(t); o2.start(t);
-    o1.stop(t+dur+0.1); o2.stop(t+dur+0.1);
+    o1.start(t); o2.start(t); o3.start(t); vib.start(t); bow.start(t);
+    o1.stop(t+dur+0.1); o2.stop(t+dur+0.1); o3.stop(t+dur+0.1);
+    vib.stop(t+dur+0.1); bow.stop(t+0.3);
   }
 }
 
@@ -4544,6 +4792,66 @@ const HAT_PRESETS = {
 
 // ---- BASS PRESETS ----
 const BASS_PRESETS = {
+  'upright': (f,t,dur,j) => {
+    // Acoustic upright bass (pizzicato). Karplus-Strong in bass range with
+    // woody body resonances. Natural pizz decay is ~1.6s max regardless of
+    // scheduled note duration — the string rings and blooms without holding
+    // like a synth sustain. Tuned soft: narrow/loud resonances and a hard
+    // attack sounded "croaky" — wide Qs + gentler attack give a mellower tone.
+    const sr = ac.sampleRate;
+    const period = Math.round(sr/f);
+    const decayTime = Math.min(dur, 1.6);
+    const bufLen = Math.max(Math.floor(sr*(decayTime+0.3)), period*2);
+    const buf = ac.createBuffer(1, bufLen, sr);
+    const d = buf.getChannelData(0);
+    // Pluck-shaped excitation — fingertip displacement on a thick bass string
+    for (let i=0; i<period; i++) {
+      d[i] = (Math.random()*2-1) * 0.7 * Math.exp(-i/(period*0.4));
+    }
+    // K-S feedback. Bass strings shed energy faster than guitar strings, but
+    // the amp envelope does most of the decay work — keep the loop relatively
+    // sustained so the tone stays warm through the full envelope.
+    const decayCoef = 0.995;
+    for (let i=period; i<bufLen; i++) {
+      d[i] = decayCoef * (0.5*d[i-period] + 0.5*d[i-period+1]);
+    }
+    const src = ac.createBufferSource(); src.buffer = buf;
+    // Body resonances — wider Qs (1.2/1.0/0.9) and lower gains (3/2/1.5 dB)
+    // give a woody color without the narrow vowel-formant "croak" that
+    // happens when peaks are sharp.
+    const air = ac.createBiquadFilter(); air.type='peaking';
+    air.frequency.value = hitJit(65, 0.08); air.Q.value = 1.2; air.gain.value = 3;
+    const top = ac.createBiquadFilter(); top.type='peaking';
+    top.frequency.value = hitJit(130, 0.08); top.Q.value = 1.0; top.gain.value = 2;
+    const back = ac.createBiquadFilter(); back.type='peaking';
+    back.frequency.value = hitJit(220, 0.1); back.Q.value = 0.9; back.gain.value = 1.5;
+    // Dark lowpass — upright is woody, not bright
+    const lpf = ac.createBiquadFilter(); lpf.type='lowpass';
+    lpf.frequency.value = hitJit(1800, 0.2) * j.brightness;
+    lpf.Q.value = 0.5;
+    // Amplitude envelope — softer attack (less fingertip click), ~1.6s bloom
+    const amp = ac.createGain();
+    amp.gain.setValueAtTime(0, t);
+    amp.gain.linearRampToValueAtTime(0.22, t+0.015);
+    amp.gain.exponentialRampToValueAtTime(0.14, t+0.15);
+    amp.gain.exponentialRampToValueAtTime(0.04, t+Math.max(0.25, decayTime*0.55));
+    amp.gain.exponentialRampToValueAtTime(0.0005, t+decayTime+0.1);
+    src.connect(air); air.connect(top); top.connect(back); back.connect(lpf);
+    lpf.connect(amp); amp.connect(instruments.bass.gain);
+    src.start(t); src.stop(t+decayTime+0.3);
+    // Very subtle fingertip click — bandpass lower (800 Hz = woody thumb),
+    // gain down to 0.025 so it colors the attack without clicking on top
+    const clen = Math.max(1, Math.floor(sr*0.012));
+    const cbuf = ac.createBuffer(1, clen, sr);
+    const cd = cbuf.getChannelData(0);
+    for (let i=0; i<clen; i++) cd[i] = (Math.random()*2-1) * Math.exp(-i/(clen*0.3));
+    const csrc = ac.createBufferSource(); csrc.buffer = cbuf;
+    const cbp = ac.createBiquadFilter(); cbp.type='bandpass';
+    cbp.frequency.value = 800; cbp.Q.value = 0.6;
+    const cg = ac.createGain(); cg.gain.value = 0.025;
+    csrc.connect(cbp); cbp.connect(cg); cg.connect(amp);
+    csrc.start(t);
+  },
   'sub-saw': (f,t,dur,j) => {
     const sub=ac.createOscillator(); sub.type='sine'; sub.frequency.value=f;
     const saw=ac.createOscillator(); saw.type='sawtooth'; saw.frequency.value=f;
@@ -4653,61 +4961,88 @@ const KEYS_PRESETS = {
     car.stop(t+dur+0.6); mod.stop(t+dur+0.6);
   },
   'piano': (f,t,dur,j) => {
-    // Additive piano — 12 partials, stretched tuning, no chorus (to avoid the
-    // beating/phasing "synthy" sound), wide-open LPF, strong hammer thump.
+    // Acoustic piano — additive synthesis tuned around the four synth-vs-real
+    // tells that our ears actually key on:
+    //   1. Unison tri-chord: real pianos strike 3 strings per note. Rendering
+    //      the first 3 partials as three oscillators at ±0.7¢ detune produces
+    //      the natural beating/shimmer that no spectrum shaping alone can fake.
+    //   2. Soundboard body modes: two peaking filters emulating the wooden
+    //      plate resonances (~95Hz, ~260Hz) — adds "wood."
+    //   3. Per-note stretch jitter + per-string timing offsets: decorrelates
+    //      phase across partials, killing the "synthy additive sheen."
+    //   4. Felt hammer: lowered noise center (2.5kHz→1.4kHz) + extra LPF for a
+    //      softer struck character instead of a click.
     const sr = ac.sampleRate;
+    const stretchJit = 1 + (Math.random() - 0.5) * 0.0008;
 
-    // Master output + amplitude envelope: sharp attack, fast initial decay, slow tail
     const amp = ac.createGain();
+    // Slightly softer, slower attack (2ms → 6ms) so the note blooms instead of
+    // clicking like a harpsichord. Slower early-decay tail keeps body in the
+    // note longer before the natural exponential fade.
     amp.gain.setValueAtTime(0, t);
-    amp.gain.linearRampToValueAtTime(0.17, t+0.002);   // hammer impact
-    amp.gain.exponentialRampToValueAtTime(0.08, t+0.05);
-    amp.gain.exponentialRampToValueAtTime(0.035, t+0.35);
-    amp.gain.exponentialRampToValueAtTime(0.012, t+1.0);
-    amp.gain.setTargetAtTime(0.001, t+Math.min(dur-0.05, 1.6), 0.45);
+    amp.gain.linearRampToValueAtTime(0.15, t+0.006);
+    amp.gain.exponentialRampToValueAtTime(0.085, t+0.08);
+    amp.gain.exponentialRampToValueAtTime(0.035, t+0.45);
+    amp.gain.exponentialRampToValueAtTime(0.012, t+1.2);
+    amp.gain.setTargetAtTime(0.0005, t+Math.min(dur-0.05, 1.8), 0.5);
     amp.connect(instruments.keys.gain);
 
-    // Wide-open LPF (was the main thing killing previous version) —
-    // 12k→6k so upper partials actually speak
+    // Soundboard body modes — partials, hammer, and thump all route through
+    // this so the whole note is tinted by the same wood.
+    const body1 = ac.createBiquadFilter(); body1.type='peaking';
+    body1.frequency.value = hitJit(95, 0.06); body1.Q.value = 1.8; body1.gain.value = 3.0;
+    const body2 = ac.createBiquadFilter(); body2.type='peaking';
+    body2.frequency.value = hitJit(260, 0.06); body2.Q.value = 1.4; body2.gain.value = 2.0;
+    body1.connect(body2); body2.connect(amp);
+
     const lpf = ac.createBiquadFilter(); lpf.type='lowpass';
     const bright = j.brightness;
     lpf.frequency.setValueAtTime(Math.min(12000, f*24)*bright, t);
     lpf.frequency.exponentialRampToValueAtTime(Math.min(6500, f*10)*bright, t+0.1);
     lpf.frequency.exponentialRampToValueAtTime(Math.min(4000, f*6)*bright, t+1.0);
     lpf.Q.value = 0.4;
-    lpf.connect(amp);
+    lpf.connect(body1);
 
-    // Partials — realistic piano spectrum: strong 1st/2nd/3rd, falling upper partials,
-    // slight inharmonic stretch, per-partial decays (higher = faster)
-    // Amplitudes rough-match measured piano spectra
+    // Partials. `unison:true` on the first three triggers the 3-string render.
     const partials = [
-      {n:1,  a:1.00, s:1.0000, d:1.8},
-      {n:2,  a:0.78, s:1.0003, d:1.5},
-      {n:3,  a:0.55, s:1.0007, d:1.2},
-      {n:4,  a:0.40, s:1.0013, d:0.9},
-      {n:5,  a:0.28, s:1.0020, d:0.7},
-      {n:6,  a:0.20, s:1.0029, d:0.55},
-      {n:7,  a:0.14, s:1.0040, d:0.45},
-      {n:8,  a:0.10, s:1.0052, d:0.35},
-      {n:9,  a:0.07, s:1.0066, d:0.28},
-      {n:10, a:0.05, s:1.0082, d:0.22},
-      {n:11, a:0.035,s:1.0099, d:0.18},
-      {n:12, a:0.025,s:1.0118, d:0.15},
+      {n:1,  a:1.00, s:1.0000, d:1.8,  unison:true},
+      {n:2,  a:0.78, s:1.0003, d:1.5,  unison:true},
+      {n:3,  a:0.55, s:1.0007, d:1.2,  unison:true},
+      {n:4,  a:0.40, s:1.0013, d:0.9,  unison:false},
+      {n:5,  a:0.28, s:1.0020, d:0.7,  unison:false},
+      {n:6,  a:0.20, s:1.0029, d:0.55, unison:false},
+      {n:7,  a:0.14, s:1.0040, d:0.45, unison:false},
+      {n:8,  a:0.10, s:1.0052, d:0.35, unison:false},
+      {n:9,  a:0.07, s:1.0066, d:0.28, unison:false},
+      {n:10, a:0.05, s:1.0082, d:0.22, unison:false},
+      {n:11, a:0.035,s:1.0099, d:0.18, unison:false},
+      {n:12, a:0.025,s:1.0118, d:0.15, unison:false},
     ];
+    const unisonOffsets = [-0.7, 0, 0.7]; // cents
     for (const p of partials) {
-      const freq = f * p.n * p.s;
-      if (freq > sr*0.45) continue;  // skip above Nyquist
-      const o = ac.createOscillator(); o.type='sine'; o.frequency.value=freq;
-      const g = ac.createGain();
-      g.gain.setValueAtTime(p.a*0.14, t);
-      g.gain.exponentialRampToValueAtTime(p.a*0.015, t+p.d);
-      g.gain.exponentialRampToValueAtTime(0.0001, t+p.d*3);
-      o.connect(g); g.connect(lpf);
-      o.start(t);
-      o.stop(t + Math.min(dur+1.5, p.d*3+0.2));
+      const baseFreq = f * p.n * p.s * stretchJit;
+      if (baseFreq > sr*0.45) continue;
+      const freqs = p.unison
+        ? unisonOffsets.map(c => baseFreq * Math.pow(2, c/1200))
+        : [baseFreq];
+      const perStringAmp = p.a / freqs.length;
+      for (let si = 0; si < freqs.length; si++) {
+        const o = ac.createOscillator(); o.type='sine'; o.frequency.value = freqs[si];
+        const g = ac.createGain();
+        // Per-string start jitter — kills the phase-coherent "additive sheen."
+        const tOff = Math.random() * 0.0015;
+        g.gain.setValueAtTime(perStringAmp*0.14, t+tOff);
+        g.gain.exponentialRampToValueAtTime(perStringAmp*0.015, t+p.d+tOff);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+p.d*3+tOff);
+        o.connect(g); g.connect(lpf);
+        o.start(t+tOff);
+        o.stop(t + Math.min(dur+1.5, p.d*3+0.2));
+      }
     }
 
-    // Hammer thump — a short burst of filtered noise that makes it sound struck
+    // Felt hammer — warmer, less click. Lower BP center (1400→950Hz) and
+    // lower LPF ceiling (3500→2400Hz) tame the "harpsichord" top, and gain
+    // drops (0.10→0.055) so the hammer colors the attack without popping.
     const clen = Math.floor(sr*0.025);
     const cbuf = ac.createBuffer(1, clen, sr);
     const cd = cbuf.getChannelData(0);
@@ -4715,21 +5050,22 @@ const KEYS_PRESETS = {
       cd[i] = (Math.random()*2-1) * Math.exp(-i/(clen*0.22));
     }
     const csrc = ac.createBufferSource(); csrc.buffer = cbuf;
-    // Bandpass in the "wood knock" region — ~1.5-4kHz
     const cbp = ac.createBiquadFilter(); cbp.type='bandpass';
-    cbp.frequency.value = 2500; cbp.Q.value = 0.5;
-    const cgain = ac.createGain(); cgain.gain.value = 0.12;
-    csrc.connect(cbp); cbp.connect(cgain); cgain.connect(amp);
+    cbp.frequency.value = hitJit(950, 0.15); cbp.Q.value = 0.6;
+    const cLpf = ac.createBiquadFilter(); cLpf.type='lowpass';
+    cLpf.frequency.value = 2400; cLpf.Q.value = 0.3;
+    const cgain = ac.createGain(); cgain.gain.value = 0.055;
+    csrc.connect(cbp); cbp.connect(cLpf); cLpf.connect(cgain); cgain.connect(body1);
     csrc.start(t);
 
-    // Low body thump — sub-freq sine click for weight
+    // Low body thump for weight — also routes through the soundboard.
     const thump = ac.createOscillator(); thump.type='sine';
     thump.frequency.setValueAtTime(Math.max(60, f*0.5), t);
     thump.frequency.exponentialRampToValueAtTime(Math.max(40, f*0.25), t+0.05);
     const tg = ac.createGain();
-    tg.gain.setValueAtTime(0.05, t);
+    tg.gain.setValueAtTime(0.04, t);
     tg.gain.exponentialRampToValueAtTime(0.001, t+0.08);
-    thump.connect(tg); tg.connect(amp);
+    thump.connect(tg); tg.connect(body1);
     thump.start(t); thump.stop(t+0.12);
   },
   'wurli': (f,t,dur,j) => {
@@ -4888,13 +5224,16 @@ function rollTimbres() {
   // fm-wob is a wobble-bass built for dubstep/DnB/synthwave where the wobble
   // IS the style. In smoother genres (R&B, soul, lofi, ambient, impressionist)
   // it reads as synthy and off-beat, so it's removed from those pools.
+  // `upright` is the acoustic pizz bass — lead with it for chill/acoustic
+  // styles. Its ~0.9s natural decay keeps it from turning into a drone on
+  // slow-tempo whole notes the way sustained-osc basses (sub/sub-saw) do.
   const bassPool = {
-    lofi:['sub-saw','sub','pluck'],
-    jazz:['sub','pluck','sub-saw'],
-    bossa:['sub','pluck'],
-    soul:['sub-saw','pluck','sub'],
-    rnb:['sub','sub-saw','pluck'],
-    funk:['pluck','sub-saw'],
+    lofi:['upright','upright','pluck','sub-saw'],
+    jazz:['upright','upright','upright','pluck'],
+    bossa:['upright','upright','pluck'],
+    soul:['upright','pluck','sub-saw'],
+    rnb:['upright','sub','pluck'],
+    funk:['pluck','sub-saw','upright'],
     house:['sub-saw','pluck','reese'],
     techno:['reese','sub-saw','pluck'],
     synthwave:['reese','sub-saw','fm-wob'],
@@ -4903,15 +5242,15 @@ function rollTimbres() {
     chiptune:['pluck','sub-saw'],
     futurebass:['fm-wob','reese','sub-saw'],
     complextro:['reese','pluck','fm-wob'],
-    ambient:['sub','sub-saw'],
-    darkambient:['sub','reese','sub-saw'],
-    chillwave:['sub','sub-saw'],
-    classical:['sub'],
-    romantic:['sub'],
-    impressionist:['sub','sub-saw'],
-    tango:['pluck','sub'],
-    waltz:['sub'],
-    cinematic:['sub','sub-saw','reese'],
+    ambient:['upright','upright','sub'],
+    darkambient:['upright','sub','reese'],
+    chillwave:['upright','sub','sub-saw'],
+    classical:['upright'],
+    romantic:['upright'],
+    impressionist:['upright'],
+    tango:['upright','pluck'],
+    waltz:['upright'],
+    cinematic:['upright','upright','sub'],
   };
   // Acoustic styles: piano dominates overwhelmingly. Electronic: more variety.
   const keysPool = {
@@ -4932,9 +5271,9 @@ function rollTimbres() {
     ambient:['piano','piano','piano','glass','rhodes'],
     darkambient:['piano','piano','glass','rhodes'],
     chillwave:['piano','piano','piano','rhodes','glass'],
-    classical:['piano','piano','piano','piano','piano','rhodes'],   // 83% piano
-    romantic:['piano','piano','piano','piano','piano','rhodes'],
-    impressionist:['piano','piano','piano','piano','glass'],
+    classical:['piano'],         // strictly acoustic piano
+    romantic:['piano'],
+    impressionist:['piano'],
     tango:['piano','piano','piano','piano','piano'],               // always piano
     waltz:['piano','piano','piano','piano','piano'],               // always piano
     cinematic:['piano','piano','piano','rhodes','glass'],
@@ -5207,10 +5546,16 @@ function initBreathCue() {
   const fLfoG=ac.createGain(); fLfoG.gain.value=300;
   fLfo.connect(fLfoG); fLfo.connect(bp.frequency);
 
-  src.connect(bp); bp.connect(shelf); shelf.connect(amp); amp.connect(dryBus);
+  // Master mute gate — the LFO modulates amp.gain around a DC offset, so
+  // setting amp.gain.value=0 alone does NOT silence the signal (the LFO still
+  // oscillates ±0.06 through it). A separate gain node after the envelope
+  // gives us a clean on/off that bypasses the modulation entirely.
+  const gate = ac.createGain();
+  gate.gain.value = $('breathCue').checked ? 1 : 0;
+  src.connect(bp); bp.connect(shelf); shelf.connect(amp); amp.connect(gate); gate.connect(dryBus);
   src.start(); lfo.start(); fLfo.start();
   breathLfoStartTime = ac.currentTime;
-  breathNodes = {amp, lfoG, bp, shelf, src};
+  breathNodes = {amp, lfoG, bp, shelf, src, gate};
 
   // Asymmetric breath shaping — strongly differentiate inhale from exhale:
   // Inhale: bright, airy, rising — high bandpass center + high shelf boost
@@ -5483,7 +5828,66 @@ function tick(time) {
   }
 
   // Keys
-  if(curKeysPat && curKeysPat[step]) {
+  if (ORCHESTRAL_STYLES.has(currentSongStyle) && voicedKeys.length > 0) {
+    // Two-voice classical texture:
+    //   LH: Alberti-style broken chord, one chord tone per 8th note, low octave
+    //   RH: stepwise melody on every quarter (or sparser in quiet passages),
+    //       walking the top of the voicing with a per-bar shape
+    // No dependence on curKeysPat — the pattern is intrinsic to the style.
+    const top = voicedKeys[voicedKeys.length - 1];
+    const n = voicedKeys.length;
+    // LH Alberti: fire on every 8th (even 16th steps)
+    if ((step & 1) === 0) {
+      // Pick one of a few Alberti cycles per bar for variety. Seed with
+      // barInSection so the pattern stays consistent within a bar but varies
+      // across the phrase.
+      const cycles = [
+        [0, 2, 1, 2],             // classic Alberti (bottom, top, mid, top)
+        [0, 3 % n, 1, 2],         // wider reach
+        [0, 2, 1, 3 % n],         // variation
+        [1, 2, 0, 2],             // shifted start
+      ];
+      const cycle = cycles[barInSection % cycles.length];
+      const idx = cycle[(step >> 1) & 3];
+      const note = voicedKeys[Math.min(idx, n - 1)]; // low register
+      playKeys([note], humT(time), sixteenth*2);
+    }
+    // RH melody: quarters (steps 0,4,8,12). Walks the top of the voicing
+    // with per-bar contour so the melody has shape instead of just repeating.
+    // Sparser on sectionEnergy < 0.4 (play only beats 1 and 3).
+    const melodyGrid = sectionEnergy < 0.4 ? [0, 8] : [0, 4, 8, 12];
+    if (melodyGrid.includes(step)) {
+      // Contours pick 4 melodic indices relative to the TOP of the voicing
+      // (0 = top, -1 = next below, -2 = below that, etc.), raised an octave
+      // so the melody sits above the LH Alberti.
+      const contours = [
+        [0, -1, 0, -2],     // bar A: top-down sigh
+        [-2, -1, 0, -1],    // bar B: rising to top then back
+        [0, 1, 0, -1],      // bar C: ornament above then step down
+        [-1, 0, -2, 0],     // bar D: neighbor turn
+      ];
+      const contour = contours[barInSection % contours.length];
+      const slot = melodyGrid.indexOf(step);
+      let relIdx = contour[slot % contour.length];
+      // Clamp into the voicing, but allow +1 to reach an extra step above top
+      const baseIdx = (n - 1) + relIdx;
+      let note;
+      if (baseIdx >= n) {
+        // Step above top of voicing — use top + 2 semitones (diatonic-ish
+        // neighbor — good enough for a passing ornament)
+        note = top + 2 + 12;
+      } else {
+        note = voicedKeys[Math.max(0, Math.min(n - 1, baseIdx))] + 12;
+      }
+      playKeys([note], humT(time), sixteenth*4);
+    }
+    // Beat-1 chord anchor (softer block chord underneath the melody) —
+    // gives the phrase depth by outlining the harmony clearly.
+    if (step === 0) {
+      const anchor = [voicedKeys[0] - 12, voicedKeys[0]];
+      playKeys(anchor, humT(time), sixteenth*6);
+    }
+  } else if(curKeysPat && curKeysPat[step]) {
     const n = voicedKeys.slice(0, 3 + (Math.random()>0.5?1:0));
     playKeys(n, humT(time), sixteenth*6);
   }
@@ -5600,8 +6004,18 @@ function updateUI() {
   instruments.strings.gain.gain.linearRampToValueAtTime(parseInt($('volStrings').value)/100,t+0.1);
   instruments.vibes.gain.gain.linearRampToValueAtTime(parseInt($('volVibes').value)/100,t+0.1);
   instruments.synth.gain.gain.linearRampToValueAtTime($('muteSynth').checked?parseInt($('volSynth').value)/100:0,t+0.1);
-  instruments.pad.gain.gain.linearRampToValueAtTime((jhanaMode||bedtimeMode) ? 0 : (parseInt($('volPad').value)/100) * (shamanicMode ? 0.25 : 1),t+0.1);
-  instruments.noise.gain.gain.linearRampToValueAtTime($('muteNoise').checked?parseInt($('volNoise').value)/100:0,t+0.3);
+  // The pad is a legacy atmospheric layer. AM modulation is applied at the
+  // master bus (amGain), so every instrument already carries the entrainment
+  // rhythm — the pad was redundant and tended to sound synthy against real
+  // instrumentation. Defaults to 0 (off); users can re-enable via the slider.
+  const orchestralNow = ORCHESTRAL_STYLES.has(currentSongStyle);
+  const padTarget = (jhanaMode||bedtimeMode||orchestralNow) ? 0 : (parseInt($('volPad').value)/100) * (shamanicMode ? 0.25 : 1);
+  instruments.pad.gain.gain.linearRampToValueAtTime(padTarget,t+0.1);
+  // Vinyl crackle is a stylistic choice that fits lofi/jazz/soul but clashes
+  // against orchestral piano+strings. Auto-mute for those styles regardless
+  // of the user's vinyl toggle.
+  const noiseTarget = (orchestralNow || !$('muteNoise').checked) ? 0 : parseInt($('volNoise').value)/100;
+  instruments.noise.gain.gain.linearRampToValueAtTime(noiseTarget,t+0.3);
 }
 
 const sliders=['rate','depth','rate2','rate2Mix','bpm','brightness','volume','reverb',
@@ -5611,6 +6025,7 @@ const checks=['muteKeys','muteBass','muteGuitar','muteDrums','muteStrings','mute
 for(const id of checks) $(id).addEventListener('change',updateUI);
 
 $('breathCue').addEventListener('change',()=>{
+  if(breathNodes.gate) breathNodes.gate.gain.value = $('breathCue').checked ? 1 : 0;
   if(breathNodes.amp) breathNodes.amp.gain.value=$('breathCue').checked?0.06:0;
 });
 
@@ -5682,10 +6097,10 @@ document.querySelectorAll('.song-btn').forEach(btn=>{
     if (entrainmentMode && choice !== 'entrainment') stopEntrainmentCarrier();
     silenceMode = false;
     entrainmentMode = false;
-    if (choice === 'shuffle') {
-      shuffleMode = true;
+    if (choice === 'adaptive') {
+      adaptiveMode = true;
     } else if (choice === 'silence') {
-      shuffleMode = false;
+      adaptiveMode = false;
       silenceMode = true;
       currentSongStyle = 'silence';
       logEvent('song_change', { style: 'silence' });
@@ -5695,7 +6110,7 @@ document.querySelectorAll('.song-btn').forEach(btn=>{
       updateUI();
       return;
     } else if (choice === 'entrainment') {
-      shuffleMode = false;
+      adaptiveMode = false;
       entrainmentMode = true;
       currentSongStyle = 'entrainment';
       logEvent('song_change', { style: 'entrainment' });
@@ -5708,7 +6123,7 @@ document.querySelectorAll('.song-btn').forEach(btn=>{
       updateUI();
       return;
     } else {
-      shuffleMode = false;
+      adaptiveMode = false;
       currentSongStyle = choice;
       logEvent('song_change', { style: currentSongStyle });
       const style = SONG_STYLES[currentSongStyle];
@@ -5823,8 +6238,8 @@ function replaySongFromParams(params) {
   masterGain.gain.linearRampToValueAtTime(0.0001, now + 1.5);
 
   // Update the style button UI immediately — no reason to wait for the fade.
-  // During history playback, always show the specific style, even if shuffle
-  // mode is active. Shuffle only applies when generating NEW songs; while
+  // During history playback, always show the specific style, even if adaptive
+  // mode is active. Adaptive only applies when generating NEW songs; while
   // browsing history we want unambiguous "this is what's playing."
   if (params.style && SONG_STYLES[params.style]) {
     currentSongStyle = params.style;
@@ -6119,7 +6534,7 @@ function stopShamanicJourney() {
 function enterShamanicMode() {
   shamanicMode = true;
   currentSongStyle = 'shamanic';
-  shuffleMode = false;
+  adaptiveMode = false;
   document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('h1').style.color = '#b088e0';
   document.querySelector('h1').style.textShadow = '0 0 30px rgba(176,136,224,.4)';
@@ -6139,9 +6554,9 @@ function exitShamanicMode() {
   document.querySelector('h1').style.color = '';
   document.querySelector('h1').style.textShadow = '';
   $('sectionInfo').style.color = '';
-  // Restore shuffle
-  shuffleMode = true;
-  document.querySelectorAll('.song-btn').forEach(b => b.classList.toggle('active', b.dataset.song === 'shuffle'));
+  // Restore adaptive
+  adaptiveMode = true;
+  document.querySelectorAll('.song-btn').forEach(b => b.classList.toggle('active', b.dataset.song === 'adaptive'));
   logEvent('shamanic_mode_off');
   if (playing) { startNewSong(); updateUI(); }
 }
@@ -6340,7 +6755,7 @@ function stopJhanaJourney() {
 function enterJhanaMode() {
   jhanaMode = true;
   currentSongStyle = 'jhana';
-  shuffleMode = false;
+  adaptiveMode = false;
   document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('h1').style.color = '#70b8d0';
   document.querySelector('h1').style.textShadow = '0 0 30px rgba(112,184,208,.4)';
@@ -6445,7 +6860,7 @@ function stopBedtimeJourney() {
 function enterBedtimeMode() {
   bedtimeMode = true;
   currentSongStyle = 'bedtime';
-  shuffleMode = false;
+  adaptiveMode = false;
   document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('h1').style.color = '#8a7fd0';
   document.querySelector('h1').style.textShadow = '0 0 30px rgba(138,127,208,.4)';
@@ -6465,8 +6880,8 @@ function exitBedtimeMode() {
   document.querySelector('h1').style.color = '';
   document.querySelector('h1').style.textShadow = '';
   $('sectionInfo').style.color = '';
-  shuffleMode = true;
-  document.querySelectorAll('.song-btn').forEach(b => b.classList.toggle('active', b.dataset.song === 'shuffle'));
+  adaptiveMode = true;
+  document.querySelectorAll('.song-btn').forEach(b => b.classList.toggle('active', b.dataset.song === 'adaptive'));
   logEvent('bedtime_mode_off');
   if (playing) { startNewSong(); updateUI(); }
 }
@@ -6478,8 +6893,8 @@ function exitJhanaMode() {
   document.querySelector('h1').style.color = '';
   document.querySelector('h1').style.textShadow = '';
   $('sectionInfo').style.color = '';
-  shuffleMode = true;
-  document.querySelectorAll('.song-btn').forEach(b => b.classList.toggle('active', b.dataset.song === 'shuffle'));
+  adaptiveMode = true;
+  document.querySelectorAll('.song-btn').forEach(b => b.classList.toggle('active', b.dataset.song === 'adaptive'));
   logEvent('jhana_mode_off');
   if (playing) { startNewSong(); updateUI(); }
 }
@@ -7063,6 +7478,12 @@ function drawBg(){
 // =====================================================
 
 let rrIntervals=[],rmssdHistory=[],rmssdBaseline=null,baselinesamples=0,bleDevice=null;
+// Belt-on warmup: skip HRV display/classification for the first several seconds
+// after a BLE connection. Chest straps take ~10-20s to settle — before that,
+// missed beats give 2x-normal RR intervals that inflate RMSSD into the 200s.
+let bleFirstRrTime = 0;
+let rrRejectStreak = 0;
+const HRV_WARMUP_MS = 15000;
 let hrHistory=[];       // {time, hr} — heart rate over time
 let fatigueHistory=[];  // {time, score} — fatigue score over time
 let breakPeriods=[];    // {start, end} — for highlighting on timeline
@@ -7074,8 +7495,9 @@ let breakPeriods=[];    // {start, end} — for highlighting on timeline
 //   3. absolute norms    — RMSSD < 20 = stress, > 50 = calm (always a ground-floor fallback)
 // This replaces the single "rmssdBaseline" which required an explicit calibration ritual.
 let todayBaseline = null;      // {rmssd, source: 'window'|'post-intervention'|'firstSession'}
-let longTermBaseline = null;   // number in ms, or null if no history
+let longTermBaseline = null;   // RMSSD in ms, or null if no history
 let longTermBaselineWeight = 0;// sum of time-decay weights — serves as a confidence signal
+let longTermHrBaseline = null; // HR in bpm — used by adaptive shuffle to locate the arousal quadrant
 const BASELINE_HALF_LIFE_DAYS = 14; // older sessions decay exponentially with this half-life
 
 // Absolute HRV norms (population ground-floor) — used when personal baselines unavailable
@@ -7112,6 +7534,22 @@ function refreshLongTermBaseline() {
   const { value, weight } = computeLongTermBaseline();
   longTermBaseline = value;
   longTermBaselineWeight = weight;
+  // HR baseline uses the same EWMA shape but reads session.avgHr.
+  if (currentProfile && currentProfile.recentSessions) {
+    const now = Date.now();
+    const halfLifeMs = BASELINE_HALF_LIFE_DAYS * 24 * 60 * 60 * 1000;
+    let sum = 0, totalWeight = 0;
+    for (const s of currentProfile.recentSessions) {
+      if (s.avgHr == null) continue;
+      const sessionTime = new Date(s.date).getTime();
+      const ageMs = now - sessionTime;
+      if (ageMs < 0) continue;
+      const w = Math.pow(0.5, ageMs / halfLifeMs);
+      sum += w * s.avgHr;
+      totalWeight += w;
+    }
+    longTermHrBaseline = totalWeight > 0 ? sum / totalWeight : null;
+  }
   return { value, weight };
 }
 
@@ -7284,7 +7722,9 @@ $('bleBtn').addEventListener('click',async()=>{
     stopEcgStream();
     $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');
     $('bioTitle').textContent='Biofeedback';
-    $('hrVal').textContent='--';$('rmssdVal').textContent='--';$('stateVal').textContent='--';
+    $('hrVal').textContent='--';$('rmssdVal').textContent='--';$('pnn50Val').textContent='--';$('stateVal').textContent='--';
+    document.querySelectorAll('#stateSpectrum .state-spectrum-cell').forEach(c => c.className='state-spectrum-cell');
+    updateAdaptiveLabel();
     return;}
   if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -7303,6 +7743,7 @@ $('bleBtn').addEventListener('click',async()=>{
       $('bioTitle').textContent='Biofeedback';
       $('bioIndicator').style.display='none';
       stopEcgStream();
+      updateAdaptiveLabel();
       logEvent('ble_disconnected');
       if(playing){
         $('status').textContent = wasName + ' disconnected — biofeedback paused';
@@ -7322,8 +7763,9 @@ $('bleBtn').addEventListener('click',async()=>{
     const devName = (bleDevice.name && bleDevice.name.trim()) || 'Heart Rate Monitor';
     $('bioTitle').textContent = 'Biofeedback — ' + devName;
     $('bioIndicator').style.display='flex';$('bioIndicator').className='bio-indicator';
+    updateAdaptiveLabel();
     $('bioIndicatorText').textContent=(currentProfile && currentProfile.rmssdBaseline) ? 'CONNECTED' : 'CALIBRATING';
-    rrIntervals=[];rmssdHistory=[];baselinesamples=0;
+    rrIntervals=[];rmssdHistory=[];baselinesamples=0;bleFirstRrTime=0;rrRejectStreak=0;
     // Restore saved profile baseline instead of wiping it
     if(currentProfile && currentProfile.rmssdBaseline){
       rmssdBaseline = currentProfile.rmssdBaseline;
@@ -7349,7 +7791,7 @@ let sessionLog = {
   breaks: [],
   events: [],         // [{time, type, ...details}] — all notable events
 };
-let sessionSongCount = 0; // incremented on each startNewSong; first song of session triggers chill-shuffle bias
+let sessionSongCount = 0; // incremented on each startNewSong; first song of session triggers chill-bias in adaptive mode
 
 let sessionTimerInterval = null;
 function startSessionTimer() {
@@ -7381,7 +7823,7 @@ function startSessionLog() {
   sessionLog.currentFocusStart = Date.now();
   sessionLog.initialParams = captureSongParams();
   hrHistory=[];fatigueHistory=[];breakPeriods=[];
-  sessionSongCount = 0; // first song of session gets chill-bias when in shuffle
+  sessionSongCount = 0; // first song of session gets chill-bias when adaptive
   // Reset today's adaptive baseline state; refresh long-term from history.
   todayBaseline = null;
   baselineWindowRmssdSamples = [];
@@ -7561,7 +8003,7 @@ const Breaks = {
     $('calCircle').className = 'breath-circle';
     $('calCircleText').textContent = Math.round(Breaks.fatigueScore);
     $('calTitle').textContent = msg;
-    const previewText = next.coherence
+    const previewText = next.paced
       ? 'Slow paced breathing at 6 breaths per minute — synchronize heart and breath'
       : next.activities[0].text;
     $('calSub').innerHTML = `Your fatigue score is <strong>${Math.round(Breaks.fatigueScore)}/100</strong>.<br><br>` +
@@ -7603,7 +8045,7 @@ const Breaks = {
         Breaks.suggestionShown = false;
         Breaks.suggestionUrgent = false;
         $('calOverlay').classList.remove('active');
-        $('calSkip').innerHTML = 'Skip (use previous calibration)';
+        $('calSkip').innerHTML = '';
         Breaks.enter(bt.key, 'user');
       };
       typeRow.appendChild(b);
@@ -7634,7 +8076,7 @@ const Breaks = {
     if (Breaks.reminderTimer) { clearTimeout(Breaks.reminderTimer); Breaks.reminderTimer = null; }
     $('calOverlay').classList.remove('active');
     $('calSkip').classList.remove('as-container');
-    $('calSkip').innerHTML = 'Skip (use previous calibration)';
+    $('calSkip').innerHTML = '';
     logEvent('break_skipped_to_breathing', { fatigueScore: +Breaks.fatigueScore.toFixed(1) });
 
     // Do a breathing intervention instead
@@ -7652,7 +8094,7 @@ const Breaks = {
     flashTitle(null);
     if (Breaks.reminderTimer) { clearInterval(Breaks.reminderTimer); Breaks.reminderTimer = null; }
     $('calSkip').classList.remove('as-container');
-    $('calSkip').innerHTML = 'Skip (use previous calibration)';
+    $('calSkip').innerHTML = '';
     if(!brk){
       const autoSuggest = SUGGESTED_BREAKS.filter(b => b.type !== 'stretch10');
       Breaks.lastSuggestedIdx = Breaks.lastSuggestedIdx % autoSuggest.length;
@@ -7663,7 +8105,7 @@ const Breaks = {
 
   // ------------------------------------------------------------
   // enter(type, category, suggestedBreak) — start a break. category is
-  // 'suggested' (app-guided, has activities or coherence flag) or 'user'
+  // 'suggested' (app-guided, has activities or paced flag) or 'user'
   // (user-requested, passive timer with "I'm back" button).
   // ------------------------------------------------------------
   enter(type, category, suggestedBreak) {
@@ -7693,15 +8135,15 @@ const Breaks = {
     $('calBar').style.width = '0%';
     $('calPhase').textContent = '';
 
-    if (category === 'suggested' && suggestedBreak && (suggestedBreak.activities || suggestedBreak.coherence || suggestedBreak.meditation)) {
+    if (category === 'suggested' && suggestedBreak && (suggestedBreak.activities || suggestedBreak.paced || suggestedBreak.meditation)) {
       $('calCircleText').textContent = suggestedBreak.durMin + 'm';
       const zhTitle = (Breaks.lang === 'zh' && suggestedBreak.labelZh);
       $('calTitle').textContent = zhTitle
         ? (suggestedBreak.labelZh + '休息')
         : (suggestedBreak.label + ' Break');
       $('calSkip').textContent = 'End break early';
-      // Subtle 6-bpm pulse as a background breathing cue (coherence drives the circle itself)
-      $('calCircle').className = suggestedBreak.coherence ? 'breath-circle' : 'breath-circle break-pulse';
+      // Subtle 6-bpm pulse as a background breathing cue (paced drives the circle itself)
+      $('calCircle').className = suggestedBreak.paced ? 'breath-circle' : 'breath-circle break-pulse';
       // Capture baseline HR/RMSSD and show live stats
       const recentHr = hrHistory.slice(-8).map(h => h.hr);
       Breaks.startHr = recentHr.length ? recentHr.reduce((a,b)=>a+b,0)/recentHr.length : null;
@@ -7715,9 +8157,9 @@ const Breaks = {
         if (isActive) {
           $('breakStatTarget').textContent = '+8–25%';
           $('breakZoneHint').textContent = 'Active break — a modest HR rise means your body is moving blood and loosening up.';
-        } else if (suggestedBreak.coherence) {
+        } else if (suggestedBreak.paced) {
           $('breakStatTarget').textContent = 'RMSSD ↑';
-          $('breakZoneHint').textContent = 'Coherence breathing — heart and breath synchronize. RMSSD should rise measurably within 3–5 minutes.';
+          $('breakZoneHint').textContent = 'Paced breathing at 6/minute — heart and breath synchronize. RMSSD should rise measurably within 3–5 minutes.';
         } else if (suggestedBreak.meditation) {
           $('breakStatTarget').textContent = 'settle';
           $('breakZoneHint').textContent = 'Meditation — let HR and RMSSD settle naturally. No targets to chase.';
@@ -7729,8 +8171,8 @@ const Breaks = {
         Breaks.liveInterval = setInterval(Breaks._updateLiveStats, 1000);
         Breaks._updateLiveStats();
       }
-      if (suggestedBreak.coherence) {
-        Breaks._startCoherence(suggestedBreak);
+      if (suggestedBreak.paced) {
+        Breaks._startPaced(suggestedBreak);
       } else if (suggestedBreak.meditation) {
         Breaks._startMeditation(suggestedBreak);
       } else {
@@ -7829,10 +8271,10 @@ const Breaks = {
   },
 
   // ------------------------------------------------------------
-  // _startCoherence(brk) — paced 4s inhale + 6s exhale (= 10s cycle = 6 BPM),
+  // _startPaced(brk) — paced 4s inhale + 6s exhale (= 10s cycle = 6 BPM),
   // the resonance frequency where HRV peaks and heart/breath synchronize.
   // ------------------------------------------------------------
-  _startCoherence(brk) {
+  _startPaced(brk) {
     const totalSec = brk.durMin * 60;
     const INHALE_MS = 4000;
     const EXHALE_MS = 6000;
@@ -7893,7 +8335,7 @@ const Breaks = {
     if (useZh()) {
       speak('共振呼吸。' + brk.durMin + '分钟。跟随圆圈。', { queue: true, lang: 'zh' });
     } else {
-      speak('Coherence breathing. ' + brk.durMin + ' minutes. Follow the circle.', { queue: true });
+      speak('Paced breathing. ' + brk.durMin + ' minutes. Follow the circle.', { queue: true });
     }
     Breaks.timer = setTimeout(step, 3500);
   },
@@ -7970,7 +8412,7 @@ const Breaks = {
     startBtn.textContent = 'Begin';
     startBtn.onclick = () => {
       $('calSkip').classList.remove('as-container');
-      $('calSkip').innerHTML = 'Skip (use previous calibration)';
+      $('calSkip').innerHTML = '';
       const brk = {
         type: 'meditation',
         label: 'Meditation',
@@ -7989,7 +8431,7 @@ const Breaks = {
     cancelBtn.onclick = () => {
       $('calOverlay').classList.remove('active');
       $('calSkip').classList.remove('as-container');
-      $('calSkip').innerHTML = 'Skip (use previous calibration)';
+      $('calSkip').innerHTML = '';
     };
 
     btnRow.appendChild(startBtn);
@@ -8168,7 +8610,7 @@ const Breaks = {
     $('calCircleText').textContent = '✓';
     $('calPhase').textContent = '';
     $('calBar').style.width = '100%';
-    $('calSkip').textContent = 'Skip (use previous calibration)';
+    $('calSkip').textContent = '';
     if (zhClose) {
       speak('欢迎回来。音乐继续。', { lang: 'zh' });
     } else {
@@ -8539,7 +8981,7 @@ const STRETCH_ACTIVITIES_EXTRA = [
 const SUGGESTED_BREAKS = [
   { type: 'stretch',   label: 'Stretch', labelZh: '拉伸', durMin: 5,  activities: STRETCH_ACTIVITIES_BASE },
   { type: 'stretch10', label: 'Stretch', labelZh: '拉伸', durMin: 10, activities: [...STRETCH_ACTIVITIES_BASE, ...STRETCH_ACTIVITIES_EXTRA] },
-  { type: 'coherence', label: 'Coherence Breathing', labelZh: '共振呼吸', durMin: 4, coherence: true },
+  { type: 'paced', label: 'Paced Breathing', labelZh: '共振呼吸', durMin: 4, paced: true },
   { type: 'eyes', label: 'Eye Rest', durMin: 3, activities: [
     { text: 'Close your eyes and relax', dur: 30,
       cues: [{at:1,say:'Let your eyes rest'},{at:7,say:'Notice any tension behind your eyes'},{at:14,say:'Let it soften'},{at:21,say:'Ten more seconds'},{at:27,say:'Almost there'}] },
@@ -8683,7 +9125,12 @@ function enterBreathingMode() {
   breathingSpokenMilestone = 0;
   breakPeriods.push({start:Date.now(), end:null});
   preMusicVolume = masterGain.gain.value;
-  preBreathingPreset = getActivePreset();
+  // If auto-calm already captured the true previous preset, don't overwrite it
+  // with the current preset — which is 'calm' and would leave the user stuck
+  // in calm mode after the breathing intervention ends.
+  if (!inAutoCalmMode) {
+    preBreathingPreset = getActivePreset();
+  }
   applyPreset('calm');
   logIntervention();
   logEvent('breathing_start', { rmssd: breathingStartRmssd ? +breathingStartRmssd.toFixed(1) : null, fatigueScore: +Breaks.fatigueScore.toFixed(1) });
@@ -8813,7 +9260,7 @@ function exitBreathingMode() {
   $('calCircle').className = 'breath-circle';
   $('calCircleText').textContent = '✓';
   $('calPhase').textContent = '';
-  $('calSkip').textContent = 'Skip (use previous calibration)';
+  $('calSkip').textContent = '';
   speak('Notice how your body feels now. Welcome back.');
   setTimeout(() => $('calOverlay').classList.remove('active'), 5000);
 
@@ -8845,12 +9292,42 @@ function exitBreathingMode() {
   }
 }
 
+// Highlight the active cell in the arousal-spectrum strip so users can see
+// where their current state sits. Left = rested, right = stressed.
+function updateStateSpectrum(st, cl) {
+  const cells = document.querySelectorAll('#stateSpectrum .state-spectrum-cell');
+  cells.forEach(c => {
+    const active = c.dataset.state === st;
+    c.classList.toggle('active', active);
+    c.classList.toggle('good', active && cl === 'good');
+    c.classList.toggle('warn', active && cl === 'warn');
+    c.classList.toggle('bad',  active && cl === 'bad');
+  });
+}
+
 function handleHRM(ev){
   const v=ev.target.value,fl=v.getUint8(0);
   let hr,off;
   if(fl&1){hr=v.getUint16(1,true);off=3;}else{hr=v.getUint8(1);off=2;}
   if(fl&0x10){while(off<v.byteLength){const rr=(v.getUint16(off,true)/1024)*1000;off+=2;
-    if(rr>300&&rr<2000){rrIntervals.push({time:Date.now(),rr});rrIntervals=rrIntervals.filter(r=>r.time>Date.now()-120000);}}}
+    if(rr>300&&rr<2000){
+      // Malik-style artifact filter: reject RR intervals that differ from the
+      // previous valid RR by more than 30%. Kills the doubled-RR artifact
+      // (~2x normal) from missed beats during belt setup, which otherwise
+      // inflates RMSSD into the 200s for the first 30s of a connection.
+      const last = rrIntervals.length ? rrIntervals[rrIntervals.length-1].rr : null;
+      if (last !== null && Math.abs(rr - last) / last > 0.30) {
+        rrRejectStreak++;
+        // If we reject 3 in a row, our 'last' is probably the artifact itself.
+        // Accept this one and reset the chain so we can recover.
+        if (rrRejectStreak < 3) continue;
+      }
+      rrRejectStreak = 0;
+      if (!bleFirstRrTime) bleFirstRrTime = Date.now();
+      rrIntervals.push({time:Date.now(),rr});
+      rrIntervals=rrIntervals.filter(r=>r.time>Date.now()-120000);
+    }
+  }}
   $('hrVal').textContent=hr;
   hrHistory.push({time:Date.now(),hr});
   // 7200 samples ≈ 2 hours at 1 sample/sec. The old cap of 600 (~10 min) was
@@ -8870,9 +9347,27 @@ function handleHRM(ev){
     }
   }
   const rec=rrIntervals.filter(r=>r.time>Date.now()-60000);
+  // Warmup: hold HRV display until the signal has been stable for a bit.
+  // Without this, the first ~15s after putting on a belt shows wildly inflated
+  // RMSSD (150-250ms) from contact noise and missed beats.
+  const inWarmup = !bleFirstRrTime || (Date.now() - bleFirstRrTime) < HRV_WARMUP_MS;
+  if (inWarmup && rec.length < 15) {
+    $('rmssdVal').textContent = '…';
+    $('stateVal').textContent = 'SETTLING';
+    $('stateVal').className = 'hrv-stat-value';
+    $('rmssdVal').className = 'hrv-stat-value';
+    document.querySelectorAll('#stateSpectrum .state-spectrum-cell').forEach(c => c.className='state-spectrum-cell');
+    return;
+  }
   if(rec.length>=10){
     const df=[];for(let i=1;i<rec.length;i++)df.push(rec[i].rr-rec[i-1].rr);
     const rmssd=Math.sqrt(df.reduce((s,d)=>s+d*d,0)/df.length);
+    // pNN50: percentage of successive RR differences exceeding 50 ms. Short-term
+    // parasympathetic index; less sensitive than RMSSD but more robust to noise.
+    // Used as a cross-check so we don't trigger on artifact: if pNN50 disagrees
+    // sharply with RMSSD-based stress (> 10% pNN50 = decent vagal tone present),
+    // downgrade the state one notch.
+    const pnn50 = df.length ? (df.filter(d => Math.abs(d) > 50).length / df.length) * 100 : 0;
     rmssdHistory.push(rmssd);
     // Opportunistic today-baseline detection — look for a 60s stable window.
     if (playing && !inBreathingMode && !Breaks.inMode) {
@@ -8902,6 +9397,7 @@ function handleHRM(ev){
       }
     }
     $('rmssdVal').textContent=rmssd.toFixed(0);
+    $('pnn50Val').textContent=pnn50.toFixed(0)+'%';
     // Dual-ratio stress detection: prefer today-baseline when we have one,
     // otherwise long-term (EWMA over past sessions), otherwise legacy
     // calibration rmssdBaseline. Absolute floor/ceiling always active.
@@ -8925,7 +9421,14 @@ function handleHRM(ev){
       else if(rmssd > ABSOLUTE_CALM_RMSSD){st='CALM';cl='good';}
       else if(ratio>1.0){st='FLOW';cl='good';}
       else {st='OK';cl='good';}
+      // pNN50 cross-check: if RMSSD classified this as STRESS but pNN50 is still
+      // decent (>10%), one of them is likely reading artifact. Downgrade to
+      // ALERT so we don't trigger interventions on noisy data.
+      if (st === 'STRESS' && pnn50 > 10 && rmssd >= ABSOLUTE_STRESS_RMSSD) {
+        st = 'ALERT'; cl = 'warn';
+      }
       $('stateVal').textContent=st;$('stateVal').className='hrv-stat-value '+cl;$('rmssdVal').className='hrv-stat-value '+cl;
+      updateStateSpectrum(st, cl);
       $('bioIndicator').className='bio-indicator '+cl;$('bioIndicatorText').textContent=st;
     } else {
       // No personal baseline at all yet (brand-new user, first few seconds).
@@ -8935,7 +9438,11 @@ function handleHRM(ev){
       else if (rmssd < 30) { st='ALERT'; cl='warn'; }
       else if (rmssd > ABSOLUTE_CALM_RMSSD) { st='CALM'; cl='good'; }
       else { st='OK'; cl='good'; }
+      if (st === 'STRESS' && pnn50 > 10 && rmssd >= ABSOLUTE_STRESS_RMSSD) {
+        st = 'ALERT'; cl = 'warn';
+      }
       $('stateVal').textContent=st; $('stateVal').className='hrv-stat-value '+cl; $('rmssdVal').className='hrv-stat-value '+cl;
+      updateStateSpectrum(st, cl);
       $('bioIndicator').className='bio-indicator '+cl; $('bioIndicatorText').textContent=st;
     }
     if (bVal) {
@@ -8969,11 +9476,23 @@ function handleHRM(ev){
       // Phase 2: Breathing intervention (if calm didn't work after ~30 more seconds)
       // Skip stress counting during HR spike suppression (postural changes)
       const spikeActive = Date.now() < hrSpikeSuppress;
+      // Session-elapsed gate: don't fire any intervention in the first 90s.
+      // Rationale: RMSSD is noisy at start (posture, settling, BLE warmup) and
+      // the adaptive baseline needs time to read the user. Firing 20s in on a
+      // low-HRV-recovery day produced an intervention that the user (correctly)
+      // flagged as premature. 90s lets the system see at least one stable window
+      // before intervening.
+      const sessionElapsedSec = sessionLog.started ? (Date.now() - sessionLog.started) / 1000 : 0;
+      const sessionWarmupOver = sessionElapsedSec >= 90;
+      // Recovery-day defer: if long-term baseline is much higher than current
+      // RMSSD and we're still in the first few minutes, assume workout-recovery /
+      // bad-sleep day rather than acute stress. The system shouldn't pile on.
+      const recoveryDayDefer = (longTermBaseline && sessionElapsedSec < 240 && longTermBaseline > rmssd * 1.8);
       if(ratio<0.7 && !spikeActive){
         stressCount++;
         recoveryCount=0;
         // Phase 1: Auto-switch to calm preset
-        if(stressCount>=CALM_THRESHOLD && !inAutoCalmMode && !inBreathingMode && !Breaks.inMode && playing && !shamanicMode && !jhanaMode && !bedtimeMode){
+        if(stressCount>=CALM_THRESHOLD && !inAutoCalmMode && !inBreathingMode && !Breaks.inMode && playing && !shamanicMode && !jhanaMode && !bedtimeMode && sessionWarmupOver && !recoveryDayDefer){
           inAutoCalmMode = true;
           logEvent('auto_calm_start', { rmssd: rmssd, ratio: +ratio.toFixed(2), stressCount, previousPreset: preBreathingPreset });
           preBreathingPreset = getActivePreset();
@@ -8998,7 +9517,7 @@ function handleHRM(ev){
         // on a brand-new user whose personal patterns we haven't learned yet.
         const firstEverSession = currentProfile && (currentProfile.lifetime?.sessions || 0) === 0;
         const firstSessionGate = firstEverSession ? (rmssd < ABSOLUTE_STRESS_RMSSD) : true;
-        if(stressCount>=STRESS_THRESHOLD && bleDevice && playing && !inBreathingMode && !Breaks.inMode && !shamanicMode && !jhanaMode && !bedtimeMode && firstSessionGate){
+        if(stressCount>=STRESS_THRESHOLD && bleDevice && playing && !inBreathingMode && !Breaks.inMode && !shamanicMode && !jhanaMode && !bedtimeMode && firstSessionGate && sessionWarmupOver && !recoveryDayDefer){
           enterBreathingMode();
           sessionBreathingInterventions++;
           Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 15);
@@ -9326,7 +9845,7 @@ function applySongParams(params) {
   // Set style
   if (params.style && SONG_STYLES[params.style]) {
     currentSongStyle = params.style;
-    shuffleMode = false;
+    adaptiveMode = false;
     document.querySelectorAll('.song-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.song === params.style);
     });
@@ -9534,6 +10053,7 @@ function buildCurrentSession() {
     focusSpans: spans.length,
     interventions: sessionLog.interventions.length,
     avgRmssd: rmssdHistory.length ? +(rmssdHistory.reduce((a, b) => a + b) / rmssdHistory.length).toFixed(1) : null,
+    avgHr: hrHistory.length ? +(hrHistory.reduce((s, h) => s + h.hr, 0) / hrHistory.length).toFixed(1) : null,
     breaks: sessionLog.breaks.filter(b => b.end).length,
     breakMinutes: +(sessionLog.breaks.filter(b => b.end).reduce((s,b) => s + (b.duration||0), 0) / 60000).toFixed(1),
     shamanic: shamanicMode || undefined,
@@ -9789,6 +10309,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-17-1349<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-19-2216<!--/VERSION--></div>
 </body>
 </html>
