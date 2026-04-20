@@ -1742,6 +1742,21 @@ function rollSongPalette() {
   songPalette = new Set(shuffled.slice(0, count));
 }
 
+// Per-song vinyl decision. Lofi loves it, orchestral clashes with it, and
+// for everything else it's an occasional flavor rather than always-on — the
+// crackle gets exhausting over a long session.
+const VINYL_ALWAYS = new Set(['lofi']);
+const VINYL_LIKELY = new Set(['jazz','bossa','soul','rnb']);   // 55%
+const VINYL_OCCASIONAL = new Set();                             // everything else: 20%
+function rollSongVinyl() {
+  let style = null;
+  try { style = currentSongStyle; } catch (_) { style = null; }
+  if (style && ORCHESTRAL_STYLES.has(style)) { songHasVinyl = false; return; }
+  if (style && VINYL_ALWAYS.has(style)) { songHasVinyl = true; return; }
+  const p = (style && VINYL_LIKELY.has(style)) ? 0.55 : 0.20;
+  songHasVinyl = Math.random() < p;
+}
+
 // Active section types for this song — rebuilt each song with randomized energy/bars
 let SECTION_TYPES = {};
 
@@ -2460,6 +2475,8 @@ const BEDTIME_JOURNEY = [
 
 let currentSongStyle = 'jazz';
 let currentSwing = 0.4;
+// Rolled per song — vinyl is a flavor, not a constant. See rollSongVinyl().
+let songHasVinyl = false;
 let adaptiveMode = true;
 let silenceMode = false;
 let entrainmentMode = false;
@@ -2992,6 +3009,7 @@ function startNewSong() {
   // Pick this song's color palette *after* the style is locked, so acoustic
   // styles get acoustic-only colors (no digital synth pad on a classical piece).
   rollSongPalette();
+  rollSongVinyl();
   if (typeof rollTimbres === 'function') rollTimbres();
   songStartedAt = Date.now();
   sessionSongCount++;
@@ -6011,10 +6029,11 @@ function updateUI() {
   const orchestralNow = ORCHESTRAL_STYLES.has(currentSongStyle);
   const padTarget = (jhanaMode||bedtimeMode||orchestralNow) ? 0 : (parseInt($('volPad').value)/100) * (shamanicMode ? 0.25 : 1);
   instruments.pad.gain.gain.linearRampToValueAtTime(padTarget,t+0.1);
-  // Vinyl crackle is a stylistic choice that fits lofi/jazz/soul but clashes
-  // against orchestral piano+strings. Auto-mute for those styles regardless
-  // of the user's vinyl toggle.
-  const noiseTarget = (orchestralNow || !$('muteNoise').checked) ? 0 : parseInt($('volNoise').value)/100;
+  // Vinyl crackle is a per-song flavor — lofi always, jazz/bossa/soul often,
+  // others occasionally, orchestral never. Rolled by rollSongVinyl() per song
+  // so long sessions don't drown in constant crackle. The user's toggle still
+  // functions as a hard mute.
+  const noiseTarget = (orchestralNow || !songHasVinyl || !$('muteNoise').checked) ? 0 : parseInt($('volNoise').value)/100;
   instruments.noise.gain.gain.linearRampToValueAtTime(noiseTarget,t+0.3);
 }
 
