@@ -1708,21 +1708,38 @@ async function pollFreeBusy() {
   const now = new Date();
   const end = new Date(now.getTime() + 60*60*1000); // 1 hour lookahead
   try {
-    const r = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + calAccessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        timeMin: now.toISOString(),
-        timeMax: end.toISOString(),
-        items: [{ id: 'primary' }],
-      }),
+    // Use events.list (not freeBusy) so we can show the meeting title in the
+    // status line. freeBusy only returns opaque start/end intervals; events
+    // also gives us summary/status/transparency/attendee response. We filter
+    // to only count: confirmed events, with a real dateTime (not all-day),
+    // not marked transparent (= show-as-free), and not declined by the user.
+    const params = new URLSearchParams({
+      timeMin: now.toISOString(),
+      timeMax: end.toISOString(),
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '25',
+    });
+    const r = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?' + params, {
+      headers: { 'Authorization': 'Bearer ' + calAccessToken },
     });
     if (!r.ok) {
       if (r.status === 401) { calAccessToken = null; calStatus('Token expired — reconnect'); return; }
-      calStatus('FreeBusy error ' + r.status); return;
+      calStatus('Calendar error ' + r.status); return;
     }
     const data = await r.json();
-    const busy = (data.calendars && data.calendars.primary && data.calendars.primary.busy) || [];
+    const busy = (data.items || []).filter(ev => {
+      if (ev.status === 'cancelled') return false;
+      if (ev.transparency === 'transparent') return false;
+      if (!ev.start || !ev.start.dateTime) return false; // skip all-day
+      const me = (ev.attendees || []).find(a => a.self);
+      if (me && me.responseStatus === 'declined') return false;
+      return true;
+    }).map(ev => ({
+      start: ev.start.dateTime,
+      end: ev.end.dateTime,
+      summary: (ev.summary || 'Meeting').trim(),
+    }));
     const nowMs = Date.now();
     // Are we currently in a busy block? (start <= now < end)
     const active = busy.find(b => {
@@ -1733,14 +1750,14 @@ async function pollFreeBusy() {
       if (!meetingPaused) {
         startMeetingPause(active);
       } else {
-        // Already paused — the user may have shortened/extended the meeting.
-        // Refresh the cached block + the "In meeting until HH:MM" status so
-        // the UI reflects the current end time instead of the one we cached
-        // when the pause started.
+        // Already paused — the user may have shortened/extended the meeting
+        // or switched to a different back-to-back event. Refresh the cached
+        // block + status so the UI reflects current name + end time.
         calCurrentBusy = active;
         const endTime = new Date(Date.parse(active.end));
         const endStr = endTime.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
-        calStatus(`\u23F8 In meeting until ${endStr}`);
+        const title = truncateTitle(active.summary);
+        calStatus(`\u23F8 ${title} \u00B7 until ${endStr}`);
       }
     } else if (meetingPaused) {
       endMeetingPause();
@@ -1751,7 +1768,8 @@ async function pollFreeBusy() {
       if (next) {
         const startMs = Date.parse(next.start);
         const mins = Math.round((startMs - nowMs) / 60000);
-        calStatus(`Connected \u00B7 next in ${mins}m`);
+        const title = truncateTitle(next.summary);
+        calStatus(`Connected \u00B7 "${title}" in ${mins}m`);
         // Pre-announce once: meeting within 3 min → speak + flash, only if
         // auto-pause is on (matches the behavior the user will see).
         const key = next.start + '|' + next.end;
@@ -1759,7 +1777,7 @@ async function pollFreeBusy() {
         if ((startMs - nowMs) <= warnWindow && (startMs - nowMs) > 0 &&
             $('calAutoPause').checked && !meetingPreWarned.has(key)) {
           meetingPreWarned.add(key);
-          announcePreMeeting(Math.max(1, mins));
+          announcePreMeeting(Math.max(1, mins), next.summary);
         }
       } else {
         calStatus('Connected \u00B7 clear for 1h');
@@ -1780,8 +1798,17 @@ function schedulePoll() {
   calPollTimer = setInterval(pollFreeBusy, interval);
 }
 
-function announcePreMeeting(mins) {
-  const msg = `You have a meeting in ${mins} minute${mins===1?'':'s'}. Session will pause and auto-resume 5 minutes after.`;
+// Long titles ("Weekly sync - backend infra review - Q2") crowd the status
+// line. Clamp to ~40 chars with an ellipsis so the end time stays visible.
+function truncateTitle(s, max) {
+  if (!s) return 'Meeting';
+  const n = max || 40;
+  return s.length > n ? s.slice(0, n - 1).trimEnd() + '\u2026' : s;
+}
+
+function announcePreMeeting(mins, title) {
+  const named = title ? `your "${title}" meeting` : 'a meeting';
+  const msg = `You have ${named} in ${mins} minute${mins===1?'':'s'}. Session will pause and auto-resume after.`;
   if (typeof speak === 'function') { try { speak(msg); } catch(_){} }
   // Brief banner in the section info line
   try {
@@ -1843,7 +1870,8 @@ function startMeetingPause(block) {
   calCurrentBusy = block;
   const endTime = new Date(Date.parse(block.end));
   const endStr = endTime.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
-  calStatus(`\u23F8 In meeting until ${endStr}`);
+  const title = truncateTitle(block.summary);
+  calStatus(`\u23F8 ${title} \u00B7 until ${endStr}`);
   // Snapshot HRV history indices so we can compute a post-meeting summary.
   // BLE streaming continues while paused, so rmssdHistory/hrHistory accumulate
   // silently — we just need the starting position.
