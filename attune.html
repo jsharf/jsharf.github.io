@@ -1611,6 +1611,10 @@ function speak(text, opts) { tts.say(text, opts); }
 // paste the client ID into the settings. Scope is calendar.readonly —
 // narrowest that allows freebusy.query.
 const CAL_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+// Default OAuth client ID — whitelisted for https://jsharf.github.io. Users
+// who self-host can override via the ⚙ settings; anyone on the official
+// deployment gets Connect-and-go.
+const DEFAULT_CAL_CLIENT_ID = '437478762139-1f8t7nr3s89fgg2qghsikte4o815ojgb.apps.googleusercontent.com';
 let calTokenClient = null;
 let calAccessToken = null;
 let calTokenExpiresAt = 0;
@@ -1621,10 +1625,11 @@ let preMeetingMasterVol = null;     // to restore on resume
 function calStatus(s) { const el = $('calStatus'); if (el) el.textContent = s; }
 
 function initCalendar() {
-  // Restore saved settings
+  // Restore saved settings; fall back to the baked-in default client ID so
+  // the user doesn't have to paste anything on the public deploy.
   const savedId = localStorage.getItem('attune_cal_client_id');
   const savedAuto = localStorage.getItem('attune_cal_autopause');
-  if (savedId) $('calClientId').value = savedId;
+  $('calClientId').value = savedId || DEFAULT_CAL_CLIENT_ID;
   if (savedAuto !== null) $('calAutoPause').checked = savedAuto === '1';
   $('calClientId').addEventListener('change', () => {
     localStorage.setItem('attune_cal_client_id', $('calClientId').value.trim());
@@ -1644,9 +1649,8 @@ function initCalendar() {
     if (calAccessToken) { disconnectCalendar(); return; }
     connectCalendar();
   });
-  // If a client ID was saved, set up the token client so subsequent Connect
-  // clicks can reuse silent re-auth.
-  if (savedId) calStatus('Not connected');
+  // Default status — there's always a client ID now (baked-in or saved).
+  calStatus('Not connected');
 }
 
 function ensureCalTokenClient() {
@@ -6232,10 +6236,27 @@ for(const id of sliders) $(id).addEventListener('input',updateUI);
 const checks=['muteKeys','muteBass','muteGuitar','muteDrums','muteStrings','muteVibes','muteSynth','muteNoise'];
 for(const id of checks) $(id).addEventListener('change',updateUI);
 
-$('breathCue').addEventListener('change',()=>{
-  if(breathNodes.gate) breathNodes.gate.gain.value = $('breathCue').checked ? 1 : 0;
-  if(breathNodes.amp) breathNodes.amp.gain.value=$('breathCue').checked?0.06:0;
-});
+// Breath guide is checkbox-controlled for normal songs, but we also want it on
+// during breathing interventions and guided experiences (jhana/bedtime/shamanic)
+// regardless of the checkbox — those modes lean on the paced breath as a core
+// element. Call this after any mode toggle or checkbox change.
+function updateBreathGate() {
+  if (!breathNodes.gate || !breathNodes.amp) return;
+  const userOn = $('breathCue').checked;
+  const guided = (typeof jhanaMode !== 'undefined' && jhanaMode) ||
+                 (typeof bedtimeMode !== 'undefined' && bedtimeMode) ||
+                 (typeof shamanicMode !== 'undefined' && shamanicMode);
+  const intervention = (typeof inBreathingMode !== 'undefined' && inBreathingMode);
+  const on = userOn || guided || intervention;
+  breathNodes.gate.gain.value = on ? 1 : 0;
+  // Only touch amp when the intervention's own envelope isn't driving it —
+  // enterBreathingMode/exitBreathingMode ramp amp explicitly, so skip during
+  // intervention to avoid clobbering the ramp.
+  if (!intervention) {
+    breathNodes.amp.gain.value = on ? 0.06 : 0;
+  }
+}
+$('breathCue').addEventListener('change', updateBreathGate);
 
 // Closed-loop control — gate on Polar + profile + calibration
 $('bioControl').addEventListener('change', async () => {
@@ -6749,6 +6770,7 @@ function enterShamanicMode() {
   $('sectionInfo').textContent = '🌀 Shamanic Journey Mode';
   $('sectionInfo').style.color = '#b088e0';
   logEvent('shamanic_mode_on');
+  if (typeof updateBreathGate === 'function') updateBreathGate();
   if (playing) {
     startNewSong();
     startShamanicJourney();
@@ -6758,6 +6780,7 @@ function enterShamanicMode() {
 
 function exitShamanicMode() {
   shamanicMode = false;
+  if (typeof updateBreathGate === 'function') updateBreathGate();
   stopShamanicJourney();
   document.querySelector('h1').style.color = '';
   document.querySelector('h1').style.textShadow = '';
@@ -6962,6 +6985,7 @@ function stopJhanaJourney() {
 
 function enterJhanaMode() {
   jhanaMode = true;
+  if (typeof updateBreathGate === 'function') updateBreathGate();
   currentSongStyle = 'jhana';
   adaptiveMode = false;
   document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('active'));
@@ -7067,6 +7091,7 @@ function stopBedtimeJourney() {
 
 function enterBedtimeMode() {
   bedtimeMode = true;
+  if (typeof updateBreathGate === 'function') updateBreathGate();
   currentSongStyle = 'bedtime';
   adaptiveMode = false;
   document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('active'));
@@ -7084,6 +7109,7 @@ function enterBedtimeMode() {
 
 function exitBedtimeMode() {
   bedtimeMode = false;
+  if (typeof updateBreathGate === 'function') updateBreathGate();
   stopBedtimeJourney();
   document.querySelector('h1').style.color = '';
   document.querySelector('h1').style.textShadow = '';
@@ -7097,6 +7123,7 @@ function exitBedtimeMode() {
 
 function exitJhanaMode() {
   jhanaMode = false;
+  if (typeof updateBreathGate === 'function') updateBreathGate();
   stopJhanaJourney();
   document.querySelector('h1').style.color = '';
   document.querySelector('h1').style.textShadow = '';
@@ -7788,6 +7815,17 @@ function checkForStableBaselineWindow(currentRmssd, currentHr) {
   const hAvg = baselineWindowHrSamples.reduce((a,b)=>a+b, 0) / 60;
   const hSd  = Math.sqrt(baselineWindowHrSamples.reduce((s,v)=>s+(v-hAvg)**2,0) / 60);
   if (hSd < 2 && rCv < 0.15 && rAvg > 10) {
+    // Reject a stable-but-low window: a chronically stressed user can have a
+    // flat-low RMSSD that passes the stability checks, and locking that in as
+    // today's baseline makes ratio≈1 and silently disables stress interventions.
+    // If long-term history says the user normally runs much higher, don't adopt.
+    if (longTermBaseline && rAvg < longTermBaseline * 0.65) {
+      logEvent('today_baseline_reject_low', { candidate: +rAvg.toFixed(1), longTerm: +longTermBaseline.toFixed(1) });
+      // Slide window forward by shedding oldest sample so we re-evaluate next tick
+      baselineWindowRmssdSamples.shift();
+      baselineWindowHrSamples.shift();
+      return;
+    }
     todayBaseline = { rmssd: +rAvg.toFixed(1), source: 'window' };
     logEvent('today_baseline_update', { source: 'window', rmssd: +rAvg.toFixed(1), hrSd: +hSd.toFixed(2), rmssdCv: +rCv.toFixed(3) });
     // Clear buffer so we don't re-detect the same window
@@ -9378,7 +9416,10 @@ function enterBreathingMode() {
   masterGain.gain.linearRampToValueAtTime(0.03, ac.currentTime + 8);
 
   // Enable breath cue at higher volume — skipped in silent mode, which the
-  // user chose specifically to avoid any ongoing audio.
+  // user chose specifically to avoid any ongoing audio. Force the gate open
+  // regardless of the user checkbox: a breathing intervention needs the audio
+  // cue or the follow-the-circle instruction has nothing to follow.
+  if (breathNodes.gate && !silenceMode) breathNodes.gate.gain.value = 1;
   if (breathNodes.amp && !silenceMode) {
     breathNodes.amp.gain.linearRampToValueAtTime(0.12, ac.currentTime + 3);
   }
@@ -9491,6 +9532,11 @@ function exitBreathingMode() {
   if (breathNodes.amp && !silenceMode) {
     const target = $('breathCue').checked ? 0.06 : 0;
     breathNodes.amp.gain.linearRampToValueAtTime(target, ac.currentTime + 5);
+  }
+  // Close the gate if the user didn't have breath guide enabled before the
+  // intervention. Small delay so the fade-out above finishes first.
+  if (breathNodes.gate) {
+    setTimeout(() => { if (typeof updateBreathGate === 'function') updateBreathGate(); }, 5500);
   }
 
   logRecovery();
@@ -9662,10 +9708,21 @@ function handleHRM(ev){
       updateStateSpectrum(st, cl);
       $('bioIndicator').className='bio-indicator '+cl; $('bioIndicatorText').textContent=st;
     }
-    if (bVal) {
-      const ratio = rmssd / bVal;
+    // Stress counting works even without a personal baseline: fall back to an
+    // absolute-threshold proxy so brand-new users (no longTermBaseline) still
+    // get breathing interventions. Previously this whole block was gated on
+    // bVal — friend with a fresh profile never triggered any intervention
+    // despite visibly stressed readings.
+    {
+      const hasBaseline = !!bVal;
+      // Effective ratio: real ratio if we have a baseline, else a synthetic one
+      // derived from absolute thresholds. ABSOLUTE_STRESS_RMSSD=20 maps to 0.7
+      // so the <0.7 test below still captures clear stress.
+      const ratio = hasBaseline
+        ? (rmssd / bVal)
+        : (rmssd / (ABSOLUTE_STRESS_RMSSD / 0.7)); // ~= rmssd / 28.5
       const st = $('stateVal').textContent;
-      if(rmssdHistory.length % 30 === 0) logEvent('hrv_snapshot', { hr: +$('hrVal').textContent, rmssd: +rmssd.toFixed(1), state: st, ratio: +ratio.toFixed(2), fatigueScore: +Breaks.fatigueScore.toFixed(1), tempo: +$('bpm').value });
+      if(rmssdHistory.length % 30 === 0) logEvent('hrv_snapshot', { hr: +$('hrVal').textContent, rmssd: +rmssd.toFixed(1), state: st, ratio: +ratio.toFixed(2), fatigueScore: +Breaks.fatigueScore.toFixed(1), tempo: +$('bpm').value, hasBaseline });
 
       // Fatigue score for break suggestions
       if(st==='STRESS') Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 0.15);
@@ -9714,6 +9771,17 @@ function handleHRM(ev){
           logEvent('auto_calm_start', { rmssd: rmssd, ratio: +ratio.toFixed(2), stressCount, previousPreset: preBreathingPreset });
           preBreathingPreset = getActivePreset();
           applyPreset('calm');
+          // Sustained stress → swap to calm preset *and* bring in the breath
+          // guide, so the user has something to entrain with. We fade it in
+          // gently so it's invitational, not alarming. Exits back to the
+          // user's chosen state when auto-calm ends (updateBreathGate handles
+          // restoration from inAutoCalmMode flag).
+          if (breathNodes.gate && !silenceMode) breathNodes.gate.gain.value = 1;
+          if (breathNodes.amp && !silenceMode) {
+            breathNodes.amp.gain.cancelScheduledValues(ac.currentTime);
+            breathNodes.amp.gain.setValueAtTime(breathNodes.amp.gain.value, ac.currentTime);
+            breathNodes.amp.gain.linearRampToValueAtTime(0.05, ac.currentTime + 6);
+          }
           // Somatic nudge — redirect attention to body instead of saying "you're stressed"
           const nudges = [
             'Check in with your body for a moment.',
@@ -9748,6 +9816,16 @@ function handleHRM(ev){
           applyPreset(preBreathingPreset);
           $('sectionInfo').style.color = '';
           $('sectionInfo').textContent = '';
+          // Restore breath guide to the user's preference (if we brought it
+          // in during auto-calm). updateBreathGate closes the gate when
+          // nothing else wants it on.
+          if (breathNodes.amp && !silenceMode) {
+            const target = $('breathCue').checked ? 0.06 : 0;
+            breathNodes.amp.gain.cancelScheduledValues(ac.currentTime);
+            breathNodes.amp.gain.setValueAtTime(breathNodes.amp.gain.value, ac.currentTime);
+            breathNodes.amp.gain.linearRampToValueAtTime(target, ac.currentTime + 5);
+          }
+          setTimeout(() => { if (typeof updateBreathGate === 'function') updateBreathGate(); }, 5500);
         }
         if(inBreathingMode){
           // Time-based progress (not RMSSD-to-target)
