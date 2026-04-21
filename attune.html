@@ -1388,6 +1388,11 @@ const tts = {
     const interrupt = opts.queue !== true;
     const snippet = String(text).slice(0, 80);
     console.log(`[tts] say${opts.lang ? ' ['+opts.lang+']' : ''}${opts.queue ? ' [queued]' : ''}: ${snippet}${String(text).length > 80 ? '…' : ''}`);
+    try {
+      if (typeof logEvent === 'function' && typeof sessionLog !== 'undefined' && sessionLog && sessionLog.started) {
+        logEvent('tts_cue', { text: String(text), lang: opts.lang || null, interrupt });
+      }
+    } catch(_) {}
     if (interrupt) {
       // Drop anything queued, cancel the in-flight utterance.
       this.q = [];
@@ -10782,6 +10787,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-19-2216<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-20-1814<!--/VERSION--></div>
 </body>
 </html>
