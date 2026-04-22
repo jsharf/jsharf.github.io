@@ -308,6 +308,34 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="history-stats" id="historyStats"></div>
 <div class="history-toolbar">
 <button id="historyExportAll">Export All</button>
+<button id="dbgLogsBtn" title="Dump recent debug logs (helpful when reporting a bug)">Debug Logs</button>
+</div>
+
+<div id="dbgLogsOverlay" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(5,5,15,.96);backdrop-filter:blur(14px);padding:24px;box-sizing:border-box;overflow:auto">
+<div style="max-width:900px;margin:0 auto">
+<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+<div style="color:#d0d4e0;font-size:18px;letter-spacing:.03em">Debug Logs</div>
+<span style="color:#6a6a8a;font-size:12px">Fire this off to a developer when something goes wrong</span>
+<button id="dbgLogsClose" style="margin-left:auto;background:none;border:1px solid rgba(120,140,180,.3);color:#aab;font-size:18px;padding:4px 12px;border-radius:6px;cursor:pointer">✕</button>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+<label style="color:#8aa;font-size:12px">Window:</label>
+<select id="dbgLogsWindow" style="background:rgba(10,10,25,.8);border:1px solid rgba(100,120,160,.3);color:#d0d4e0;font-size:13px;padding:6px 10px;border-radius:6px">
+<option value="3600000">Last hour</option>
+<option value="10800000">Last 3 hours</option>
+<option value="21600000">Last 6 hours</option>
+<option value="43200000">Last 12 hours</option>
+<option value="86400000" selected>Last 24 hours</option>
+<option value="172800000">Last 48 hours</option>
+<option value="604800000">Last 7 days</option>
+<option value="1209600000">Last 14 days</option>
+</select>
+<button id="dbgLogsCopy" style="background:rgba(138,180,248,.15);border:1px solid rgba(138,180,248,.4);color:#8ab4f8;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer">Copy to clipboard</button>
+<button id="dbgLogsDownload" style="background:rgba(138,180,248,.15);border:1px solid rgba(138,180,248,.4);color:#8ab4f8;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer">Download .txt</button>
+<span id="dbgLogsCount" style="color:#6a6a8a;font-size:11px;margin-left:auto"></span>
+</div>
+<pre id="dbgLogsOutput" style="background:rgba(10,10,25,.6);border:1px solid rgba(80,90,120,.3);border-radius:8px;padding:14px;max-height:70vh;overflow:auto;color:#c0c8d0;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;margin:0"></pre>
+</div>
 </div>
 <div class="history-title" style="font-size:16px;margin-top:24px">Music Taste Map</div>
 <div style="font-size:11px;color:#6a6a8a;margin-bottom:8px">Songs projected by similarity. <span style="color:#6d6">&#9679;</span> liked <span style="color:#d66">&#9679;</span> disliked <span style="color:#666">&#9679;</span> neutral. Click a dot to select.</div>
@@ -615,7 +643,7 @@ let currentProfile = null;
 function openDB() {
   return new Promise((resolve, reject) => {
     // NB: IDB name kept as 'vibefib' (legacy) so existing profiles/sessions survive the Attune rename.
-    const req = indexedDB.open('vibefib', 3);
+    const req = indexedDB.open('vibefib', 4);
     req.onupgradeneeded = (e) => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains('profiles')) {
@@ -625,9 +653,57 @@ function openDB() {
       if (db.objectStoreNames.contains('sessions')) {
         db.deleteObjectStore('sessions');
       }
+      // Debug log store — for chasing data-loss bugs like "silent session wiped
+      // my history". Auto-increment keys; indexed by timestamp.
+      if (!db.objectStoreNames.contains('dbgLogs')) {
+        const store = db.createObjectStore('dbgLogs', { keyPath: 'id', autoIncrement: true });
+        store.createIndex('ts', 'ts', { unique: false });
+      }
     };
     req.onsuccess = () => { db = req.result; resolve(db); };
     req.onerror = () => reject(req.error);
+  });
+}
+
+// ---- Debug logging (separate IDB store) ----
+// Lightweight, fire-and-forget log to a rolling IDB store. Captures UI events,
+// profile mutations, session lifecycle. Used to post-mortem bugs users hit in
+// the wild. Auto-pruned to the last 14 days on every log write so it doesn't
+// grow unbounded.
+let _dbgLogPruneAt = 0;
+function dbg(tag, data) {
+  try {
+    if (!db) return;
+    const entry = { ts: Date.now(), tag, data: data == null ? null : JSON.parse(JSON.stringify(data)) };
+    const tx = db.transaction('dbgLogs', 'readwrite');
+    tx.objectStore('dbgLogs').add(entry);
+    // Prune old entries once per hour
+    const now = Date.now();
+    if (now - _dbgLogPruneAt > 3600000) {
+      _dbgLogPruneAt = now;
+      const cutoff = now - 14 * 86400000;
+      const idx = tx.objectStore('dbgLogs').index('ts');
+      const range = IDBKeyRange.upperBound(cutoff);
+      idx.openCursor(range).onsuccess = (ev) => {
+        const cur = ev.target.result;
+        if (cur) { cur.delete(); cur.continue(); }
+      };
+    }
+  } catch(e) { /* swallow — logging must never break the app */ }
+}
+
+async function getDbgLogs(sinceMs) {
+  return new Promise((resolve) => {
+    if (!db) return resolve([]);
+    const tx = db.transaction('dbgLogs', 'readonly');
+    const idx = tx.objectStore('dbgLogs').index('ts');
+    const range = IDBKeyRange.lowerBound(sinceMs);
+    const out = [];
+    idx.openCursor(range).onsuccess = (ev) => {
+      const cur = ev.target.result;
+      if (cur) { out.push(cur.value); cur.continue(); }
+      else resolve(out);
+    };
   });
 }
 
@@ -641,6 +717,20 @@ async function getProfiles() {
 }
 
 async function saveProfile(profile) {
+  // Log every profile write with a compact fingerprint so we can reconstruct
+  // the history timeline if sessions go missing. Avoid dumping the full
+  // profile — recentSessions can be huge.
+  try {
+    const rs = profile && profile.recentSessions;
+    dbg('saveProfile', {
+      name: profile && profile.name,
+      recentSessionsLen: rs ? rs.length : null,
+      lastSessionDate: rs && rs.length ? rs[rs.length - 1].date : null,
+      lastSessionDur: rs && rs.length ? rs[rs.length - 1].durationMin : null,
+      lifetimeSessions: profile && profile.lifetime && profile.lifetime.sessions,
+      caller: (new Error().stack || '').split('\n').slice(2, 5).join(' | '),
+    });
+  } catch(_) {}
   return new Promise((resolve) => {
     const tx = db.transaction('profiles', 'readwrite');
     tx.objectStore('profiles').put(profile);
@@ -689,6 +779,11 @@ function loadSelectedProfile() {
   const req = tx.objectStore('profiles').get(name);
   req.onsuccess = () => {
     currentProfile = req.result;
+    dbg('loadSelectedProfile', {
+      name,
+      recentSessionsLen: currentProfile && currentProfile.recentSessions ? currentProfile.recentSessions.length : null,
+      lifetimeSessions: currentProfile && currentProfile.lifetime ? currentProfile.lifetime.sessions : null,
+    });
     if (currentProfile && currentProfile.rmssdBaseline) {
       rmssdBaseline = currentProfile.rmssdBaseline;
       $('status').textContent = '';
@@ -1196,6 +1291,50 @@ $('historyExportAll').addEventListener('click', () => {
   const a = document.createElement('a');
   a.href = url;
   a.download = `attune-${currentProfile.name}-full.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ---- Debug logs dump UI ----
+function formatDbgLogs(logs) {
+  return logs.map(e => {
+    const t = new Date(e.ts).toISOString();
+    const data = e.data ? ' ' + JSON.stringify(e.data) : '';
+    return `${t}  ${e.tag}${data}`;
+  }).join('\n');
+}
+async function renderDbgLogs() {
+  const windowMs = parseInt($('dbgLogsWindow').value, 10);
+  const since = Date.now() - windowMs;
+  const logs = await getDbgLogs(since);
+  $('dbgLogsCount').textContent = `${logs.length} entries`;
+  $('dbgLogsOutput').textContent = logs.length ? formatDbgLogs(logs) : '(no logs in this window)';
+}
+$('dbgLogsBtn').addEventListener('click', () => {
+  $('dbgLogsOverlay').style.display = 'block';
+  renderDbgLogs();
+});
+$('dbgLogsClose').addEventListener('click', () => {
+  $('dbgLogsOverlay').style.display = 'none';
+});
+$('dbgLogsWindow').addEventListener('change', renderDbgLogs);
+$('dbgLogsCopy').addEventListener('click', async () => {
+  const text = $('dbgLogsOutput').textContent || '';
+  try {
+    await navigator.clipboard.writeText(text);
+    $('dbgLogsCount').textContent = 'Copied ✓';
+    setTimeout(renderDbgLogs, 1500);
+  } catch(e) {
+    $('dbgLogsCount').textContent = 'Copy failed';
+  }
+});
+$('dbgLogsDownload').addEventListener('click', () => {
+  const text = $('dbgLogsOutput').textContent || '';
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `attune-debug-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 });
@@ -6487,6 +6626,7 @@ document.querySelectorAll('.song-btn').forEach(btn=>{
     if (entrainmentMode && choice !== 'entrainment') stopEntrainmentCarrier();
     silenceMode = false;
     entrainmentMode = false;
+    dbg('songBtn.click', { choice, playing, prevStyle: currentSongStyle });
     if (choice === 'adaptive') {
       adaptiveMode = true;
     } else if (choice === 'silence') {
@@ -6789,6 +6929,13 @@ document.querySelectorAll('.break-lang-btn').forEach(btn => {
 
 // Play/Stop
 $('playBtn').addEventListener('click', async()=>{
+  dbg('playBtn.click', {
+    playing,
+    silent: silenceMode, jhana: jhanaMode, bedtime: bedtimeMode, shamanic: shamanicMode,
+    entrainment: entrainmentMode, style: currentSongStyle,
+    hasProfile: !!currentProfile,
+    profileRecentSessionsLen: currentProfile && currentProfile.recentSessions ? currentProfile.recentSessions.length : null,
+  });
   if(!playing){
     // First-start profile creation. If there's no profile yet, prompt the user
     // for a name (or accept a humanhash default). The user's click on the
@@ -8487,6 +8634,12 @@ function logEvent(type, details) {
 
 function startSessionLog() {
   sessionLog.started = Date.now();
+  dbg('startSessionLog', {
+    silent: silenceMode, jhana: jhanaMode, bedtime: bedtimeMode, shamanic: shamanicMode,
+    entrainment: entrainmentMode, style: currentSongStyle,
+    profileLoaded: !!currentProfile,
+    profileRecentSessionsLen: currentProfile && currentProfile.recentSessions ? currentProfile.recentSessions.length : null,
+  });
   sessionLog.focusSpans = [];
   sessionLog.interventions = [];
   sessionLog.breaks = [];
@@ -10893,10 +11046,14 @@ function buildCurrentSession() {
 }
 
 async function persistSession() {
-  if (!db || !currentProfile || !sessionLog.started) return;
+  if (!db || !currentProfile || !sessionLog.started) {
+    dbg('persistSession.skip', { hasDb: !!db, hasProfile: !!currentProfile, started: !!sessionLog.started });
+    return;
+  }
   if (!currentProfile.recentSessions) currentProfile.recentSessions = [];
   // Update the "current" session slot on the profile (last entry in recentSessions)
   const session = buildCurrentSession();
+  const lenBefore = currentProfile.recentSessions.length;
   if (lastPersistedSession) {
     // Replace last entry
     currentProfile.recentSessions[currentProfile.recentSessions.length - 1] = session;
@@ -10908,15 +11065,29 @@ async function persistSession() {
     }
     lastPersistedSession = true;
   }
+  dbg('persistSession', {
+    action: lastPersistedSession && lenBefore === currentProfile.recentSessions.length ? 'replace' : 'push',
+    lenBefore, lenAfter: currentProfile.recentSessions.length,
+    durationMin: session.durationMin,
+    silent: silenceMode, jhana: jhanaMode, bedtime: bedtimeMode, shamanic: shamanicMode,
+    style: currentSongStyle,
+  });
   await saveProfile(currentProfile);
 }
 
 async function finalizeSession() {
-  if (!db || !currentProfile || !sessionLog.started) return;
+  if (!db || !currentProfile || !sessionLog.started) {
+    dbg('finalizeSession.skip', { hasDb: !!db, hasProfile: !!currentProfile, started: !!sessionLog.started });
+    return;
+  }
   const session = buildCurrentSession();
-  if (session.durationMin < 0.5) return; // skip very short sessions
+  if (session.durationMin < 0.5) {
+    dbg('finalizeSession.tooShort', { durationMin: session.durationMin, lastPersistedSession });
+    return; // skip very short sessions
+  }
 
   // Update the live entry to final state
+  const lenBefore = currentProfile.recentSessions.length;
   if (lastPersistedSession && currentProfile.recentSessions.length > 0) {
     currentProfile.recentSessions[currentProfile.recentSessions.length - 1] = session;
   } else {
@@ -10925,6 +11096,12 @@ async function finalizeSession() {
       currentProfile.recentSessions = currentProfile.recentSessions.slice(-1000);
     }
   }
+  dbg('finalizeSession', {
+    action: lastPersistedSession ? 'replace' : 'push',
+    lenBefore, lenAfter: currentProfile.recentSessions.length,
+    durationMin: session.durationMin,
+    silent: silenceMode, jhana: jhanaMode, bedtime: bedtimeMode, shamanic: shamanicMode,
+  });
 
   // Update lifetime aggregates (but NOT recentSessions — already handled above)
   currentProfile.lifetime.sessions++;
@@ -10954,14 +11131,23 @@ function stopPersistLoop() {
 
 // Persist on tab close/hide
 document.addEventListener('visibilitychange', () => {
+  dbg('visibilitychange', { state: document.visibilityState, playing });
   if (document.visibilityState === 'hidden' && playing) persistSession();
 });
 window.addEventListener('beforeunload', () => {
+  dbg('beforeunload', { playing });
   if (playing) finalizeSession();
 });
 
 // Init DB
-openDB().then(() => loadProfileList());
+openDB().then(() => {
+  dbg('appBoot', {
+    url: location.href,
+    ua: navigator.userAgent,
+    lastProfileKey: (() => { try { return localStorage.getItem('vibefib-lastProfile'); } catch(_){ return null; } })(),
+  });
+  loadProfileList();
+});
 
 // Humanhash-style name generator — warm nature-ish compound, e.g. "quiet-fox".
 // Keep the adjective pool gentle; avoid anything that could read as a judgment
@@ -11022,6 +11208,12 @@ async function ensureProfileBeforeStart() {
   if (profiles.length > 0) {
     const last = (() => { try { return localStorage.getItem('vibefib-lastProfile'); } catch(e){ return null; } })();
     currentProfile = profiles.find(p => p.name === last) || profiles[0];
+    dbg('ensureProfileBeforeStart.fallback', {
+      lastKey: last,
+      pickedName: currentProfile && currentProfile.name,
+      recentSessionsLen: currentProfile && currentProfile.recentSessions ? currentProfile.recentSessions.length : null,
+      totalProfiles: profiles.length,
+    });
     return;
   }
   await promptCreateProfile();
@@ -11152,6 +11344,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1552<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1606<!--/VERSION--></div>
 </body>
 </html>
