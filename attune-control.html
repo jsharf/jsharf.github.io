@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attune Control — Baseline Recording</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+       background:#0a0a0f;color:#c8c8d0;min-height:100vh;padding:22px;display:flex;
+       flex-direction:column;align-items:center}
+  h1{font-weight:300;letter-spacing:.18em;text-transform:uppercase;font-size:18px;
+     color:#8ca0c0;margin-bottom:6px}
+  .sub{color:#667;font-size:12px;margin-bottom:18px;letter-spacing:.05em}
+  .container{max-width:920px;width:100%}
+  .card{background:rgba(18,18,32,.6);border:1px solid rgba(80,80,120,.25);
+        border-radius:10px;padding:16px;margin-bottom:14px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{background:rgba(138,180,248,.15);color:#c8d8f8;border:1px solid rgba(138,180,248,.4);
+         border-radius:6px;padding:8px 16px;font-size:13px;letter-spacing:.05em;
+         cursor:pointer;transition:background .15s}
+  button:hover:not(:disabled){background:rgba(138,180,248,.28)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.danger{background:rgba(248,138,138,.15);color:#f8c0c0;border-color:rgba(248,138,138,.4)}
+  button.danger:hover:not(:disabled){background:rgba(248,138,138,.28)}
+  button.primary{background:rgba(138,248,180,.15);color:#c0f8d8;border-color:rgba(138,248,180,.4)}
+  button.primary:hover:not(:disabled){background:rgba(138,248,180,.28)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+  .stat{background:rgba(10,12,24,.6);border:1px solid rgba(60,60,100,.3);
+        border-radius:8px;padding:10px 12px}
+  .stat-label{font-size:10px;color:#667;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+  .stat-value{font-size:22px;color:#e0e8f0;font-weight:300}
+  #status{font-size:12px;color:#8a95a5;min-height:16px;margin:4px 0 12px}
+  #status.err{color:#f8a0a0}
+  #status.ok{color:#a0f8c0}
+  canvas{display:block;background:rgba(5,8,14,.5);border:1px solid rgba(60,60,100,.25);
+         border-radius:8px;cursor:crosshair;width:100%;height:360px}
+  .chart-wrap{position:relative}
+  #tooltip{display:none;position:absolute;pointer-events:none;background:rgba(15,15,30,.95);
+           border:1px solid rgba(100,100,150,.5);border-radius:6px;padding:5px 10px;
+           font-size:12px;color:#ddd;white-space:nowrap;z-index:5;backdrop-filter:blur(8px);max-width:260px}
+  .hint{color:#556;font-size:11px;margin-top:6px;font-style:italic}
+  .timer{font-family:ui-monospace,monospace;font-size:20px;color:#c0d0f0}
+  .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;
+        letter-spacing:.1em;text-transform:uppercase;background:rgba(248,180,138,.15);
+        color:#f8c898;border:1px solid rgba(248,180,138,.35)}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Attune · Control</h1>
+  <div class="sub">Baseline recording — HR &amp; HRV only, no interventions <span class="pill">Control</span></div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <button id="bleBtn">Connect HR Monitor</button>
+        <button id="startBtn" class="primary" disabled>Start Session</button>
+        <button id="stopBtn" class="danger" disabled>Stop &amp; Export</button>
+      </div>
+      <div class="timer" id="timer">0:00</div>
+    </div>
+    <div id="status">Idle</div>
+  </div>
+
+  <div class="card">
+    <div class="stats">
+      <div class="stat"><div class="stat-label">HR</div><div class="stat-value" id="hrVal">--</div></div>
+      <div class="stat"><div class="stat-label">HRV (RMSSD)</div><div class="stat-value" id="rmssdVal">--</div></div>
+      <div class="stat"><div class="stat-label">Avg HR</div><div class="stat-value" id="avgHrVal">--</div></div>
+      <div class="stat"><div class="stat-label">Avg HRV</div><div class="stat-value" id="avgRmssdVal">--</div></div>
+      <div class="stat"><div class="stat-label">Samples</div><div class="stat-value" id="samplesVal">0</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:12px;color:#889;margin-bottom:8px">
+      Hover for values · Click on chart to add a note (phone call, stretch, coffee, etc.)
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+      <div id="tooltip"></div>
+    </div>
+    <div class="hint">Data is kept in memory and exported as JSON on Stop. Schema matches the main Attune app so you can diff control vs. music sessions directly.</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+
+// --- State ----------------------------------------------------------------
+let bleDevice = null;
+let hrChar = null;
+let session = null; // { started, hrHistory: [{time,hr}], rmssdHistory: [num], annotations: [] }
+let rrIntervals = []; // {time, rr}
+let rrRejectStreak = 0;
+let bleFirstRrTime = 0;
+const HRV_WARMUP_MS = 15000;
+
+// --- UI helpers ------------------------------------------------------------
+function setStatus(msg, cls) {
+  $('status').textContent = msg;
+  $('status').className = cls || '';
+}
+function fmtTime(ms) {
+  const s = Math.floor(ms / 1000);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+// --- Bluetooth -------------------------------------------------------------
+$('bleBtn').addEventListener('click', async () => {
+  if (bleDevice) {
+    try { bleDevice.gatt.disconnect(); } catch(_){}
+    bleDevice = null; hrChar = null;
+    $('bleBtn').textContent = 'Connect HR Monitor';
+    $('startBtn').disabled = true;
+    setStatus('Disconnected');
+    return;
+  }
+  if (!navigator.bluetooth) {
+    setStatus('Web Bluetooth not available. Use Chrome, Edge, or Brave.', 'err');
+    return;
+  }
+  try {
+    setStatus('Scanning…');
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ services: ['heart_rate'] }],
+    });
+    bleDevice.addEventListener('gattserverdisconnected', () => {
+      setStatus('HR monitor disconnected', 'err');
+      $('bleBtn').textContent = 'Connect HR Monitor';
+      $('startBtn').disabled = true;
+      bleDevice = null; hrChar = null;
+    });
+    const server = await bleDevice.gatt.connect();
+    const svc = await server.getPrimaryService('heart_rate');
+    hrChar = await svc.getCharacteristic('heart_rate_measurement');
+    await hrChar.startNotifications();
+    hrChar.addEventListener('characteristicvaluechanged', onHRM);
+    $('bleBtn').textContent = 'Disconnect';
+    $('startBtn').disabled = false;
+    const name = (bleDevice.name || 'HR monitor').trim();
+    setStatus(name + ' connected. Ready to record.', 'ok');
+  } catch (e) {
+    setStatus('BLE: ' + e.message, 'err');
+    bleDevice = null; hrChar = null;
+  }
+});
+
+// --- HRM parsing (matches main app: Malik 30% artifact filter) ------------
+function onHRM(ev) {
+  const v = ev.target.value;
+  const fl = v.getUint8(0);
+  let hr, off;
+  if (fl & 1) { hr = v.getUint16(1, true); off = 3; } else { hr = v.getUint8(1); off = 2; }
+  if (fl & 0x10) {
+    while (off < v.byteLength) {
+      const rr = (v.getUint16(off, true) / 1024) * 1000;
+      off += 2;
+      if (rr > 300 && rr < 2000) {
+        const last = rrIntervals.length ? rrIntervals[rrIntervals.length - 1].rr : null;
+        if (last !== null && Math.abs(rr - last) / last > 0.30) {
+          rrRejectStreak++;
+          if (rrRejectStreak < 3) continue;
+        }
+        rrRejectStreak = 0;
+        if (!bleFirstRrTime) bleFirstRrTime = Date.now();
+        rrIntervals.push({ time: Date.now(), rr });
+        rrIntervals = rrIntervals.filter(r => r.time > Date.now() - 120000);
+      }
+    }
+  }
+  $('hrVal').textContent = hr;
+
+  if (session && session.started) {
+    session.hrHistory.push({ time: Date.now(), hr });
+    if (session.hrHistory.length > 7200) session.hrHistory = session.hrHistory.slice(-7200);
+  }
+
+  // RMSSD over last 60s of RRs
+  const rec = rrIntervals.filter(r => r.time > Date.now() - 60000);
+  const inWarmup = !bleFirstRrTime || (Date.now() - bleFirstRrTime) < HRV_WARMUP_MS;
+  if (inWarmup && rec.length < 15) {
+    $('rmssdVal').textContent = '…';
+    return;
+  }
+  if (rec.length >= 10) {
+    const df = [];
+    for (let i = 1; i < rec.length; i++) df.push(rec[i].rr - rec[i - 1].rr);
+    const rmssd = Math.sqrt(df.reduce((s, d) => s + d * d, 0) / df.length);
+    $('rmssdVal').textContent = rmssd.toFixed(0);
+    if (session && session.started) session.rmssdHistory.push(rmssd);
+  }
+
+  updateAvgs();
+}
+
+function updateAvgs() {
+  if (!session || !session.started) return;
+  const hrs = session.hrHistory;
+  const rms = session.rmssdHistory;
+  if (hrs.length) $('avgHrVal').textContent = Math.round(hrs.reduce((a, b) => a + b.hr, 0) / hrs.length);
+  if (rms.length) $('avgRmssdVal').textContent = (rms.reduce((a, b) => a + b, 0) / rms.length).toFixed(0);
+  $('samplesVal').textContent = hrs.length;
+}
+
+// --- Session lifecycle -----------------------------------------------------
+let timerInt = null;
+$('startBtn').addEventListener('click', () => {
+  session = {
+    started: Date.now(),
+    hrHistory: [],
+    rmssdHistory: [],
+    annotations: [],
+  };
+  $('startBtn').disabled = true;
+  $('stopBtn').disabled = false;
+  $('bleBtn').disabled = true;
+  setStatus('Recording…', 'ok');
+  timerInt = setInterval(() => {
+    $('timer').textContent = fmtTime(Date.now() - session.started);
+  }, 500);
+});
+
+$('stopBtn').addEventListener('click', () => {
+  if (!session || !session.started) return;
+  clearInterval(timerInt); timerInt = null;
+  const now = Date.now();
+  const sStart = session.started;
+  const durationMin = +((now - sStart) / 60000).toFixed(1);
+  const out = {
+    date: new Date(sStart).toISOString(),
+    durationMin,
+    controlMode: true,
+    interventions: 0,
+    breaks: 0,
+    breakMinutes: 0,
+    focusSpans: 0,
+    avgRmssd: session.rmssdHistory.length
+      ? +(session.rmssdHistory.reduce((a, b) => a + b, 0) / session.rmssdHistory.length).toFixed(1) : null,
+    avgHr: session.hrHistory.length
+      ? +(session.hrHistory.reduce((a, b) => a + b.hr, 0) / session.hrHistory.length).toFixed(1) : null,
+    rmssdBaseline: null,
+    rmssdSeries: session.rmssdHistory.map(v => +v.toFixed(1)),
+    hrSeries: session.hrHistory.map(h => [h.time - sStart, h.hr]),
+    fatigueSeries: [],
+    breakPeriodsList: [],
+    annotations: session.annotations.map(a => ({ t: a.t - sStart, label: a.label, source: a.source })),
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const tag = new Date(sStart).toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  a.download = `attune-control-session-${tag}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  setStatus(`Session saved · ${durationMin} min · ${session.hrHistory.length} HR samples`, 'ok');
+  session = null;
+  $('startBtn').disabled = bleDevice == null;
+  $('stopBtn').disabled = true;
+  $('bleBtn').disabled = false;
+});
+
+// --- Chart rendering + tooltip + click-to-annotate -------------------------
+const cv = $('chart');
+const ctx = cv.getContext('2d');
+let chartData = null;
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = cv.clientWidth * dpr;
+  cv.height = cv.clientHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function drawChart() {
+  resizeCanvas();
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const pad = { top: 14, right: 14, bottom: 22, left: 46 };
+  const plotW = w - pad.left - pad.right;
+  ctx.clearRect(0, 0, w, h);
+
+  const now = Date.now();
+  const sStart = session && session.started ? session.started : now - 60000;
+  const tStart = sStart;
+  const windowMs = Math.max(60000, now - tStart);
+  const tx = t => pad.left + Math.max(0, Math.min(1, (t - tStart) / windowMs)) * plotW;
+
+  const rowH = (h - pad.top - pad.bottom - 10) / 2;
+  const rows = [
+    { top: pad.top, h: rowH },
+    { top: pad.top + rowH + 10, h: rowH },
+  ];
+
+  // HRV series (one sample/sec since main loop ran)
+  const rmssdPts = (session ? session.rmssdHistory : [])
+    .map((v, i, arr) => ({ time: now - (arr.length - 1 - i) * 1000, val: v }))
+    .filter(d => d.time >= tStart);
+
+  const hrPts = (session ? session.hrHistory : []).filter(d => d.time >= tStart);
+
+  // Time ticks
+  const totalMin = windowMs / 60000;
+  const tickStep = totalMin <= 5 ? 1 : totalMin <= 15 ? 2 : totalMin <= 30 ? 5 : 10;
+  function drawTicks(r) {
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = 'rgba(150,150,180,0.5)';
+    ctx.strokeStyle = 'rgba(150,150,180,0.08)';
+    for (let m = tickStep; m <= totalMin; m += tickStep) {
+      const t = tStart + m * 60000;
+      if (t > now) continue;
+      const x = tx(t);
+      ctx.fillText(m + 'm', x - 8, r.top + r.h + 14);
+      ctx.beginPath(); ctx.moveTo(x, r.top); ctx.lineTo(x, r.top + r.h); ctx.stroke();
+    }
+  }
+
+  // Row 1: HRV
+  const r0 = rows[0];
+  if (rmssdPts.length > 1) {
+    const vals = rmssdPts.map(d => d.val);
+    const mn = Math.min(...vals) * 0.85, mx = Math.max(...vals) * 1.1;
+    const range = Math.max(mx - mn, 5);
+    const ry = v => r0.top + r0.h - (v - mn) / range * r0.h;
+    // Y ticks
+    ctx.font = '9px sans-serif'; ctx.fillStyle = 'rgba(138,248,180,0.5)';
+    const step = Math.max(10, Math.round((mx - mn) / 3 / 10) * 10);
+    for (let v = Math.floor(mn / step) * step; v <= mx; v += step) {
+      const y = ry(v);
+      if (y > r0.top + 8 && y < r0.top + r0.h - 4) {
+        ctx.fillText(v.toFixed(0), pad.left - 34, y + 3);
+        ctx.strokeStyle = 'rgba(138,248,180,0.07)';
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+      }
+    }
+    ctx.strokeStyle = 'rgba(138,248,180,0.85)'; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i = 0; i < rmssdPts.length; i++) {
+      const x = tx(rmssdPts[i].time), y = ry(rmssdPts[i].val);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    drawTicks(r0);
+    ctx.fillStyle = 'rgba(138,248,180,0.7)'; ctx.font = '11px sans-serif';
+    ctx.fillText('HRV (ms)', pad.left + 4, r0.top + 12);
+  } else {
+    ctx.strokeStyle = 'rgba(138,248,180,0.1)';
+    ctx.strokeRect(pad.left, r0.top, plotW, r0.h);
+    ctx.fillStyle = 'rgba(138,248,180,0.3)'; ctx.font = '12px sans-serif';
+    ctx.fillText('Waiting for HRV data…', pad.left + plotW / 2 - 60, r0.top + r0.h / 2);
+    drawTicks(r0);
+  }
+
+  // Row 2: HR
+  const r1 = rows[1];
+  if (hrPts.length > 1) {
+    const vals = hrPts.map(d => d.hr);
+    const mn = Math.min(...vals) - 5, mx = Math.max(...vals) + 5;
+    const range = Math.max(mx - mn, 10);
+    const hy = v => r1.top + r1.h - (v - mn) / range * r1.h;
+    ctx.font = '9px sans-serif'; ctx.fillStyle = 'rgba(248,138,138,0.5)';
+    const step = Math.max(5, Math.round((mx - mn) / 3 / 5) * 5);
+    for (let v = Math.floor(mn / step) * step; v <= mx; v += step) {
+      const y = hy(v);
+      if (y > r1.top + 8 && y < r1.top + r1.h - 4) {
+        ctx.fillText(v.toFixed(0), pad.left - 34, y + 3);
+        ctx.strokeStyle = 'rgba(248,138,138,0.07)';
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+      }
+    }
+    ctx.strokeStyle = 'rgba(248,138,138,0.85)'; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i = 0; i < hrPts.length; i++) {
+      const x = tx(hrPts[i].time), y = hy(hrPts[i].hr);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    drawTicks(r1);
+    ctx.fillStyle = 'rgba(248,138,138,0.7)'; ctx.font = '11px sans-serif';
+    ctx.fillText('HR (bpm)', pad.left + 4, r1.top + 12);
+  } else {
+    ctx.strokeStyle = 'rgba(248,138,138,0.1)';
+    ctx.strokeRect(pad.left, r1.top, plotW, r1.h);
+    ctx.fillStyle = 'rgba(248,138,138,0.3)'; ctx.font = '12px sans-serif';
+    ctx.fillText('Waiting for HR data…', pad.left + plotW / 2 - 55, r1.top + r1.h / 2);
+    drawTicks(r1);
+  }
+
+  // Annotations — draw across both rows
+  const annHitBoxes = [];
+  const anns = session ? session.annotations : [];
+  const topY = pad.top, botY = pad.top + 2 * rowH + 10;
+  for (const a of anns) {
+    if (a.t < tStart || a.t > now) continue;
+    const x = tx(a.t);
+    ctx.strokeStyle = 'rgba(248,216,138,0.9)'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]); ctx.beginPath();
+    ctx.moveTo(x, topY); ctx.lineTo(x, botY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(248,216,138,0.9)';
+    ctx.beginPath(); ctx.arc(x, topY + 2, 3.5, 0, Math.PI * 2); ctx.fill();
+    annHitBoxes.push({ x, top: topY - 6, bottom: botY, ann: a });
+  }
+
+  chartData = { pad, plotW, tStart, windowMs, now, rows, rmssdPts, hrPts, annHitBoxes };
+  requestAnimationFrame(drawChart);
+}
+requestAnimationFrame(drawChart);
+
+// Tooltip + click-to-annotate
+cv.addEventListener('mousemove', (e) => {
+  if (!chartData) return;
+  const tip = $('tooltip');
+  const rect = cv.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const d = chartData;
+  if (mx < d.pad.left || mx > d.pad.left + d.plotW) { tip.style.display = 'none'; return; }
+
+  // Annotation hit
+  const annHit = d.annHitBoxes.find(h => Math.abs(mx - h.x) <= 6 && my >= h.top && my <= h.bottom);
+  if (annHit) {
+    tip.innerHTML = `<strong style="color:#f8d88a">${escapeHtml(annHit.ann.label)}</strong><br><span style="color:#667;font-size:10px">click to remove</span>`;
+    tip.style.display = 'block';
+    tip.style.left = Math.min(mx + 14, cv.clientWidth - tip.offsetWidth - 8) + 'px';
+    tip.style.top = Math.max(4, my - 36) + 'px';
+    cv.style.cursor = 'pointer';
+    return;
+  }
+  cv.style.cursor = 'crosshair';
+
+  // Row hit
+  let rowIdx = -1;
+  for (let i = 0; i < d.rows.length; i++) {
+    if (my >= d.rows[i].top && my <= d.rows[i].top + d.rows[i].h) { rowIdx = i; break; }
+  }
+  if (rowIdx < 0) { tip.style.display = 'none'; return; }
+  const t = d.tStart + ((mx - d.pad.left) / d.plotW) * d.windowMs;
+
+  const tol = Math.max(5000, d.windowMs * 0.02);
+  let label = '', value = '', unit = '', color = '';
+  const pickNearest = (arr, getT) => arr.length ? arr.reduce((best, p) => Math.abs(getT(p) - t) < Math.abs(getT(best) - t) ? p : best) : null;
+  if (rowIdx === 0 && d.rmssdPts.length) {
+    const n = pickNearest(d.rmssdPts, p => p.time);
+    if (n && Math.abs(n.time - t) <= tol) { label = 'HRV'; value = n.val.toFixed(1); unit = 'ms'; color = '#8af8b4'; }
+  } else if (rowIdx === 1 && d.hrPts.length) {
+    const n = pickNearest(d.hrPts, p => p.time);
+    if (n && Math.abs(n.time - t) <= tol) { label = 'HR'; value = Math.round(n.hr); unit = 'bpm'; color = '#f88a8a'; }
+  }
+  if (!label) { tip.style.display = 'none'; return; }
+  const ago = Math.round((d.now - t) / 1000);
+  const agoText = ago < 60 ? ago + 's ago' : Math.floor(ago / 60) + 'm ' + (ago % 60) + 's ago';
+  tip.innerHTML = `<span style="color:${color}">${label}: <strong>${value}</strong> ${unit}</span> <span style="color:#888;font-size:10px">${agoText}</span><br><span style="color:#556;font-size:10px">click to add note</span>`;
+  tip.style.display = 'block';
+  tip.style.left = Math.min(mx + 14, cv.clientWidth - tip.offsetWidth - 8) + 'px';
+  tip.style.top = Math.max(4, my - 38) + 'px';
+});
+
+cv.addEventListener('mouseleave', () => { $('tooltip').style.display = 'none'; });
+
+cv.addEventListener('click', (e) => {
+  if (!chartData || !session || !session.started) {
+    if (!session) setStatus('Start a session first, then click to annotate.', 'err');
+    return;
+  }
+  const rect = cv.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const d = chartData;
+  if (mx < d.pad.left || mx > d.pad.left + d.plotW) return;
+  const annHit = d.annHitBoxes.find(h => Math.abs(mx - h.x) <= 6 && my >= h.top && my <= h.bottom);
+  if (annHit) {
+    if (!confirm(`Remove annotation "${annHit.ann.label}"?`)) return;
+    const i = session.annotations.indexOf(annHit.ann);
+    if (i >= 0) session.annotations.splice(i, 1);
+    return;
+  }
+  let inRow = false;
+  for (let i = 0; i < d.rows.length; i++) {
+    if (my >= d.rows[i].top && my <= d.rows[i].top + d.rows[i].h) { inRow = true; break; }
+  }
+  if (!inRow) return;
+  const t = d.tStart + ((mx - d.pad.left) / d.plotW) * d.windowMs;
+  const label = (prompt('Annotation (e.g. "phone call")', '') || '').trim();
+  if (!label) return;
+  session.annotations.push({ t, label, source: 'user' });
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch]));
+}
+</script>
+</body>
+</html>

@@ -332,15 +332,20 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 
 <div class="history-title" style="font-size:16px;margin-top:24px">Session History</div>
 <table class="history-table"><thead><tr>
-<th>Date</th><th>Duration</th><th>Mode</th><th>Avg RMSSD</th><th>Focus</th><th>Interventions</th><th></th>
+<th>Date</th><th>Duration</th><th>Mode</th><th>Avg HRV</th><th>Focus</th><th>Interventions</th><th></th>
 </tr></thead><tbody id="historyBody"></tbody></table>
 </div>
 </div>
 <div id="vizExpandOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,5,15,.92);backdrop-filter:blur(12px);padding:20px;box-sizing:border-box;overflow:auto">
-<div style="margin-bottom:12px">
+<div style="margin-bottom:12px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
 <span id="vizExpandTitle" style="color:#aac;font-size:14px;letter-spacing:.05em">This Session</span>
+<span id="vizExpandStats" style="color:#8aa;font-size:12px;letter-spacing:.02em"></span>
+<span style="color:#667;font-size:11px;margin-left:auto">Hover for values · Click to annotate</span>
 </div>
-<canvas id="vizExpandCanvas" style="width:100%;height:calc(100vh - 80px);display:block;background:rgba(10,10,20,.6);border:1px solid rgba(80,80,120,.2);border-radius:8px"></canvas>
+<div style="position:relative">
+<canvas id="vizExpandCanvas" style="width:100%;height:calc(100vh - 80px);display:block;background:rgba(10,10,20,.6);border:1px solid rgba(80,80,120,.2);border-radius:8px;cursor:crosshair"></canvas>
+<div id="vizExpandTooltip" style="display:none;position:absolute;pointer-events:none;background:rgba(15,15,30,.95);border:1px solid rgba(100,100,150,.5);border-radius:6px;padding:5px 10px;font-size:13px;color:#ddd;white-space:nowrap;z-index:5;backdrop-filter:blur(8px);max-width:260px"></div>
+</div>
 </div>
 <!-- Close buttons live OUTSIDE the overlays so position:fixed anchors to the
      viewport. Inside the overlay, backdrop-filter creates a new containing
@@ -390,7 +395,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="breath-stats" id="breakStats" style="display:none">
   <div class="breath-stat"><div class="breath-stat-label">HR</div><div class="breath-stat-value" id="breakStatHr">--</div></div>
   <div class="breath-stat"><div class="breath-stat-label">Δ HR</div><div class="breath-stat-value" id="breakStatHrDelta">--</div></div>
-  <div class="breath-stat"><div class="breath-stat-label">RMSSD</div><div class="breath-stat-value" id="breakStatRmssd">--</div></div>
+  <div class="breath-stat"><div class="breath-stat-label">HRV</div><div class="breath-stat-value" id="breakStatRmssd">--</div></div>
   <div class="breath-stat"><div class="breath-stat-label">Target</div><div class="breath-stat-value" id="breakStatTarget" style="font-size:13px">--</div></div>
 </div>
 <div id="breakZoneHint" style="display:none;font-size:12px;color:#6a6a8a;margin:-6px 0 14px;font-style:italic"></div>
@@ -737,7 +742,7 @@ $('profileStatsBtn').addEventListener('click', () => {
     <strong>${lt.sessions || 0}</strong> sessions · <strong>${hours}</strong> hours total<br>
     <strong>${lt.focusSpans || 0}</strong> focus spans · <strong>${lt.interventions || 0}</strong> breathing interventions<br>
     <strong>${lt.breaks || 0}</strong> breaks · <strong>${((lt.breakMinutes || 0)).toFixed(0)}</strong> min break time<br>
-    Avg RMSSD: <strong>${avgRmssd}ms</strong> (all time) · <strong>${recentAvg}ms</strong> (last 10)<br>
+    Avg HRV: <strong>${avgRmssd}ms</strong> (all time) · <strong>${recentAvg}ms</strong> (last 10)<br>
     Baseline: <strong>${currentProfile.rmssdBaseline ? currentProfile.rmssdBaseline.toFixed(0) + 'ms' : 'uncalibrated'}</strong><br>
     Calibrations: <strong>${currentProfile.calibrationHistory?.length || 0}</strong>
   `;
@@ -808,8 +813,8 @@ function openHistoryOverlay() {
     <div class="history-stat"><div class="history-stat-val">${hours}h</div><div class="history-stat-label">Total Time</div></div>
     <div class="history-stat"><div class="history-stat-val">${avgDuration}m</div><div class="history-stat-label">Avg Session</div></div>
     <div class="history-stat"><div class="history-stat-val">${longestSession}m</div><div class="history-stat-label">Longest</div></div>
-    <div class="history-stat"><div class="history-stat-val">${avgRmssd}</div><div class="history-stat-label">Avg RMSSD</div></div>
-    <div class="history-stat"><div class="history-stat-val">${recentAvg}</div><div class="history-stat-label">RMSSD (Last 10)</div></div>
+    <div class="history-stat"><div class="history-stat-val">${avgRmssd}</div><div class="history-stat-label">Avg HRV</div></div>
+    <div class="history-stat"><div class="history-stat-val">${recentAvg}</div><div class="history-stat-label">HRV (Last 10)</div></div>
     <div class="history-stat"><div class="history-stat-val">${lt.interventions || 0}</div><div class="history-stat-label">Interventions</div></div>
     <div class="history-stat"><div class="history-stat-val">${jhanaSessions}</div><div class="history-stat-label">Jhana Sessions</div></div>
   `;
@@ -1309,7 +1314,7 @@ async function finishCalibration() {
     }
 
     $('calTitle').textContent = 'Calibrated!';
-    $('calSub').textContent = `Your relaxed baseline: ${baseline.toFixed(0)}ms RMSSD`;
+    $('calSub').textContent = `Your relaxed baseline: ${baseline.toFixed(0)}ms HRV`;
     $('calPhase').textContent = '';
     $('calCircle').className = 'breath-circle';
     $('calCircleText').textContent = '✓';
@@ -1832,7 +1837,7 @@ function showMeetingRecap(stats) {
   if (!stats) return;
   const parts = [];
   if (stats.hrMean != null) parts.push(`HR avg ${stats.hrMean} bpm (${stats.hrMin}\u2013${stats.hrMax})`);
-  if (stats.rmssdMean != null) parts.push(`RMSSD avg ${stats.rmssdMean} ms (low ${stats.rmssdMin})`);
+  if (stats.rmssdMean != null) parts.push(`HRV avg ${stats.rmssdMean} ms (low ${stats.rmssdMin})`);
   if (stats.rmssdMean != null) parts.push(`${stats.stressPct}% of time in stress zone`);
   const line = `Meeting recap \u00B7 ${stats.durationMin} min \u00B7 ` + parts.join(' \u00B7 ');
   try {
@@ -1871,6 +1876,13 @@ function startMeetingPause(block) {
   // Switch to tighter poll cadence so shortened/extended meetings update fast
   schedulePoll();
   logEvent && logEvent('meeting_pause_start', { until: block.end });
+  // Auto-annotate the chart so the user can later see when meetings broke up the session.
+  try {
+    if (sessionLog && sessionLog.started) {
+      sessionLog.annotations = sessionLog.annotations || [];
+      sessionLog.annotations.push({ t: Date.now(), label: 'Meeting', source: 'calendar' });
+    }
+  } catch(_) {}
 }
 
 function endMeetingPause() {
@@ -1888,6 +1900,12 @@ function endMeetingPause() {
   // Back to the relaxed poll cadence
   schedulePoll();
   logEvent && logEvent('meeting_pause_end', {});
+  try {
+    if (sessionLog && sessionLog.started) {
+      sessionLog.annotations = sessionLog.annotations || [];
+      sessionLog.annotations.push({ t: Date.now(), label: 'Meeting end', source: 'calendar' });
+    }
+  } catch(_) {}
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -7429,10 +7447,10 @@ function drawViz(){
 
       drawTimeTicks(r);
       c.fillStyle='rgba(138,248,180,0.7)';c.font='10px sans-serif';
-      c.fillText('RMSSD (ms)',pad.left+2,r.top+11);
+      c.fillText('HRV (ms)',pad.left+2,r.top+11);
     }
   } else {
-    drawEmptyRow(rows[0],'RMSSD (ms)','rgba(138,248,180,1)');
+    drawEmptyRow(rows[0],'HRV (ms)','rgba(138,248,180,1)');
   }
 
   // ========== ROW 2: Heart Rate ==========
@@ -7582,7 +7600,7 @@ $('hrvViz').addEventListener('mousemove', (e) => {
     const data = rmssdHistory.slice(-300).map((v, i, arr) => ({ time: now - (arr.length - 1 - i) * 1000, val: v }));
     const nearest = data.reduce((best, d) => Math.abs(d.time - t) < Math.abs(best.time - t) ? d : best);
     if (Math.abs(nearest.time - t) < 5000) {
-      label = 'RMSSD'; value = nearest.val.toFixed(1); unit = 'ms'; color = '#8af8b4';
+      label = 'HRV'; value = nearest.val.toFixed(1); unit = 'ms'; color = '#8af8b4';
     }
   } else if (rowIdx === 1 && hrHistory.length > 1) {
     const visible = hrHistory.filter(d => d.time >= tStart);
@@ -7619,6 +7637,7 @@ $('hrvViz').addEventListener('mouseleave', () => {
 
 let vizExpandAnim = null;
 let vizExpandSession = null; // when set, expand overlay renders this historical session
+let vizExpandChartData = null; // populated each frame by drawVizExpanded() for hit-testing
 $('vizExpandBtn').addEventListener('click', () => {
   vizExpandSession = null;
   $('vizExpandTitle').textContent = 'This Session';
@@ -7632,6 +7651,153 @@ $('vizCollapseBtn').addEventListener('click', () => {
   if (vizExpandAnim) { cancelAnimationFrame(vizExpandAnim); vizExpandAnim = null; }
   vizExpandSession = null;
 });
+
+// --- Expanded-view tooltip + click-to-annotate ------------------------------
+// On hover: show exact value (HRV/HR/Fatigue) at nearest data point, or the
+// annotation label if hovering near an annotation marker.
+// On click (outside an existing annotation): prompt for a short label and
+// add an annotation at that time.
+(function setupVizExpandedInteraction(){
+  const cv = $('vizExpandCanvas');
+  if (!cv) return;
+  const tip = $('vizExpandTooltip');
+
+  // Map pointer event to canvas-internal CSS-pixel coords.
+  function ptFromEvent(e) {
+    const rect = cv.getBoundingClientRect();
+    return { mx: e.clientX - rect.left, my: e.clientY - rect.top };
+  }
+
+  // For live-view: data times are absolute timestamps; for historical: relative offsets.
+  // Either way, tx() handles both transparently via tStart/windowMs. The reverse
+  // (pixel → time) uses the same linear map.
+  function px2t(mx, d) { return d.tStart + ((mx - d.pad.left) / d.plotW) * d.windowMs; }
+
+  function agoFor(t, d) {
+    if (d.hist) {
+      // t is ms since session start
+      const mins = Math.floor(t / 60000);
+      const secs = Math.round((t % 60000) / 1000);
+      return mins + 'm ' + String(secs).padStart(2, '0') + 's in';
+    }
+    const diff = Math.round((d.now - t) / 1000);
+    if (diff < 60) return diff + 's ago';
+    return Math.floor(diff / 60) + 'm ' + (diff % 60) + 's ago';
+  }
+
+  cv.addEventListener('mousemove', (e) => {
+    const d = vizExpandChartData;
+    if (!d || !d.rows) { tip.style.display = 'none'; return; }
+    const { mx, my } = ptFromEvent(e);
+    if (mx < d.pad.left || mx > d.pad.left + d.plotW) { tip.style.display = 'none'; return; }
+
+    // Annotation hit (any Y): prioritize over data tooltip
+    const annHit = (d.annHitBoxes || []).find(h => Math.abs(mx - h.x) <= 6 && my >= h.top && my <= h.bottom);
+    if (annHit) {
+      const src = annHit.ann.source === 'calendar' ? 'calendar' : 'note';
+      tip.innerHTML = `<span style="color:#f8d88a"><strong>${escapeHtml(annHit.ann.label)}</strong></span> <span style="color:#888;font-size:10px">${src} · ${agoFor(annHit.ann.t, d)}</span><br><span style="color:#667;font-size:10px">click to remove</span>`;
+      tip.style.display = 'block';
+      tip.style.left = Math.min(mx + 14, cv.clientWidth - tip.offsetWidth - 8) + 'px';
+      tip.style.top = Math.max(4, my - 36) + 'px';
+      cv.style.cursor = 'pointer';
+      return;
+    }
+    cv.style.cursor = 'crosshair';
+
+    // Which row is the cursor in?
+    let rowIdx = -1;
+    for (let i = 0; i < d.rows.length; i++) {
+      if (my >= d.rows[i].top && my <= d.rows[i].top + d.rows[i].h) { rowIdx = i; break; }
+    }
+    if (rowIdx < 0) { tip.style.display = 'none'; return; }
+    const t = px2t(mx, d);
+
+    // Tolerance: for historical charts, windowMs can be long (1hr+) and samples sparse.
+    // Use 2% of windowMs as the "near" threshold.
+    const tol = Math.max(5000, d.windowMs * 0.02);
+    let label = '', value = '', unit = '', color = '';
+    const pickNearest = (arr, getT) => arr.reduce((best, p) => Math.abs(getT(p) - t) < Math.abs(getT(best) - t) ? p : best);
+    if (rowIdx === 0 && d.rmssdVisible && d.rmssdVisible.length) {
+      const n = pickNearest(d.rmssdVisible, p => p.time);
+      if (Math.abs(n.time - t) <= tol) { label = 'HRV'; value = n.val.toFixed(1); unit = 'ms'; color = '#8af8b4'; }
+    } else if (rowIdx === 1 && d.hrVisible && d.hrVisible.length) {
+      const n = pickNearest(d.hrVisible, p => p.time);
+      if (Math.abs(n.time - t) <= tol) { label = 'HR'; value = Math.round(n.hr); unit = 'bpm'; color = '#f88a8a'; }
+    } else if (rowIdx === 2 && d.fatigueVisible && d.fatigueVisible.length) {
+      const n = pickNearest(d.fatigueVisible, p => p.time);
+      if (Math.abs(n.time - t) <= tol) { label = 'Fatigue'; value = n.score.toFixed(1); unit = ''; color = '#f8b48a'; }
+    }
+    if (!label) { tip.style.display = 'none'; return; }
+    tip.innerHTML = `<span style="color:${color}">${label}: <strong>${value}</strong> ${unit}</span> <span style="color:#888;font-size:10px">${agoFor(t, d)}</span><br><span style="color:#556;font-size:10px">click to add note</span>`;
+    tip.style.display = 'block';
+    tip.style.left = Math.min(mx + 14, cv.clientWidth - tip.offsetWidth - 8) + 'px';
+    tip.style.top = Math.max(4, my - 38) + 'px';
+  });
+
+  cv.addEventListener('mouseleave', () => {
+    tip.style.display = 'none';
+    cv.style.cursor = 'crosshair';
+  });
+
+  cv.addEventListener('click', (e) => {
+    const d = vizExpandChartData;
+    if (!d || !d.rows) return;
+    const { mx, my } = ptFromEvent(e);
+    if (mx < d.pad.left || mx > d.pad.left + d.plotW) return;
+
+    // Click on existing annotation → remove (after confirm).
+    const annHit = (d.annHitBoxes || []).find(h => Math.abs(mx - h.x) <= 6 && my >= h.top && my <= h.bottom);
+    if (annHit) {
+      if (!confirm(`Remove annotation "${annHit.ann.label}"?`)) return;
+      removeAnnotation(annHit.ann);
+      return;
+    }
+
+    // Must click inside a row to annotate a time.
+    let inRow = false;
+    for (let i = 0; i < d.rows.length; i++) {
+      if (my >= d.rows[i].top && my <= d.rows[i].top + d.rows[i].h) { inRow = true; break; }
+    }
+    if (!inRow) return;
+
+    const t = (d.tStart + ((mx - d.pad.left) / d.plotW) * d.windowMs);
+    const label = (prompt('Annotation (e.g. "phone call")', '') || '').trim();
+    if (!label) return;
+    addAnnotation(t, label, 'user');
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+  }
+})();
+
+// Annotation add/remove: mutates the right store (live sessionLog or the
+// historical session object) and persists to IndexedDB.
+function addAnnotation(t, label, source) {
+  const hist = vizExpandSession;
+  const ann = { t, label, source: source || 'user' };
+  if (hist) {
+    if (!hist.annotations) hist.annotations = [];
+    hist.annotations.push(ann);
+  } else {
+    if (!sessionLog.annotations) sessionLog.annotations = [];
+    sessionLog.annotations.push(ann);
+    try { logEvent('annotation_added', { label, source: ann.source }); } catch(_) {}
+  }
+  if (currentProfile && typeof saveProfile === 'function') {
+    try { saveProfile(currentProfile); } catch(_) {}
+  }
+}
+
+function removeAnnotation(ann) {
+  const hist = vizExpandSession;
+  const list = hist ? (hist.annotations || []) : (sessionLog.annotations || []);
+  const idx = list.indexOf(ann);
+  if (idx >= 0) list.splice(idx, 1);
+  if (currentProfile && typeof saveProfile === 'function') {
+    try { saveProfile(currentProfile); } catch(_) {}
+  }
+}
 
 function drawVizExpanded() {
   if ($('vizExpandOverlay').style.display === 'none') { vizExpandAnim = null; return; }
@@ -7753,6 +7919,21 @@ function drawVizExpanded() {
     fatigueVisible = fatigueHistory.filter(d => d.time >= tStart);
   }
 
+  // Shared Y-axis tick renderer for the expanded rows.
+  function drawYTicks(r, mn, mx, yFn, colorRgbPrefix, step) {
+    c.font = '10px sans-serif';
+    c.fillStyle = colorRgbPrefix + '0.55)';
+    const start = Math.ceil(mn / step) * step;
+    for (let v = start; v <= mx; v += step) {
+      const y = yFn(v);
+      if (y <= r.top + 10 || y >= r.top + r.h - 2) continue;
+      c.fillText(String(v), pad.left - 32, y + 3);
+      c.strokeStyle = colorRgbPrefix + '0.08)';
+      c.lineWidth = 0.5;
+      c.beginPath(); c.moveTo(pad.left, y); c.lineTo(pad.left + plotW, y); c.stroke();
+    }
+  }
+
   // RMSSD
   if (rmssdVisible && rmssdVisible.length > 1) {
     const r = rows[0];
@@ -7761,6 +7942,8 @@ function drawVizExpanded() {
     const range = Math.max(mx - mn, 5);
     function ry(v) { return r.top + r.h - (v - mn) / range * r.h; }
     drawBreaks(r);
+    const rmssdStep = Math.max(5, Math.round((mx - mn) / 4 / 5) * 5);
+    drawYTicks(r, mn, mx, ry, 'rgba(138,248,180,', rmssdStep);
     if (baselineForRow) {
       const by = ry(baselineForRow);
       if (by > r.top && by < r.top + r.h) {
@@ -7779,9 +7962,9 @@ function drawVizExpanded() {
     c.stroke();
     drawTicks(r);
     c.fillStyle = 'rgba(138,248,180,0.7)'; c.font = '12px sans-serif';
-    c.fillText('RMSSD (ms)', pad.left + 4, r.top + 14);
+    c.fillText('HRV (ms)', pad.left + 4, r.top + 14);
   } else {
-    drawExpandedEmpty(rows[0], 'RMSSD (ms)', 'rgba(138,248,180,1)');
+    drawExpandedEmpty(rows[0], 'HRV (ms)', 'rgba(138,248,180,1)');
   }
 
   // Heart Rate
@@ -7792,6 +7975,8 @@ function drawVizExpanded() {
     const range = Math.max(mx - mn, 10);
     function hy(v) { return r.top + r.h - (v - mn) / range * r.h; }
     drawBreaks(r);
+    const hrStep = Math.max(5, Math.round((mx - mn) / 4 / 5) * 5);
+    drawYTicks(r, mn, mx, hy, 'rgba(248,138,138,', hrStep);
     c.strokeStyle = 'rgba(248,138,138,0.7)'; c.lineWidth = 2; c.beginPath();
     for (let i = 0; i < hrVisible.length; i++) {
       const x = tx(hrVisible[i].time), y = hy(hrVisible[i].hr);
@@ -7811,6 +7996,7 @@ function drawVizExpanded() {
     const mn = 0, mx = 100, range = 100;
     function fy(v) { return r.top + r.h - (v - mn) / range * r.h; }
     drawBreaks(r);
+    drawYTicks(r, 0, 100, fy, 'rgba(248,180,138,', 25);
     c.strokeStyle = 'rgba(248,180,138,0.7)'; c.lineWidth = 2; c.beginPath();
     for (let i = 0; i < fatigueVisible.length; i++) {
       const x = tx(fatigueVisible[i].time), y = fy(fatigueVisible[i].score);
@@ -7823,6 +8009,61 @@ function drawVizExpanded() {
   } else {
     drawExpandedEmpty(rows[2], 'Fatigue Score', 'rgba(248,180,138,1)');
   }
+
+  // --- Stats strip in header (avg / min / max) --------------------------
+  try {
+    const statsEl = $('vizExpandStats');
+    if (statsEl) {
+      const parts = [];
+      if (rmssdVisible && rmssdVisible.length) {
+        const vs = rmssdVisible.map(d => d.val);
+        const avg = vs.reduce((a,b)=>a+b,0) / vs.length;
+        const mn = Math.min(...vs), mx = Math.max(...vs);
+        parts.push(`<span style="color:#8af8b4">HRV avg <strong>${avg.toFixed(0)}</strong> ms</span> <span style="color:#567">(${mn.toFixed(0)}–${mx.toFixed(0)})</span>`);
+      }
+      if (hrVisible && hrVisible.length) {
+        const vs = hrVisible.map(d => d.hr);
+        const avg = vs.reduce((a,b)=>a+b,0) / vs.length;
+        const mn = Math.min(...vs), mx = Math.max(...vs);
+        parts.push(`<span style="color:#f88a8a">HR avg <strong>${avg.toFixed(0)}</strong> bpm</span> <span style="color:#567">(${mn.toFixed(0)}–${mx.toFixed(0)})</span>`);
+      }
+      if (fatigueVisible && fatigueVisible.length) {
+        const vs = fatigueVisible.map(d => d.score);
+        const avg = vs.reduce((a,b)=>a+b,0) / vs.length;
+        parts.push(`<span style="color:#f8b48a">Fatigue avg <strong>${avg.toFixed(0)}</strong></span>`);
+      }
+      statsEl.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+    }
+  } catch(_) {}
+
+  // --- Annotations (user notes + auto calendar markers) -----------------
+  // For live session, annotations store absolute timestamps; for historical
+  // sessions they're offsets from session start. Both map cleanly via tx().
+  const annotations = hist ? (hist.annotations || []) : (sessionLog && sessionLog.annotations ? sessionLog.annotations : []);
+  const annHitBoxes = [];
+  const topY = pad.top - 2;
+  const bottomY = pad.top + 2 * (rows[0].h) + 12 + rows[0].h; // bottom of last row
+  for (const ann of annotations) {
+    if (ann.t < tStart || ann.t > now) continue;
+    const x = tx(ann.t);
+    const color = ann.source === 'calendar' ? 'rgba(138,180,248,0.85)' : 'rgba(248,216,138,0.9)';
+    // Vertical dashed line spanning all rows
+    c.strokeStyle = color; c.lineWidth = 1; c.setLineDash([3, 3]);
+    c.beginPath(); c.moveTo(x, pad.top); c.lineTo(x, bottomY); c.stroke();
+    c.setLineDash([]);
+    // Pin dot at top
+    c.fillStyle = color;
+    c.beginPath(); c.arc(x, pad.top + 2, 3.5, 0, Math.PI * 2); c.fill();
+    // Record hit box for hover (a narrow vertical strip)
+    annHitBoxes.push({ x, top: pad.top - 6, bottom: bottomY, ann });
+  }
+
+  // Cache chart state for hover/click handlers on the expanded canvas.
+  vizExpandChartData = {
+    rows, pad, plotW, tStart, windowMs, now,
+    rmssdVisible, hrVisible, fatigueVisible,
+    annotations, annHitBoxes, hist,
+  };
 }
 
 function drawBg(){
@@ -8173,6 +8414,7 @@ let sessionLog = {
   currentFocusStart: null,
   breaks: [],
   events: [],         // [{time, type, ...details}] — all notable events
+  annotations: [],    // [{t: absMs, label, source: 'user'|'calendar'}] — chart pins
 };
 let sessionSongCount = 0; // incremented on each startNewSong; first song of session triggers chill-bias in adaptive mode
 
@@ -8203,6 +8445,7 @@ function startSessionLog() {
   sessionLog.interventions = [];
   sessionLog.breaks = [];
   sessionLog.events = [];
+  sessionLog.annotations = [];
   sessionLog.currentFocusStart = Date.now();
   sessionLog.initialParams = captureSongParams();
   hrHistory=[];fatigueHistory=[];breakPeriods=[];
@@ -8571,14 +8814,14 @@ const Breaks = {
           $('breakStatTarget').textContent = '+8–25%';
           $('breakZoneHint').textContent = 'Active break — a modest HR rise means your body is moving blood and loosening up.';
         } else if (suggestedBreak.paced) {
-          $('breakStatTarget').textContent = 'RMSSD ↑';
-          $('breakZoneHint').textContent = 'Paced breathing at 6/minute — heart and breath synchronize. RMSSD should rise measurably within 3–5 minutes.';
+          $('breakStatTarget').textContent = 'HRV ↑';
+          $('breakZoneHint').textContent = 'Paced breathing at 6/minute — heart and breath synchronize. HRV should rise measurably within 3–5 minutes.';
         } else if (suggestedBreak.meditation) {
           $('breakStatTarget').textContent = 'settle';
-          $('breakZoneHint').textContent = 'Meditation — let HR and RMSSD settle naturally. No targets to chase.';
+          $('breakZoneHint').textContent = 'Meditation — let HR and HRV settle naturally. No targets to chase.';
         } else {
           $('breakStatTarget').textContent = 'hold / ↓';
-          $('breakZoneHint').textContent = 'Passive break — HR should hold steady or drop, RMSSD should rise.';
+          $('breakZoneHint').textContent = 'Passive break — HR should hold steady or drop, HRV should rise.';
         }
         if (Breaks.liveInterval) clearInterval(Breaks.liveInterval);
         Breaks.liveInterval = setInterval(Breaks._updateLiveStats, 1000);
@@ -10524,6 +10767,9 @@ function buildCurrentSession() {
       start: b.start - sStart,
       end: (b.end || now) - sStart,
     })),
+    annotations: (sessionLog.annotations || []).filter(a => a.t >= sStart && a.t <= now).map(a => ({
+      t: a.t - sStart, label: a.label, source: a.source || 'user',
+    })),
   };
 }
 
@@ -10787,6 +11033,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-20-1814<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-21-2228<!--/VERSION--></div>
 </body>
 </html>
