@@ -2080,6 +2080,9 @@ const VINYL_OCCASIONAL = new Set();                             // everything el
 function rollSongVinyl() {
   let style = null;
   try { style = currentSongStyle; } catch (_) { style = null; }
+  // Meditation modes are about pure synth textures — vinyl crackle reads as
+  // static/graininess on top of the drone, not as lofi flavor.
+  if (jhanaMode || bedtimeMode || shamanicMode) { songHasVinyl = false; return; }
   if (style && ORCHESTRAL_STYLES.has(style)) { songHasVinyl = false; return; }
   if (style && VINYL_ALWAYS.has(style)) { songHasVinyl = true; return; }
   const p = (style && VINYL_LIKELY.has(style)) ? 0.55 : 0.20;
@@ -11145,6 +11148,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1006<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1430<!--/VERSION--></div>
 </body>
 </html>
