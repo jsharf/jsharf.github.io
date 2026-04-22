@@ -191,7 +191,10 @@ function onHRM(ev) {
     for (let i = 1; i < rec.length; i++) df.push(rec[i].rr - rec[i - 1].rr);
     const rmssd = Math.sqrt(df.reduce((s, d) => s + d * d, 0) / df.length);
     $('rmssdVal').textContent = rmssd.toFixed(0);
-    if (session && session.started) session.rmssdHistory.push(rmssd);
+    if (session && session.started) {
+      session.rmssdHistory.push(rmssd);
+      session.rmssdTimes.push(Date.now());
+    }
   }
 
   updateAvgs();
@@ -213,6 +216,7 @@ $('startBtn').addEventListener('click', () => {
     started: Date.now(),
     hrHistory: [],
     rmssdHistory: [],
+    rmssdTimes: [],
     annotations: [],
   };
   $('startBtn').disabled = true;
@@ -224,6 +228,22 @@ $('startBtn').addEventListener('click', () => {
   }, 500);
 });
 
+function timeOfDayTag(epochMs) {
+  const d = new Date(epochMs);
+  const h = d.getHours();
+  let bucket;
+  if (h >= 5 && h < 12) bucket = 'morning';
+  else if (h >= 12 && h < 17) bucket = 'afternoon';
+  else if (h >= 17 && h < 21) bucket = 'evening';
+  else bucket = 'night';
+  return {
+    bucket, localHour: h,
+    localTime: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+    tzOffsetMin: -d.getTimezoneOffset(),
+    weekday: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()],
+  };
+}
+
 $('stopBtn').addEventListener('click', () => {
   if (!session || !session.started) return;
   clearInterval(timerInt); timerInt = null;
@@ -232,6 +252,7 @@ $('stopBtn').addEventListener('click', () => {
   const durationMin = +((now - sStart) / 60000).toFixed(1);
   const out = {
     date: new Date(sStart).toISOString(),
+    timeOfDay: timeOfDayTag(sStart),
     durationMin,
     controlMode: true,
     interventions: 0,
@@ -243,7 +264,11 @@ $('stopBtn').addEventListener('click', () => {
     avgHr: session.hrHistory.length
       ? +(session.hrHistory.reduce((a, b) => a + b.hr, 0) / session.hrHistory.length).toFixed(1) : null,
     rmssdBaseline: null,
-    rmssdSeries: session.rmssdHistory.map(v => +v.toFixed(1)),
+    // Timestamped [offset_ms, val] pairs so the control export matches the main app.
+    rmssdSeries: session.rmssdHistory.map((v, i) => [
+      (session.rmssdTimes[i] != null ? session.rmssdTimes[i] - sStart : i * 1000),
+      +v.toFixed(1),
+    ]),
     hrSeries: session.hrHistory.map(h => [h.time - sStart, h.hr]),
     fatigueSeries: [],
     breakPeriodsList: [],

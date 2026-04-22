@@ -10670,6 +10670,25 @@ function applyBiofeedback(ratio){
 }
 
 // ---- SESSION EXPORT ----
+// Derive a coarse time-of-day bucket from a wall-time epoch ms, using LOCAL hour.
+// Buckets: night 21-04, morning 05-11, afternoon 12-16, evening 17-20.
+function timeOfDayTag(epochMs) {
+  const d = new Date(epochMs);
+  const h = d.getHours();
+  let bucket;
+  if (h >= 5 && h < 12) bucket = 'morning';
+  else if (h >= 12 && h < 17) bucket = 'afternoon';
+  else if (h >= 17 && h < 21) bucket = 'evening';
+  else bucket = 'night';
+  return {
+    bucket,
+    localHour: h,
+    localTime: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+    tzOffsetMin: -d.getTimezoneOffset(),
+    weekday: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()],
+  };
+}
+
 $('exportBtn').addEventListener('click', () => {
   // Finalize current focus span if still going
   const now = Date.now();
@@ -10689,6 +10708,7 @@ $('exportBtn').addEventListener('click', () => {
       focusPercentage: totalSessionMs > 0 ? +(totalFocusMs / totalSessionMs * 100).toFixed(1) : 0,
       songStyle: currentSongStyle,
       focusMode: getActivePreset(),
+      timeOfDay: timeOfDayTag(sessionLog.started || now),
     },
     focus: {
       totalSpans: spans.length,
@@ -10778,6 +10798,7 @@ function buildCurrentSession() {
   const sStart = sessionLog.started || now;
   return {
     date: new Date(sStart).toISOString(),
+    timeOfDay: timeOfDayTag(sStart),
     durationMin: +(totalMs / 60000).toFixed(1),
     focusSpans: spans.length,
     interventions: sessionLog.interventions.length,
@@ -11103,6 +11124,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-21-2300<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-21-2334<!--/VERSION--></div>
 </body>
 </html>
