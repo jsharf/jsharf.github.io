@@ -649,10 +649,6 @@ function openDB() {
       if (!db.objectStoreNames.contains('profiles')) {
         db.createObjectStore('profiles', { keyPath: 'name' });
       }
-      // Remove old sessions store if present
-      if (db.objectStoreNames.contains('sessions')) {
-        db.deleteObjectStore('sessions');
-      }
       // Debug log store — for chasing data-loss bugs like "silent session wiped
       // my history". Auto-increment keys; indexed by timestamp.
       if (!db.objectStoreNames.contains('dbgLogs')) {
@@ -922,12 +918,14 @@ $('importFileInput').addEventListener('change', async (e) => {
 function openHistoryOverlay() {
   if (!currentProfile) { $('status').textContent = 'Select a profile first'; return; }
   const lt = currentProfile.lifetime || {};
-  // Filter out zombie placeholder entries — 0m / no-data rows from quick
-  // start/stop cycles before the tooShort-pop fix landed. Recognized by
-  // durationMin < 0.5 AND no HRV data.
+  // Filter out zombie placeholder entries — <30s rows that aren't meaningful
+  // sessions. These came from the old persistSession-on-start behavior that
+  // pushed a t=0 placeholder even when the session died before anything real
+  // was recorded. A few might have incidental HRV samples, so filter purely
+  // on durationMin.
   const allSessions = currentProfile.recentSessions || [];
   const sessions = allSessions
-    .filter(s => !((s.durationMin || 0) < 0.5 && s.avgRmssd == null))
+    .filter(s => (s.durationMin || 0) >= 0.5)
     .slice().reverse(); // newest first
 
   // Title
@@ -11185,7 +11183,11 @@ async function finalizeSession() {
 
 function startPersistLoop() {
   lastPersistedSession = null;
-  persistSession();
+  // NOTE: deliberately do NOT persist at t=0. An immediate push creates a
+  // zombie entry (durationMin=0, no data yet) that only gets updated on the
+  // 30s tick or at finalize. Quick start→stop or tab-close within 30s leaves
+  // that zombie in recentSessions forever. finalizeSession handles save-on-end
+  // for sessions that didn't live long enough for a persist tick.
   persistInterval = setInterval(persistSession, 30000);
 }
 function stopPersistLoop() {
@@ -11408,6 +11410,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1638<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1643<!--/VERSION--></div>
 </body>
 </html>
