@@ -9749,26 +9749,28 @@ function updateBreathingLiveStats() {
 
 // Attention chime — audible even when tab is backgrounded (Web Audio doesn't suspend like TTS does)
 const CHIME_PRESETS = {
-  // Rising arpeggio — a bit more urgent, for breathing interventions
+  // Rising arpeggio — a bit more urgent, for breathing interventions.
+  // Partial is a perfect fifth (1.5x) rather than an octave, which is gentler
+  // — octave partials on sine tones sound glassy/shrill.
   breathing: {
     notes: [
-      { freqs: [523.25, 1046.5], t: 0.00 },
-      { freqs: [783.99, 1568.0], t: 0.35 },
-      { freqs: [1046.5, 2093.0], t: 0.70 },
+      { freqs: [523.25, 784.88], t: 0.00 },
+      { freqs: [783.99, 1176.0], t: 0.45 },
+      { freqs: [1046.5, 1569.8], t: 0.90 },
     ],
-    peakFund: 0.40, peakPartial: 0.13,
-    attack: 0.18, tail: 1.8, total: 2.6,
-    lpStart: 1200, lpPeak: 3500, lpEnd: 1800,
+    peakFund: 0.32, peakPartial: 0.06,
+    attack: 0.32, tail: 2.2, total: 3.2,
+    lpStart: 900, lpPeak: 2200, lpEnd: 1200,
   },
   // Descending warm pair — gentler nudge, for break check-ins
   break: {
     notes: [
-      { freqs: [659.25, 1318.5], t: 0.00 }, // E5 + E6
-      { freqs: [440.00,  880.0], t: 0.45 }, // A4 + A5
+      { freqs: [659.25, 988.88], t: 0.00 }, // E5 + B5 (fifth)
+      { freqs: [440.00, 660.00], t: 0.55 }, // A4 + E5 (fifth)
     ],
-    peakFund: 0.28, peakPartial: 0.09,
-    attack: 0.22, tail: 2.0, total: 2.8,
-    lpStart: 900, lpPeak: 2400, lpEnd: 1300,
+    peakFund: 0.24, peakPartial: 0.05,
+    attack: 0.36, tail: 2.4, total: 3.2,
+    lpStart: 700, lpPeak: 1800, lpEnd: 900,
   },
 };
 function playAttentionChime(variant = 'breathing') {
@@ -9781,13 +9783,14 @@ function playAttentionChime(variant = 'breathing') {
   const lp = ac.createBiquadFilter();
   lp.type = 'lowpass';
   lp.frequency.setValueAtTime(cfg.lpStart, now);
-  lp.frequency.linearRampToValueAtTime(cfg.lpPeak, now + 0.6);
+  lp.frequency.linearRampToValueAtTime(cfg.lpPeak, now + 0.8);
   lp.frequency.linearRampToValueAtTime(cfg.lpEnd, now + cfg.total * 0.9);
-  lp.Q.value = 0.5;
+  lp.Q.value = 0.4;
   bus.connect(lp).connect(ac.destination); // bypass masterGain so fades don't muffle it
-  // Smooth master envelope — long attack, very long tail
-  bus.gain.linearRampToValueAtTime(0.32, now + 0.20);
-  bus.gain.linearRampToValueAtTime(0.22, now + cfg.total * 0.45);
+  // Smooth master envelope via setTargetAtTime — exponential onset feels softer
+  // than a linear ramp, no perceptible attack transient.
+  bus.gain.setTargetAtTime(0.26, now, 0.25);
+  bus.gain.setTargetAtTime(0.18, now + cfg.total * 0.5, 0.5);
   bus.gain.exponentialRampToValueAtTime(0.0005, now + cfg.total);
   for (const n of cfg.notes) {
     for (let i = 0; i < n.freqs.length; i++) {
@@ -9798,7 +9801,8 @@ function playAttentionChime(variant = 'breathing') {
       const peak = i === 0 ? cfg.peakFund : cfg.peakPartial;
       const t0 = now + n.t;
       g.gain.setValueAtTime(0, t0);
-      g.gain.linearRampToValueAtTime(peak, t0 + cfg.attack);
+      // setTargetAtTime for each note onset — exponential swell-in.
+      g.gain.setTargetAtTime(peak, t0, cfg.attack * 0.45);
       g.gain.exponentialRampToValueAtTime(0.001, t0 + cfg.tail);
       osc.connect(g).connect(bus);
       osc.start(t0);
@@ -11148,6 +11152,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1430<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1552<!--/VERSION--></div>
 </body>
 </html>
