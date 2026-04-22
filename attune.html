@@ -307,7 +307,6 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="history-title" id="historyTitle">Session History</div>
 <div class="history-stats" id="historyStats"></div>
 <div class="history-toolbar">
-<button id="historyExportAll">Export All</button>
 <button id="dbgLogsBtn" title="Dump recent debug logs (helpful when reporting a bug)">Debug Logs</button>
 </div>
 
@@ -468,8 +467,9 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <button id="newProfileBtn">+ New</button>
 <button id="recalibrateBtn">Recalibrate</button>
 <button id="profileStatsBtn">Stats</button>
-<button id="exportProfileBtn">Export</button>
-<button id="importProfileBtn">Import</button>
+<button id="exportProfileBtn" title="Export just the current profile">Export</button>
+<button id="backupAllBtn" title="Back up every profile on this device, plus recent debug logs">Backup</button>
+<button id="importProfileBtn" title="Restore a profile or full backup from a JSON file">Import</button>
 <input type="file" id="importFileInput" accept=".json" style="display:none">
 </div>
 
@@ -873,7 +873,7 @@ $('profileStatsBtn').addEventListener('click', () => {
   $('calSkip').textContent = 'Close';
 });
 
-// Export = dump the profile object (contains everything)
+// Export = dump the current profile object (single profile).
 $('exportProfileBtn').addEventListener('click', () => {
   if (!currentProfile) { $('status').textContent = 'Select a profile first'; return; }
   const blob = new Blob([JSON.stringify(currentProfile, null, 2)], { type: 'application/json' });
@@ -885,7 +885,39 @@ $('exportProfileBtn').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-// Import = replace/create profile from file. Profile is the whole thing.
+// Backup = everything on this device: all profiles + recent debug logs, wrapped
+// in a versioned envelope so Import can distinguish it from a single-profile
+// file.
+$('backupAllBtn').addEventListener('click', async () => {
+  try {
+    const profiles = await getProfiles();
+    // Last 7 days of debug logs — enough for bug triage, bounded so backups
+    // stay reasonable in size.
+    const since = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const dbgLogs = await getDbgLogs(since);
+    const payload = {
+      format: 'attune-backup-v1',
+      exportedAt: new Date().toISOString(),
+      profiles,
+      dbgLogs,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.download = `attune-backup-${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    $('status').textContent = `Backed up ${profiles.length} profile${profiles.length === 1 ? '' : 's'}`;
+  } catch(err) {
+    $('status').textContent = 'Backup failed: ' + err.message;
+  }
+});
+
+// Import handles both shapes:
+//   - single profile: { name, lifetime, recentSessions, ... }
+//   - full backup:    { format: 'attune-backup-v1', profiles: [...], dbgLogs }
 $('importProfileBtn').addEventListener('click', () => $('importFileInput').click());
 $('importFileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -893,18 +925,38 @@ $('importFileInput').addEventListener('change', async (e) => {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    // Accept either {name, lifetime, ...} (direct profile) or {profile: {...}} (old format)
-    const profile = data.name ? data : data.profile;
-    if (!profile || !profile.name) { $('status').textContent = 'Invalid file — no profile name found'; return; }
-    // Ensure schema fields exist
-    if (!profile.lifetime) profile.lifetime = { sessions:0, durationMin:0, focusSpans:0, interventions:0, rmssdSum:0, rmssdCount:0 };
-    if (!profile.recentSessions) profile.recentSessions = [];
-    if (!profile.calibrationHistory) profile.calibrationHistory = [];
-    await saveProfile(profile);
-    await loadProfileList();
-    $('profileSelect').value = profile.name;
-    loadSelectedProfile();
-    $('status').textContent = `Imported profile: ${profile.name}`;
+
+    if (data && data.format === 'attune-backup-v1' && Array.isArray(data.profiles)) {
+      let restored = 0;
+      for (const p of data.profiles) {
+        if (!p || !p.name) continue;
+        if (!p.lifetime) p.lifetime = { sessions:0, durationMin:0, focusSpans:0, interventions:0, rmssdSum:0, rmssdCount:0 };
+        if (!p.recentSessions) p.recentSessions = [];
+        if (!p.calibrationHistory) p.calibrationHistory = [];
+        await saveProfile(p);
+        restored++;
+      }
+      await loadProfileList();
+      // Prefer the profile that was active before import if still present;
+      // otherwise fall back to the first restored profile.
+      const prev = currentProfile && currentProfile.name;
+      const names = data.profiles.map(p => p && p.name).filter(Boolean);
+      const pick = (prev && names.includes(prev)) ? prev : names[0];
+      if (pick) { $('profileSelect').value = pick; await loadSelectedProfile(); }
+      $('status').textContent = `Restored ${restored} profile${restored === 1 ? '' : 's'} from backup`;
+    } else {
+      // Single profile: accept either {name, ...} or legacy {profile: {...}}
+      const profile = data.name ? data : data.profile;
+      if (!profile || !profile.name) { $('status').textContent = 'Invalid file — no profile name found'; return; }
+      if (!profile.lifetime) profile.lifetime = { sessions:0, durationMin:0, focusSpans:0, interventions:0, rmssdSum:0, rmssdCount:0 };
+      if (!profile.recentSessions) profile.recentSessions = [];
+      if (!profile.calibrationHistory) profile.calibrationHistory = [];
+      await saveProfile(profile);
+      await loadProfileList();
+      $('profileSelect').value = profile.name;
+      await loadSelectedProfile();
+      $('status').textContent = `Imported profile: ${profile.name}`;
+    }
   } catch(err) {
     $('status').textContent = 'Import failed: ' + err.message;
   }
@@ -1318,18 +1370,6 @@ $('historyBody').addEventListener('click', (e) => {
     a.click();
     URL.revokeObjectURL(url);
   }
-});
-
-// Export all sessions as a single JSON array
-$('historyExportAll').addEventListener('click', () => {
-  if (!currentProfile) return;
-  const blob = new Blob([JSON.stringify(currentProfile, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `attune-${currentProfile.name}-full.json`;
-  a.click();
-  URL.revokeObjectURL(url);
 });
 
 // ---- Debug logs dump UI ----
@@ -11410,6 +11450,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1643<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1658<!--/VERSION--></div>
 </body>
 </html>
