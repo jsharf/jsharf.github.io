@@ -4710,13 +4710,21 @@ function playAsmrShimmer(t, pan) {
 }
 
 function playAsmrBreathTexture(t, pan) {
-  // Whisper-like breath texture — filtered noise with formants, very quiet
+  // Whisper-like breath texture — pink-filtered noise with formants, very quiet
   if (!ac) return;
-  const dur = 1.2 + Math.random() * 1.0; // 1.2-2.2s (was 0.6s)
+  const dur = 1.2 + Math.random() * 1.0; // 1.2-2.2s
   const sz = Math.floor(ac.sampleRate * (dur + 0.3));
   const nb = ac.createBuffer(1, sz, ac.sampleRate);
   const nd = nb.getChannelData(0);
-  for (let i = 0; i < sz; i++) nd[i] = Math.random() * 2 - 1;
+  let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+  for (let i = 0; i < sz; i++) {
+    const w = Math.random() * 2 - 1;
+    b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759;
+    b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856;
+    b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
+    nd[i] = (b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11;
+    b6 = w*0.115926;
+  }
   const n = ac.createBufferSource(); n.buffer = nb;
   // Formant filter for whisper quality
   const bp = ac.createBiquadFilter(); bp.type = 'bandpass';
@@ -5871,10 +5879,18 @@ function initNoise() {
 let breathNodes = {};
 let breathLfoStartTime = 0;
 function initBreathCue() {
-  // White noise source
-  const sz=2*ac.sampleRate, buf=ac.createBuffer(1,sz,ac.sampleRate);
+  // Pink noise source — smoother, wind-like. Paul Kellet's filter approximation.
+  const sz=4*ac.sampleRate, buf=ac.createBuffer(1,sz,ac.sampleRate);
   const d=buf.getChannelData(0);
-  for(let i=0;i<sz;i++) d[i]=Math.random()*2-1;
+  let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+  for(let i=0;i<sz;i++){
+    const w=Math.random()*2-1;
+    b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759;
+    b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856;
+    b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
+    d[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11;
+    b6=w*0.115926;
+  }
   const src=ac.createBufferSource(); src.buffer=buf; src.loop=true;
 
   // Primary bandpass — shaped per-phase for inhale vs exhale
@@ -5904,26 +5920,31 @@ function initBreathCue() {
   breathLfoStartTime = ac.currentTime;
   breathNodes = {amp, lfoG, bp, shelf, src, gate};
 
-  // Asymmetric breath shaping — strongly differentiate inhale from exhale:
-  // Inhale: bright, airy, rising — high bandpass center + high shelf boost
-  // Exhale: warm, soft, falling — low bandpass center + high shelf cut
+  // Asymmetric breath shaping — strongly differentiate inhale from exhale.
+  // Smooth AudioParam updates via setTargetAtTime so filter sweeps don't zipper.
   function shapeBreath() {
     if (!ac || ac.state === 'closed') return;
     const phase = getBreathPhase();
     const inInhale = phase < 0.5;
+    const now = ac.currentTime;
+    const tc = 0.05; // audio-rate smoothing constant
+    let freq, q, shelfGain;
     if (inInhale) {
       const t = phase * 2;
       const sinT = Math.sin(t * Math.PI);
-      bp.frequency.value = 500 + sinT * 800;   // 500→1300→500 — noticeably bright
-      bp.Q.value = 0.7 + sinT * 0.8;           // tighter, whistly
-      shelf.gain.value = sinT * 6;              // +6dB high shelf boost at peak
+      freq = 500 + sinT * 800;   // 500→1300→500 — noticeably bright
+      q = 0.7 + sinT * 0.8;      // tighter, whistly
+      shelfGain = sinT * 6;      // +6dB high shelf boost at peak
     } else {
       const t = (phase - 0.5) * 2;
       const sinT = Math.sin(t * Math.PI);
-      bp.frequency.value = 250 + sinT * 200;   // 250→450→250 — much lower, warm
-      bp.Q.value = 0.4 + sinT * 0.2;           // wide, diffuse
-      shelf.gain.value = sinT * -5;             // -5dB high shelf cut — darker
+      freq = 250 + sinT * 200;   // 250→450→250 — much lower, warm
+      q = 0.4 + sinT * 0.2;      // wide, diffuse
+      shelfGain = sinT * -5;     // -5dB high shelf cut — darker
     }
+    bp.frequency.setTargetAtTime(freq, now, tc);
+    bp.Q.setTargetAtTime(q, now, tc);
+    shelf.gain.setTargetAtTime(shelfGain, now, tc);
     requestAnimationFrame(shapeBreath);
   }
   shapeBreath();
@@ -11124,6 +11145,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-21-2334<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1006<!--/VERSION--></div>
 </body>
 </html>
