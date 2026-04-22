@@ -7401,9 +7401,14 @@ function drawViz(){
   // ========== ROW 1: RMSSD ==========
   if(rmssdHistory.length>1){
     const r=rows[0];
-    // Build time-indexed RMSSD data (approximate: 1 sample/sec, most recent)
-    // rmssdHistory doesn't have timestamps, so map from end backwards
-    const data=rmssdHistory.slice(-300).map((v,i,arr)=>({time:now-(arr.length-1-i)*1000,val:v}));
+    // rmssdTimes captures the real wall-time of each sample; fall back to 1 Hz
+    // when missing (should not happen mid-session after the fix).
+    const rmssdLen = rmssdHistory.length;
+    const startIdx = Math.max(0, rmssdLen - 300);
+    const data = rmssdHistory.slice(startIdx).map((v, i) => ({
+      time: (rmssdTimes[startIdx + i] != null) ? rmssdTimes[startIdx + i] : (now - (rmssdLen - 1 - (startIdx + i)) * 1000),
+      val: v,
+    }));
     const visible=data.filter(d=>d.time>=tStart);
     if(visible.length>1){
       const vals=visible.map(d=>d.val);
@@ -7597,7 +7602,12 @@ $('hrvViz').addEventListener('mousemove', (e) => {
   // Find nearest data point
   let label = '', value = '', unit = '', color = '';
   if (rowIdx === 0 && rmssdHistory.length > 1) {
-    const data = rmssdHistory.slice(-300).map((v, i, arr) => ({ time: now - (arr.length - 1 - i) * 1000, val: v }));
+    const _rlen = rmssdHistory.length;
+    const _start = Math.max(0, _rlen - 300);
+    const data = rmssdHistory.slice(_start).map((v, i) => ({
+      time: (rmssdTimes[_start + i] != null) ? rmssdTimes[_start + i] : (now - (_rlen - 1 - (_start + i)) * 1000),
+      val: v,
+    }));
     const nearest = data.reduce((best, d) => Math.abs(d.time - t) < Math.abs(best.time - t) ? d : best);
     if (Math.abs(nearest.time - t) < 5000) {
       label = 'HRV'; value = nearest.val.toFixed(1); unit = 'ms'; color = '#8af8b4';
@@ -7892,13 +7902,25 @@ function drawVizExpanded() {
     baselineForRow = hist.rmssdBaseline;
     const series = hist.rmssdSeries;
     if (series && series.length > 1) {
-      const step = windowMs / Math.max(series.length - 1, 1);
-      rmssdVisible = series.map((v, i) => ({ time: i * step, val: v }));
+      // New format: [[offset, val], ...] — real wall-time timestamps.
+      // Old format: [val, val, ...] — spread evenly across session duration.
+      if (Array.isArray(series[0])) {
+        rmssdVisible = series.map(([t, v]) => ({ time: t, val: v }));
+      } else {
+        const step = windowMs / Math.max(series.length - 1, 1);
+        rmssdVisible = series.map((v, i) => ({ time: i * step, val: v }));
+      }
     }
   } else {
     baselineForRow = rmssdBaseline;
     if (rmssdHistory.length > 1) {
-      const data = rmssdHistory.map((v, i, arr) => ({ time: now - (arr.length - 1 - i) * 1000, val: v }));
+      // Prefer the real timestamps we now capture; fall back to 1Hz assumption
+      // for samples that predate rmssdTimes being populated (shouldn't happen
+      // within a single session, but defensive).
+      const data = rmssdHistory.map((v, i, arr) => ({
+        time: (rmssdTimes && rmssdTimes[i] != null) ? rmssdTimes[i] : (now - (arr.length - 1 - i) * 1000),
+        val: v,
+      }));
       rmssdVisible = data.filter(d => d.time >= tStart);
     }
   }
@@ -8085,7 +8107,7 @@ function drawBg(){
 // BLUETOOTH HRV
 // =====================================================
 
-let rrIntervals=[],rmssdHistory=[],rmssdBaseline=null,baselinesamples=0,bleDevice=null;
+let rrIntervals=[],rmssdHistory=[],rmssdTimes=[],rmssdBaseline=null,baselinesamples=0,bleDevice=null;
 // Belt-on warmup: skip HRV display/classification for the first several seconds
 // after a BLE connection. Chest straps take ~10-20s to settle — before that,
 // missed beats give 2x-normal RR intervals that inflate RMSSD into the 200s.
@@ -8389,7 +8411,7 @@ $('bleBtn').addEventListener('click',async()=>{
     // if a session is already running — otherwise a mid-session reconnect
     // loses the first part of the HRV chart.
     rrIntervals=[];baselinesamples=0;bleFirstRrTime=0;rrRejectStreak=0;
-    if (!(sessionLog && sessionLog.started)) rmssdHistory=[];
+    if (!(sessionLog && sessionLog.started)) { rmssdHistory=[]; rmssdTimes=[]; }
     // Restore saved profile baseline instead of wiping it
     if(currentProfile && currentProfile.rmssdBaseline){
       rmssdBaseline = currentProfile.rmssdBaseline;
@@ -8449,6 +8471,11 @@ function startSessionLog() {
   sessionLog.currentFocusStart = Date.now();
   sessionLog.initialParams = captureSongParams();
   hrHistory=[];fatigueHistory=[];breakPeriods=[];
+  // Clear HRV history too — otherwise samples from a previous session (or
+  // pre-session BLE warmup) leak into this session. Was causing HRV to
+  // appear spread across the whole chart while HR only covered the actual
+  // recording window.
+  rmssdHistory=[];rmssdTimes=[];
   sessionSongCount = 0; // first song of session gets chill-bias when adaptive
   // Reset today's adaptive baseline state; refresh long-term from history.
   todayBaseline = null;
@@ -10033,6 +10060,12 @@ function handleHRM(ev){
     // downgrade the state one notch.
     const pnn50 = df.length ? (df.filter(d => Math.abs(d) > 50).length / df.length) * 100 : 0;
     rmssdHistory.push(rmssd);
+    rmssdTimes.push(Date.now());
+    // Cap both in lockstep so they stay index-aligned.
+    if (rmssdHistory.length > 7200) {
+      rmssdHistory = rmssdHistory.slice(-7200);
+      rmssdTimes = rmssdTimes.slice(-7200);
+    }
     // Opportunistic today-baseline detection — look for a 60s stable window.
     if (playing && !inBreathingMode && !Breaks.inMode) {
       checkForStableBaselineWindow(rmssd, hr);
@@ -10760,15 +10793,52 @@ function buildCurrentSession() {
       final: captureSongParams(),
     },
     rmssdBaseline: rmssdBaseline != null ? +rmssdBaseline.toFixed(1) : null,
-    rmssdSeries: rmssdHistory.map(v => +v.toFixed(1)),
+    // Timestamped [offset, val] pairs — matches hrSeries shape so the chart
+    // can plot HRV against real wall time even if BLE reconnected mid-session.
+    // Old sessions stored a flat number[] and the draw code handles both.
+    rmssdSeries: rmssdHistory.map((v, i) => [
+      (rmssdTimes[i] != null ? rmssdTimes[i] - sStart : i * 1000),
+      +v.toFixed(1),
+    ]),
     hrSeries: hrHistory.map(h => [h.time - sStart, h.hr]),
-    fatigueSeries: fatigueHistory.filter((_, i) => i % 5 === 0).map(f => [f.time - sStart, +f.score.toFixed(1)]),
+    // fatigueSeries keeps score+state; state was previously dropped.
+    fatigueSeries: fatigueHistory.filter((_, i) => i % 5 === 0).map(f => [
+      f.time - sStart, +f.score.toFixed(1), f.state || null,
+    ]),
     breakPeriodsList: breakPeriods.filter(b => b.start).map(b => ({
       start: b.start - sStart,
       end: (b.end || now) - sStart,
     })),
     annotations: (sessionLog.annotations || []).filter(a => a.t >= sStart && a.t <= now).map(a => ({
       t: a.t - sStart, label: a.label, source: a.source || 'user',
+    })),
+    // Full event log (TTS cues, interventions, breathing, mode toggles, snapshots, etc).
+    // Each event already carries a wall-time `time`; we normalize to session offset.
+    events: (sessionLog.events || []).map(e => {
+      const { time, ...rest } = e;
+      return { t: (time || sStart) - sStart, ...rest };
+    }),
+    // Detailed interventions (previously only the count was kept).
+    interventionsList: sessionLog.interventions.map(i => ({
+      start: i.start - sStart,
+      end: i.end != null ? i.end - sStart : null,
+      duration: i.duration,
+      preRmssd: i.preRmssd,
+      postRmssd: i.postRmssd,
+    })),
+    // Detailed focus spans (previously only the count was kept).
+    focusSpansList: spans.map(s => ({
+      start: s.start - sStart,
+      end: s.end - sStart,
+      duration: s.duration,
+    })),
+    // Detailed breaks with type/category (previously only count + total minutes).
+    breaksList: sessionLog.breaks.filter(b => b.end).map(b => ({
+      start: b.start - sStart,
+      end: b.end - sStart,
+      duration: b.duration,
+      type: b.type,
+      category: b.category,
     })),
   };
 }
@@ -11033,6 +11103,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-21-2228<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-21-2300<!--/VERSION--></div>
 </body>
 </html>
