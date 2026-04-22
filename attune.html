@@ -772,17 +772,50 @@ async function loadProfileList() {
   }
 }
 
+// Rebuild lifetime aggregates from recentSessions. Used as self-healing when
+// lifetime has drifted from recentSessions (legacy profiles, past finalize
+// failures, etc). Returns true if anything changed.
+function reconcileLifetime(profile) {
+  if (!profile) return false;
+  const sessions = (profile.recentSessions || []).filter(s => (s.durationMin || 0) >= 0.5);
+  const computed = {
+    sessions: sessions.length,
+    durationMin: +sessions.reduce((s, x) => s + (x.durationMin || 0), 0).toFixed(1),
+    focusSpans: sessions.reduce((s, x) => s + (x.focusSpans || 0), 0),
+    interventions: sessions.reduce((s, x) => s + (x.interventions || 0), 0),
+    rmssdSum: +sessions.reduce((s, x) => s + (x.avgRmssd || 0), 0).toFixed(1),
+    rmssdCount: sessions.filter(x => x.avgRmssd != null).length,
+    breaks: sessions.reduce((s, x) => s + (x.breaks || 0), 0),
+    breakMinutes: +sessions.reduce((s, x) => s + (x.breakMinutes || 0), 0).toFixed(1),
+  };
+  const current = profile.lifetime || {};
+  // Only rebuild if lifetime looks under-counted — never lose a higher number
+  // (e.g. counts that legitimately ran ahead of recentSessions truncation).
+  if ((current.sessions || 0) >= computed.sessions && (current.durationMin || 0) >= computed.durationMin) {
+    return false;
+  }
+  profile.lifetime = computed;
+  return true;
+}
+
 function loadSelectedProfile() {
   const name = $('profileSelect').value;
   if (!name) return;
   const tx = db.transaction('profiles', 'readonly');
   const req = tx.objectStore('profiles').get(name);
-  req.onsuccess = () => {
+  req.onsuccess = async () => {
     currentProfile = req.result;
+    const beforeLt = currentProfile && currentProfile.lifetime ? { ...currentProfile.lifetime } : null;
+    const healed = reconcileLifetime(currentProfile);
+    if (healed) {
+      dbg('reconcileLifetime', { name, before: beforeLt, after: currentProfile.lifetime });
+      await saveProfile(currentProfile);
+    }
     dbg('loadSelectedProfile', {
       name,
       recentSessionsLen: currentProfile && currentProfile.recentSessions ? currentProfile.recentSessions.length : null,
       lifetimeSessions: currentProfile && currentProfile.lifetime ? currentProfile.lifetime.sessions : null,
+      healed,
     });
     if (currentProfile && currentProfile.rmssdBaseline) {
       rmssdBaseline = currentProfile.rmssdBaseline;
@@ -11131,17 +11164,20 @@ async function finalizeSession() {
     silent: silenceMode, jhana: jhanaMode, bedtime: bedtimeMode, shamanic: shamanicMode,
   });
 
-  // Update lifetime aggregates (but NOT recentSessions — already handled above)
-  currentProfile.lifetime.sessions++;
-  currentProfile.lifetime.durationMin += session.durationMin || 0;
-  currentProfile.lifetime.focusSpans += session.focusSpans || 0;
-  currentProfile.lifetime.interventions += session.interventions || 0;
+  // Update lifetime aggregates (but NOT recentSessions — already handled above).
+  // Defensive init: legacy profiles may be missing the object or individual
+  // fields; either case used to silently zero out / NaN the counters.
+  const lt = currentProfile.lifetime = currentProfile.lifetime || {};
+  lt.sessions = (lt.sessions || 0) + 1;
+  lt.durationMin = (lt.durationMin || 0) + (session.durationMin || 0);
+  lt.focusSpans = (lt.focusSpans || 0) + (session.focusSpans || 0);
+  lt.interventions = (lt.interventions || 0) + (session.interventions || 0);
   if (session.avgRmssd != null) {
-    currentProfile.lifetime.rmssdSum += session.avgRmssd;
-    currentProfile.lifetime.rmssdCount++;
+    lt.rmssdSum = (lt.rmssdSum || 0) + session.avgRmssd;
+    lt.rmssdCount = (lt.rmssdCount || 0) + 1;
   }
-  currentProfile.lifetime.breaks = (currentProfile.lifetime.breaks || 0) + (session.breaks || 0);
-  currentProfile.lifetime.breakMinutes = (currentProfile.lifetime.breakMinutes || 0) + (session.breakMinutes || 0);
+  lt.breaks = (lt.breaks || 0) + (session.breaks || 0);
+  lt.breakMinutes = (lt.breakMinutes || 0) + (session.breakMinutes || 0);
 
   await saveProfile(currentProfile);
   lastPersistedSession = null;
@@ -11372,6 +11408,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1635<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1638<!--/VERSION--></div>
 </body>
 </html>
