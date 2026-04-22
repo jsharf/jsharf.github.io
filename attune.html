@@ -889,7 +889,13 @@ $('importFileInput').addEventListener('change', async (e) => {
 function openHistoryOverlay() {
   if (!currentProfile) { $('status').textContent = 'Select a profile first'; return; }
   const lt = currentProfile.lifetime || {};
-  const sessions = (currentProfile.recentSessions || []).slice().reverse(); // newest first
+  // Filter out zombie placeholder entries — 0m / no-data rows from quick
+  // start/stop cycles before the tooShort-pop fix landed. Recognized by
+  // durationMin < 0.5 AND no HRV data.
+  const allSessions = currentProfile.recentSessions || [];
+  const sessions = allSessions
+    .filter(s => !((s.durationMin || 0) < 0.5 && s.avgRmssd == null))
+    .slice().reverse(); // newest first
 
   // Title
   $('historyTitle').textContent = `${currentProfile.name} — Profile History`;
@@ -8647,12 +8653,12 @@ function startSessionLog() {
   sessionLog.annotations = [];
   sessionLog.currentFocusStart = Date.now();
   sessionLog.initialParams = captureSongParams();
-  hrHistory=[];fatigueHistory=[];breakPeriods=[];
-  // Clear HRV history too — otherwise samples from a previous session (or
-  // pre-session BLE warmup) leak into this session. Was causing HRV to
-  // appear spread across the whole chart while HR only covered the actual
-  // recording window.
-  rmssdHistory=[];rmssdTimes=[];
+  fatigueHistory=[];breakPeriods=[];
+  // NOTE: rmssdHistory / hrHistory / rmssdTimes are intentionally NOT cleared
+  // here. Pre-Start BLE warmup should stay visible on the chart (otherwise
+  // clicking Start looks like data loss to the user). Session-scoped metrics
+  // are computed by filtering to samples with timestamp >= sessionLog.started
+  // in buildCurrentSession() instead.
   sessionSongCount = 0; // first song of session gets chill-bias when adaptive
   // Reset today's adaptive baseline state; refresh long-term from history.
   todayBaseline = null;
@@ -10977,14 +10983,22 @@ function buildCurrentSession() {
   }
   const totalMs = sessionLog.started ? now - sessionLog.started : 0;
   const sStart = sessionLog.started || now;
+  // Session-scoped filters: rmssdHistory / hrHistory accumulate from BLE
+  // across the Connect → Start boundary, so filter to in-session samples.
+  const inSessionRmssd = [];
+  for (let i = 0; i < rmssdHistory.length; i++) {
+    const t = rmssdTimes[i];
+    if (t == null || t >= sStart) inSessionRmssd.push(rmssdHistory[i]);
+  }
+  const inSessionHr = hrHistory.filter(h => h.time >= sStart);
   return {
     date: new Date(sStart).toISOString(),
     timeOfDay: timeOfDayTag(sStart),
     durationMin: +(totalMs / 60000).toFixed(1),
     focusSpans: spans.length,
     interventions: sessionLog.interventions.length,
-    avgRmssd: rmssdHistory.length ? +(rmssdHistory.reduce((a, b) => a + b) / rmssdHistory.length).toFixed(1) : null,
-    avgHr: hrHistory.length ? +(hrHistory.reduce((s, h) => s + h.hr, 0) / hrHistory.length).toFixed(1) : null,
+    avgRmssd: inSessionRmssd.length ? +(inSessionRmssd.reduce((a, b) => a + b) / inSessionRmssd.length).toFixed(1) : null,
+    avgHr: inSessionHr.length ? +(inSessionHr.reduce((s, h) => s + h.hr, 0) / inSessionHr.length).toFixed(1) : null,
     breaks: sessionLog.breaks.filter(b => b.end).length,
     breakMinutes: +(sessionLog.breaks.filter(b => b.end).reduce((s,b) => s + (b.duration||0), 0) / 60000).toFixed(1),
     shamanic: shamanicMode || undefined,
@@ -10998,11 +11012,13 @@ function buildCurrentSession() {
     // Timestamped [offset, val] pairs — matches hrSeries shape so the chart
     // can plot HRV against real wall time even if BLE reconnected mid-session.
     // Old sessions stored a flat number[] and the draw code handles both.
-    rmssdSeries: rmssdHistory.map((v, i) => [
-      (rmssdTimes[i] != null ? rmssdTimes[i] - sStart : i * 1000),
-      +v.toFixed(1),
-    ]),
-    hrSeries: hrHistory.map(h => [h.time - sStart, h.hr]),
+    rmssdSeries: rmssdHistory.reduce((out, v, i) => {
+      const t = rmssdTimes[i];
+      if (t != null && t < sStart) return out;
+      out.push([(t != null ? t - sStart : i * 1000), +v.toFixed(1)]);
+      return out;
+    }, []),
+    hrSeries: inSessionHr.map(h => [h.time - sStart, h.hr]),
     // fatigueSeries keeps score+state; state was previously dropped.
     fatigueSeries: fatigueHistory.filter((_, i) => i % 5 === 0).map(f => [
       f.time - sStart, +f.score.toFixed(1), f.state || null,
@@ -11082,8 +11098,20 @@ async function finalizeSession() {
   }
   const session = buildCurrentSession();
   if (session.durationMin < 0.5) {
-    dbg('finalizeSession.tooShort', { durationMin: session.durationMin, lastPersistedSession });
-    return; // skip very short sessions
+    // Too short to count as a real session. If persistSession already pushed a
+    // placeholder entry at session start, pop it back off so recentSessions
+    // doesn't accumulate zombie 0-minute rows on quick start/stop cycles.
+    let popped = false;
+    if (lastPersistedSession && currentProfile && currentProfile.recentSessions && currentProfile.recentSessions.length > 0) {
+      currentProfile.recentSessions.pop();
+      popped = true;
+    }
+    dbg('finalizeSession.tooShort', { durationMin: session.durationMin, lastPersistedSession, poppedPlaceholder: popped });
+    if (popped) {
+      await saveProfile(currentProfile);
+    }
+    lastPersistedSession = null;
+    return;
   }
 
   // Update the live entry to final state
@@ -11344,6 +11372,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1606<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1635<!--/VERSION--></div>
 </body>
 </html>
