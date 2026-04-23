@@ -8771,7 +8771,8 @@ function startSessionLog() {
   // chart line is continuous at the Start boundary. Thresholds (60/85) are
   // far above anything warmup could plausibly accumulate.
   sessionBreathingInterventions = 0;
-  MicroCues.reset();
+  lastCueAt = 0;
+  activeCue = null;
 }
 
 function logIntervention() {
@@ -9993,83 +9994,16 @@ const SUGGESTED_BREAKS = [
   ]},
 ];
 
-// ============================================================
-// MicroCues — low-friction voice prompts for physiological sigh and vagal
-// humming. These don't take over the screen (no overlay, no preset change);
-// they're TTS cues delivered when fatigue is in the mid-range where a full
-// breathing intervention would feel like overkill. After firing, we check
-// RMSSD ~40s later; if it improved, we give a brief encouragement.
-// ============================================================
-const MicroCues = {
-  enabled: true,
-  active: null,              // { type, firedAt, rmssdAtFire }
-  lastCueAt: 0,
-  cooldownMs: 4 * 60 * 1000, // 4 minutes between any two cues
-  followUpTimer: null,
-  // Fatigue band where micro-cues fire. Below this, no intervention needed;
-  // above this, Breaks.suggest() handles it and we stay out of the way.
-  MIN_FATIGUE: 28,
-  MAX_FATIGUE: 55,
-
-  tryFire() {
-    if (!MicroCues.enabled || MicroCues.active || !playing) return;
-    if (inBreathingMode || Breaks.inMode || Breaks.suggestionShown) return;
-    if (shamanicMode || jhanaMode || bedtimeMode) return;
-    const now = Date.now();
-    if (now - MicroCues.lastCueAt < MicroCues.cooldownMs) return;
-    // Skip the first 2 minutes — RMSSD is noisy at session start.
-    if (sessionLog.started && now - sessionLog.started < 120000) return;
-    const f = Breaks.fatigueScore;
-    if (f < MicroCues.MIN_FATIGUE || f > MicroCues.MAX_FATIGUE) return;
-    // ~0.5% per HRV tick in-band — averages a firing every 3-4 minutes of
-    // sustained mid-range fatigue, matched with the 4-minute cooldown.
-    if (Math.random() > 0.005) return;
-    MicroCues.fire(Math.random() < 0.5 ? 'sigh' : 'hum');
-  },
-
-  fire(type) {
-    const baseline = rmssdHistory.length ? rmssdHistory[rmssdHistory.length - 1] : null;
-    MicroCues.active = { type, firedAt: Date.now(), rmssdAtFire: baseline };
-    MicroCues.lastCueAt = Date.now();
-    logEvent('micro_cue_fire', {
-      type,
-      rmssd: baseline != null ? +baseline.toFixed(1) : null,
-      fatigueScore: +Breaks.fatigueScore.toFixed(1),
-    });
-    if (type === 'sigh') {
-      speak("Try a physiological sigh. Two quick breaths in through the nose, then one long breath out.");
-    } else {
-      speak("Let's hum for thirty seconds. Low 'vooo' sound on your exhale — it activates the vagus nerve.");
-    }
-    if (MicroCues.followUpTimer) clearTimeout(MicroCues.followUpTimer);
-    MicroCues.followUpTimer = setTimeout(MicroCues.followUp, 40000);
-  },
-
-  followUp() {
-    MicroCues.followUpTimer = null;
-    if (!MicroCues.active) return;
-    // Don't talk over an overlay or intervention that started meanwhile.
-    const suppressed = inBreathingMode || Breaks.inMode || Breaks.suggestionShown;
-    const cur = rmssdHistory.length ? rmssdHistory[rmssdHistory.length - 1] : null;
-    const base = MicroCues.active.rmssdAtFire;
-    logEvent('micro_cue_followup', {
-      type: MicroCues.active.type,
-      rmssdBefore: base != null ? +base.toFixed(1) : null,
-      rmssdAfter: cur != null ? +cur.toFixed(1) : null,
-      suppressed,
-    });
-    if (!suppressed && base != null && cur != null && cur > base * 1.10) {
-      speak("Nice — that's better.");
-    }
-    MicroCues.active = null;
-  },
-
-  reset() {
-    if (MicroCues.followUpTimer) { clearTimeout(MicroCues.followUpTimer); MicroCues.followUpTimer = null; }
-    MicroCues.active = null;
-    MicroCues.lastCueAt = 0;
-  },
-};
+// Low-friction voice cues for mid-range fatigue — physiological sigh or
+// vagal hum. TTS only; no overlay, no preset change. The positive-feedback
+// follow-up ("Nice — that's better") is watched on every HRV tick so it
+// fires the moment RMSSD rebounds, instead of on a fixed timer.
+let lastCueAt = 0;
+let activeCue = null; // { type, firedAt, rmssdAtFire }
+const CUE_COOLDOWN_MS = 4 * 60 * 1000;
+const CUE_FOLLOWUP_WINDOW_MS = 90 * 1000;
+const CUE_MIN_FATIGUE = 28;
+const CUE_MAX_FATIGUE = 55;
 
 function applyPreset(name) {
   const p = PRESETS[name];
@@ -10569,14 +10503,62 @@ function handleHRM(ev){
         if(recentAvg < prevAvg * 0.9) Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 0.1);
       }
       if(!Breaks.inMode && !inBreathingMode && playing && !shamanicMode && !jhanaMode && !bedtimeMode) {
+        // Per-tick follow-up: if we fired a cue, acknowledge the rebound the
+        // moment RMSSD comes back — no waiting on a fixed 40s timer.
+        if (activeCue) {
+          const elapsed = Date.now() - activeCue.firedAt;
+          const base = activeCue.rmssdAtFire;
+          const suppressed = inBreathingMode || Breaks.inMode || Breaks.suggestionShown;
+          if (!suppressed && base != null && rmssd > base * 1.10) {
+            speak("Nice — that's better.");
+            logEvent('micro_cue_followup', {
+              type: activeCue.type,
+              rmssdBefore: +base.toFixed(1),
+              rmssdAfter: +rmssd.toFixed(1),
+              elapsedMs: elapsed,
+              rebound: true,
+            });
+            activeCue = null;
+          } else if (elapsed > CUE_FOLLOWUP_WINDOW_MS) {
+            logEvent('micro_cue_followup', {
+              type: activeCue.type,
+              rmssdBefore: base != null ? +base.toFixed(1) : null,
+              rmssdAfter: +rmssd.toFixed(1),
+              elapsedMs: elapsed,
+              rebound: false,
+              timedOut: true,
+            });
+            activeCue = null;
+          }
+        }
         if(Breaks.fatigueScore >= Breaks.URGENT_THRESHOLD) {
           if(!Breaks.suggestionShown || !Breaks.suggestionUrgent) Breaks.suggest(true);
         } else if(Breaks.fatigueScore >= Breaks.SUGGEST_THRESHOLD && !Breaks.suggestionShown) {
           Breaks.suggest(false);
-        } else {
-          // Mid-range fatigue: try a low-friction voice cue (sigh / hum).
-          // tryFire() guards cooldown, session-elapsed, and fatigue band.
-          MicroCues.tryFire();
+        } else if (!activeCue) {
+          // Mid-range fatigue: maybe fire a low-friction voice cue (sigh / hum).
+          const now = Date.now();
+          const elapsedSession = sessionLog.started ? now - sessionLog.started : 0;
+          if (now - lastCueAt >= CUE_COOLDOWN_MS &&
+              elapsedSession >= 120000 &&
+              Breaks.fatigueScore >= CUE_MIN_FATIGUE &&
+              Breaks.fatigueScore <= CUE_MAX_FATIGUE &&
+              Math.random() < 0.005) {
+            const type = Math.random() < 0.5 ? 'sigh' : 'hum';
+            const baseline = rmssdHistory.length ? rmssdHistory[rmssdHistory.length - 1] : null;
+            activeCue = { type, firedAt: now, rmssdAtFire: baseline };
+            lastCueAt = now;
+            logEvent('micro_cue_fire', {
+              type,
+              rmssd: baseline != null ? +baseline.toFixed(1) : null,
+              fatigueScore: +Breaks.fatigueScore.toFixed(1),
+            });
+            if (type === 'sigh') {
+              speak("Try a physiological sigh. Two quick breaths in through the nose, then one long breath out.");
+            } else {
+              speak("Let's hum for thirty seconds. Low 'vooo' sound on your exhale — it activates the vagus nerve.");
+            }
+          }
         }
       }
 
@@ -11624,6 +11606,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1729<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1736<!--/VERSION--></div>
 </body>
 </html>
