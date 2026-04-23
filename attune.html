@@ -10529,10 +10529,14 @@ function handleHRM(ev){
             const delta = (base != null && base > 0) ? (recentAvg - base) / base : 0;
             let verdict;
             if (!suppressed) {
-              if (delta >= 0.02) {
+              // RMSSD wobbles ~5% inside any 5s window just from breath phase
+              // and sampling. Only claim a real rebound when it's clearly
+              // beyond that — otherwise we'd be rewarding noise. "Good."
+              // closes the loop without implying the cue worked.
+              if (delta >= 0.08) {
                 speak("Nice — that's better.");
                 verdict = 'up';
-              } else if (delta >= -0.02) {
+              } else if (delta > -0.08) {
                 speak("Good.");
                 verdict = 'flat';
               } else {
@@ -11628,6 +11632,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1754<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1758<!--/VERSION--></div>
 </body>
 </html>
