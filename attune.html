@@ -8668,9 +8668,10 @@ async function startBatteryMonitor(server) {
     const sv = await server.getPrimaryService('battery_service');
     const ch = await sv.getCharacteristic('battery_level');
     const handle = (val) => {
-      // Some HRMs push battery notifications continuously at the same level —
-      // only log on change to avoid spamming session exports.
-      if (val !== lastBatteryLogged) {
+      // Log only the first reading and subsequent monotonic decreases.
+      // HRMs often renotify at the same % (spam) or wobble +/-1 (sensor noise);
+      // we only care about the trajectory toward empty.
+      if (lastBatteryLogged === null || val < lastBatteryLogged) {
         logEvent('battery_level', { pct: val });
         lastBatteryLogged = val;
       }
@@ -11795,6 +11796,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1859<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-0953<!--/VERSION--></div>
 </body>
 </html>
