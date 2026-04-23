@@ -8652,10 +8652,6 @@ function stopEcgStream() {
   ecgCtrlChar = null; ecgDataChar = null;
 }
 
-// One-shot enumeration of BLE services + characteristics on a connected GATT
-// server. Logged via dbg() so users can paste the output to report what their
-// HRM actually exposes (e.g. COOSPO H9Z non-standard services). Driven only
-// by what's listed in BLE_OPTIONAL_SERVICES — unlisted UUIDs stay invisible.
 // Read battery level once on connect and subscribe to updates. Alerts at ≤5%
 // so the user knows to charge before mid-session death. Only warns once per
 // connection to avoid nagging as the level hovers at the threshold.
@@ -8693,37 +8689,6 @@ async function startBatteryMonitor(server) {
   }
 }
 
-async function probeBleServices(server) {
-  try {
-    const services = await server.getPrimaryServices();
-    const report = [];
-    for (const sv of services) {
-      const entry = { service: sv.uuid, chars: [] };
-      try {
-        const chars = await sv.getCharacteristics();
-        for (const ch of chars) {
-          const props = ch.properties || {};
-          entry.chars.push({
-            uuid: ch.uuid,
-            read: !!props.read,
-            write: !!props.write,
-            writeWithoutResponse: !!props.writeWithoutResponse,
-            notify: !!props.notify,
-            indicate: !!props.indicate,
-          });
-        }
-      } catch (e) {
-        entry.error = String(e && e.message || e);
-      }
-      report.push(entry);
-    }
-    dbg('ble_probe', { deviceName: (bleDevice && bleDevice.name) || null, services: report });
-    logEvent('ble_probe', { deviceName: (bleDevice && bleDevice.name) || null, count: report.length });
-  } catch (e) {
-    dbg('ble_probe.error', { error: String(e && e.message || e) });
-  }
-}
-
 $('bleBtn').addEventListener('click',async()=>{
   if(bleDevice){if(bleDevice.gatt.connected)bleDevice.gatt.disconnect();bleDevice=null;
     stopEcgStream();
@@ -8743,25 +8708,7 @@ $('bleBtn').addEventListener('click',async()=>{
   }
   try{
     $('bleBtn').textContent='Scanning...';
-    // optionalServices controls which services we're allowed to discover.
-    // Declare a broad set of SIG-standard + common-proprietary UUIDs so the
-    // post-connect probe can enumerate anything the device exposes. Web
-    // Bluetooth silently filters getPrimaryServices() to declared UUIDs only,
-    // so missing a UUID here = invisible to us even if present on the device.
-    const BLE_OPTIONAL_SERVICES = [
-      'heart_rate',            // 0x180D
-      'battery_service',       // 0x180F
-      'device_information',    // 0x180A
-      'current_time',          // 0x1805
-      'running_speed_and_cadence', // 0x1814
-      'cycling_power',         // 0x1818
-      'cycling_speed_and_cadence', // 0x1816
-      'fitness_machine',       // 0x1826
-      PMD_SERVICE,             // Polar PMD
-      '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART
-      '0000feee-0000-1000-8000-00805f9b34fb', // Polar alt
-    ];
-    bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:['heart_rate']}],optionalServices:BLE_OPTIONAL_SERVICES});
+    bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:['heart_rate']}],optionalServices:['heart_rate','battery_service',PMD_SERVICE]});
     bleDevice.addEventListener('gattserverdisconnected',()=>{
       const wasName = (bleDevice && bleDevice.name && bleDevice.name.trim()) || 'Heart rate monitor';
       $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');bleDevice=null;
@@ -8777,8 +8724,6 @@ $('bleBtn').addEventListener('click',async()=>{
       }
     });
     const server = await bleDevice.gatt.connect();
-    // Non-blocking service probe — fire-and-forget, logs to dbg for diagnostics
-    probeBleServices(server);
     const sv=await server.getPrimaryService('heart_rate');
     const ch=await sv.getCharacteristic('heart_rate_measurement');
     await ch.startNotifications();ch.addEventListener('characteristicvaluechanged',handleHRM);
@@ -11812,6 +11757,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1830<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1833<!--/VERSION--></div>
 </body>
 </html>
