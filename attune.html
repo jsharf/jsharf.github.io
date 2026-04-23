@@ -10756,7 +10756,14 @@ function handleHRM(ev){
       // Recovery-day defer: if long-term baseline is much higher than current
       // RMSSD and we're still in the first few minutes, assume workout-recovery /
       // bad-sleep day rather than acute stress. The system shouldn't pile on.
-      const recoveryDayDefer = (longTermBaseline && sessionElapsedSec < 240 && longTermBaseline > rmssd * 1.8);
+      //
+      // Important: "recovery day" only applies when the user's HRV has been
+      // low the *whole* session. If they started at/near baseline and then
+      // dropped, that's acute stress — exactly what we want to intervene on.
+      // Gate on session-max so a mid-session drop still fires.
+      const sessionMaxRmssd = rmssdHistory.length ? Math.max.apply(null, rmssdHistory) : 0;
+      const wasHealthyThisSession = longTermBaseline && sessionMaxRmssd >= longTermBaseline * 0.75;
+      const recoveryDayDefer = (longTermBaseline && sessionElapsedSec < 240 && longTermBaseline > rmssd * 1.8 && !wasHealthyThisSession);
       if(ratio<0.7 && !spikeActive){
         stressCount++;
         recoveryCount=0;
@@ -11799,6 +11806,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1821<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1827<!--/VERSION--></div>
 </body>
 </html>
