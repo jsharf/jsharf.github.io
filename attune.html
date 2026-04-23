@@ -10504,17 +10504,22 @@ function handleHRM(ev){
       }
       if(!Breaks.inMode && !inBreathingMode && playing && !shamanicMode && !jhanaMode && !bedtimeMode) {
         // Per-tick follow-up: if we fired a cue, acknowledge the rebound the
-        // moment RMSSD comes back — no waiting on a fixed 40s timer.
+        // moment RMSSD comes back. We compare a short rolling mean (last 5
+        // samples ≈ 5s) to the baseline captured at fire time, so a real
+        // parasympathetic bump registers within a few seconds of showing up
+        // instead of waiting on a single noisy sample to cross the threshold.
         if (activeCue) {
           const elapsed = Date.now() - activeCue.firedAt;
           const base = activeCue.rmssdAtFire;
           const suppressed = inBreathingMode || Breaks.inMode || Breaks.suggestionShown;
-          if (!suppressed && base != null && rmssd > base * 1.10) {
+          const tail = rmssdHistory.slice(-5);
+          const recentAvg = tail.length ? tail.reduce((a,b)=>a+b,0) / tail.length : rmssd;
+          if (!suppressed && base != null && elapsed > 4000 && recentAvg > base * 1.05) {
             speak("Nice — that's better.");
             logEvent('micro_cue_followup', {
               type: activeCue.type,
               rmssdBefore: +base.toFixed(1),
-              rmssdAfter: +rmssd.toFixed(1),
+              rmssdAfter: +recentAvg.toFixed(1),
               elapsedMs: elapsed,
               rebound: true,
             });
@@ -10545,7 +10550,8 @@ function handleHRM(ev){
               Breaks.fatigueScore <= CUE_MAX_FATIGUE &&
               Math.random() < 0.005) {
             const type = Math.random() < 0.5 ? 'sigh' : 'hum';
-            const baseline = rmssdHistory.length ? rmssdHistory[rmssdHistory.length - 1] : null;
+            const fireTail = rmssdHistory.slice(-5);
+            const baseline = fireTail.length ? fireTail.reduce((a,b)=>a+b,0) / fireTail.length : null;
             activeCue = { type, firedAt: now, rmssdAtFire: baseline };
             lastCueAt = now;
             logEvent('micro_cue_fire', {
@@ -11606,6 +11612,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1736<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1750<!--/VERSION--></div>
 </body>
 </html>
