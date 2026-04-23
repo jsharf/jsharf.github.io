@@ -768,12 +768,18 @@ async function loadProfileList() {
   }
 }
 
+// Minimum duration (minutes) for a row to count as a real session. Short
+// sessions below this are skipped by persistSession and dropped by finalize;
+// kept as a module-level constant so history filters and aggregate rebuilds
+// agree with the persistence path.
+const MIN_SESSION_MINUTES = 10 / 60; // 10 seconds
+
 // Rebuild lifetime aggregates from recentSessions. Used as self-healing when
 // lifetime has drifted from recentSessions (legacy profiles, past finalize
 // failures, etc). Returns true if anything changed.
 function reconcileLifetime(profile) {
   if (!profile) return false;
-  const sessions = (profile.recentSessions || []).filter(s => (s.durationMin || 0) >= 0.5);
+  const sessions = (profile.recentSessions || []).filter(s => (s.durationMin || 0) >= MIN_SESSION_MINUTES);
   const computed = {
     sessions: sessions.length,
     durationMin: +sessions.reduce((s, x) => s + (x.durationMin || 0), 0).toFixed(1),
@@ -970,14 +976,11 @@ $('importFileInput').addEventListener('change', async (e) => {
 function openHistoryOverlay() {
   if (!currentProfile) { $('status').textContent = 'Select a profile first'; return; }
   const lt = currentProfile.lifetime || {};
-  // Filter out zombie placeholder entries — <30s rows that aren't meaningful
-  // sessions. These came from the old persistSession-on-start behavior that
-  // pushed a t=0 placeholder even when the session died before anything real
-  // was recorded. A few might have incidental HRV samples, so filter purely
-  // on durationMin.
+  // Filter out zombie placeholder entries — rows below MIN_SESSION_MINUTES
+  // that may exist from older zombie-push behavior or from race conditions.
   const allSessions = currentProfile.recentSessions || [];
   const sessions = allSessions
-    .filter(s => (s.durationMin || 0) >= 0.5)
+    .filter(s => (s.durationMin || 0) >= MIN_SESSION_MINUTES)
     .slice().reverse(); // newest first
 
   // Title
@@ -10010,7 +10013,13 @@ const CHIME_PRESETS = {
   },
 };
 function playAttentionChime(variant = 'breathing') {
-  if (!ac) return;
+  if (!ac) { dbg('chime.skip', { reason: 'no-ac', variant }); return; }
+  // If the AudioContext is suspended (background tab, autoplay gate), schedule
+  // calls go through but nothing plays. Kick it awake first.
+  if (ac.state === 'suspended' && ac.resume) {
+    try { ac.resume(); } catch(_) {}
+  }
+  dbg('chime', { variant, acState: ac.state });
   const cfg = CHIME_PRESETS[variant] || CHIME_PRESETS.breathing;
   const now = ac.currentTime;
   // Shared warm lowpass + master envelope so voices blend
@@ -11146,6 +11155,17 @@ async function persistSession() {
   if (!currentProfile.recentSessions) currentProfile.recentSessions = [];
   // Update the "current" session slot on the profile (last entry in recentSessions)
   const session = buildCurrentSession();
+  // Don't push a first-time entry that's too short / has no biometric data —
+  // visibilitychange can fire persistSession before our 10s startup delay,
+  // and if the tab dies before finalize we'd leave a zombie row behind.
+  // Replacing an already-pushed row is always fine (it just updates duration).
+  if (!lastPersistedSession) {
+    const hasSample = session.avgHr != null || session.avgRmssd != null;
+    if (session.durationMin < MIN_SESSION_MINUTES || !hasSample) {
+      dbg('persistSession.skipTooShort', { durationMin: session.durationMin, hasSample });
+      return;
+    }
+  }
   const lenBefore = currentProfile.recentSessions.length;
   if (lastPersistedSession) {
     // Replace last entry
@@ -11174,16 +11194,25 @@ async function finalizeSession() {
     return;
   }
   const session = buildCurrentSession();
-  if (session.durationMin < 0.5) {
-    // Too short to count as a real session. If persistSession already pushed a
-    // placeholder entry at session start, pop it back off so recentSessions
-    // doesn't accumulate zombie 0-minute rows on quick start/stop cycles.
+  // Keep sessions >= MIN_SESSION_MINUTES (10s) with at least one biometric
+  // sample. The previous 30s cutoff dropped too many legitimate short
+  // sessions on quick tab closes; the HR-sample requirement still guards
+  // against accidental-click zombies.
+  const hasSample = session.avgHr != null || session.avgRmssd != null;
+  if (session.durationMin < MIN_SESSION_MINUTES || !hasSample) {
+    // Too short / no biometric data — pop any placeholder pushed by the 10s
+    // persist tick so recentSessions doesn't accumulate zombies.
     let popped = false;
     if (lastPersistedSession && currentProfile && currentProfile.recentSessions && currentProfile.recentSessions.length > 0) {
       currentProfile.recentSessions.pop();
       popped = true;
     }
-    dbg('finalizeSession.tooShort', { durationMin: session.durationMin, lastPersistedSession, poppedPlaceholder: popped });
+    dbg('finalizeSession.tooShort', {
+      durationMin: session.durationMin,
+      hasSample,
+      lastPersistedSession,
+      poppedPlaceholder: popped,
+    });
     if (popped) {
       await saveProfile(currentProfile);
     }
@@ -11227,17 +11256,24 @@ async function finalizeSession() {
   lastPersistedSession = null;
 }
 
+let persistFirstTimeout = null;
 function startPersistLoop() {
   lastPersistedSession = null;
-  // NOTE: deliberately do NOT persist at t=0. An immediate push creates a
-  // zombie entry (durationMin=0, no data yet) that only gets updated on the
-  // 30s tick or at finalize. Quick start→stop or tab-close within 30s leaves
-  // that zombie in recentSessions forever. finalizeSession handles save-on-end
-  // for sessions that didn't live long enough for a persist tick.
-  persistInterval = setInterval(persistSession, 30000);
+  // First save at 10s so unexpected tab closes in the 10–30s window still leave
+  // a row behind (finalizeSession's 10s floor matches). After that, replace
+  // every 30s. Skipping t=0 still matters: nothing useful is captured yet, and
+  // pushing a zombie row that only resolves 30s later regressed history for
+  // quick start→close cycles.
+  if (persistFirstTimeout) { clearTimeout(persistFirstTimeout); persistFirstTimeout = null; }
+  persistFirstTimeout = setTimeout(() => {
+    persistFirstTimeout = null;
+    persistSession();
+    persistInterval = setInterval(persistSession, 30000);
+  }, 10000);
 }
 function stopPersistLoop() {
-  clearInterval(persistInterval);
+  if (persistFirstTimeout) { clearTimeout(persistFirstTimeout); persistFirstTimeout = null; }
+  if (persistInterval) { clearInterval(persistInterval); persistInterval = null; }
   finalizeSession();
 }
 
@@ -11456,6 +11492,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1705<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1710<!--/VERSION--></div>
 </body>
 </html>
