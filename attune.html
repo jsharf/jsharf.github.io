@@ -8486,7 +8486,12 @@ function checkForStableBaselineWindow(currentRmssd, currentHr) {
   const rCv  = rAvg > 0 ? rSd / rAvg : 99;
   const hAvg = baselineWindowHrSamples.reduce((a,b)=>a+b, 0) / 60;
   const hSd  = Math.sqrt(baselineWindowHrSamples.reduce((s,v)=>s+(v-hAvg)**2,0) / 60);
-  if (hSd < 2 && rCv < 0.15 && rAvg > 10) {
+  // HR std-dev threshold is 4 bpm (was 2). Normal desk-work posture shifts,
+  // deep breaths, typing bursts easily move HR 3-5 bpm; 2 was unrealistically
+  // tight and windows almost never qualified. The reject-low guard
+  // (max(longTerm, calibration) * 0.75) catches any stress windows that slip
+  // through the looser stability check.
+  if (hSd < 4 && rCv < 0.15 && rAvg > 10) {
     // Reject a stable-but-low window: a chronically stressed user can have a
     // flat-low RMSSD that passes the stability checks, and locking that in as
     // today's baseline makes ratio≈1 and silently disables stress interventions.
@@ -10033,6 +10038,7 @@ const SUGGESTED_BREAKS = [
 // fires the moment RMSSD rebounds, instead of on a fixed timer.
 let lastCueAt = 0;
 let activeCue = null; // { type, firedAt, rmssdAtFire }
+let lastCueType = null;
 const CUE_COOLDOWN_MS = 4 * 60 * 1000;
 const CUE_FOLLOWUP_WINDOW_MS = 90 * 1000;
 const CUE_MIN_FATIGUE = 28;
@@ -10097,16 +10103,21 @@ const CHIME_PRESETS = {
     lpStart: 700, lpPeak: 1800, lpEnd: 900,
   },
 };
-function playAttentionChime(variant = 'breathing') {
+async function playAttentionChime(variant = 'breathing') {
   if (!ac) { dbg('chime.skip', { reason: 'no-ac', variant }); return; }
   // If the AudioContext is suspended (background tab, autoplay gate), schedule
-  // calls go through but nothing plays. Kick it awake first.
+  // calls go through but nothing plays. Await the resume so scheduling happens
+  // against a running context — previously we fired-and-forgot the promise and
+  // the bus gain ramps could start executing before the audio thread had
+  // actually switched state, silently dropping the chime.
   if (ac.state === 'suspended' && ac.resume) {
-    try { ac.resume(); } catch(_) {}
+    try { await ac.resume(); } catch(_) {}
   }
   dbg('chime', { variant, acState: ac.state });
   const cfg = CHIME_PRESETS[variant] || CHIME_PRESETS.breathing;
-  const now = ac.currentTime;
+  // Schedule 100ms into the future so a just-resumed audio thread has time to
+  // pick up state before the first ramp target arrives.
+  const now = ac.currentTime + 0.1;
   // Shared warm lowpass + master envelope so voices blend
   const bus = ac.createGain();
   bus.gain.value = 0;
@@ -10592,7 +10603,11 @@ function handleHRM(ev){
               Breaks.fatigueScore >= CUE_MIN_FATIGUE &&
               Breaks.fatigueScore <= CUE_MAX_FATIGUE &&
               Math.random() < 0.005) {
-            const type = Math.random() < 0.5 ? 'sigh' : 'hum';
+            // Alternate sigh/hum deterministically so the user hears both over
+            // time. Pure random on a small sample can produce long sigh-only
+            // runs, which defeats the point of having two cue variants.
+            const type = (lastCueType === 'sigh') ? 'hum' : 'sigh';
+            lastCueType = type;
             const fireTail = rmssdHistory.slice(-5);
             const baseline = fireTail.length ? fireTail.reduce((a,b)=>a+b,0) / fireTail.length : null;
             activeCue = { type, firedAt: now, rmssdAtFire: baseline };
@@ -11538,7 +11553,22 @@ async function maybeFirstRunCalibration() {
   if (!currentProfile) return;
   if (currentProfile.rmssdBaseline) return;
   if ((currentProfile.calibrationHistory || []).length > 0) return;
-  try { if (localStorage.getItem('attune-cal-declined-' + currentProfile.name) === '1') return; } catch(e){}
+  // Declined-within-24h skip. Short enough to re-offer tomorrow when the user
+  // is fresh; long enough that declining now doesn't pester them every Play
+  // this session. By the next day they likely have a long-term EWMA too.
+  try {
+    const key = 'attune-cal-declined-' + currentProfile.name;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const declinedAt = +raw;
+      if (!Number.isNaN(declinedAt) && Date.now() - declinedAt < 24 * 60 * 60 * 1000) return;
+      // Legacy '1' marker — treat as fresh decline today, then expire.
+      if (raw === '1') {
+        localStorage.setItem(key, String(Date.now()));
+        return;
+      }
+    }
+  } catch(e){}
   if (!bleDevice) return; // no sensor → nothing to measure; fall back to adaptive baseline
   const go = confirm(
     "First time with this profile — set your baseline?\n\n" +
@@ -11546,7 +11576,7 @@ async function maybeFirstRunCalibration() {
     "OK to start · Cancel to skip"
   );
   if (!go) {
-    try { localStorage.setItem('attune-cal-declined-' + currentProfile.name, '1'); } catch(e){}
+    try { localStorage.setItem('attune-cal-declined-' + currentProfile.name, String(Date.now())); } catch(e){}
     return;
   }
   await new Promise(resolve => {
@@ -11655,6 +11685,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1801<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1806<!--/VERSION--></div>
 </body>
 </html>
