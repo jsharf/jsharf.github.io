@@ -10229,7 +10229,6 @@ async function playAttentionChime(variant = 'breathing') {
   }
   // Shared warm lowpass + master envelope so voices blend
   const bus = ac.createGain();
-  bus.gain.value = 0;
   const lp = ac.createBiquadFilter();
   lp.type = 'lowpass';
   lp.frequency.setValueAtTime(cfg.lpStart, now);
@@ -10237,11 +10236,15 @@ async function playAttentionChime(variant = 'breathing') {
   lp.frequency.linearRampToValueAtTime(cfg.lpEnd, now + cfg.total * 0.9);
   lp.Q.value = 0.4;
   bus.connect(lp).connect(ac.destination); // bypass masterGain so fades don't muffle it
-  // Smooth master envelope via setTargetAtTime — exponential onset feels softer
-  // than a linear ramp, no perceptible attack transient.
-  bus.gain.setTargetAtTime(0.26, now, 0.25);
-  bus.gain.setTargetAtTime(0.18, now + cfg.total * 0.5, 0.5);
-  bus.gain.exponentialRampToValueAtTime(0.0005, now + cfg.total);
+  // Bus master envelope. Previously mixed setTargetAtTime + exponentialRamp,
+  // which in Chrome can silently fail when the ramp's start value is derived
+  // from an asymptotic setTargetAtTime curve — field-confirmed: chime event
+  // logged with acState=running, music duck worked (linear ramps), but the
+  // chime itself was silent. Deterministic setValueAtTime + linear ramps fix it.
+  bus.gain.setValueAtTime(0.0001, now);
+  bus.gain.linearRampToValueAtTime(0.26, now + 0.18);
+  bus.gain.linearRampToValueAtTime(0.22, now + cfg.total * 0.5);
+  bus.gain.linearRampToValueAtTime(0.0001, now + cfg.total);
   for (const n of cfg.notes) {
     for (let i = 0; i < n.freqs.length; i++) {
       const osc = ac.createOscillator();
@@ -10250,10 +10253,12 @@ async function playAttentionChime(variant = 'breathing') {
       osc.frequency.value = n.freqs[i];
       const peak = i === 0 ? cfg.peakFund : cfg.peakPartial;
       const t0 = now + n.t;
-      g.gain.setValueAtTime(0, t0);
-      // setTargetAtTime for each note onset — exponential swell-in.
-      g.gain.setTargetAtTime(peak, t0, cfg.attack * 0.45);
-      g.gain.exponentialRampToValueAtTime(0.001, t0 + cfg.tail);
+      // Deterministic envelope — setValueAtTime + linear ramps. Same reason
+      // as the bus: avoid the setTargetAtTime → exponentialRamp combo that
+      // silently dropped the chime.
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(peak, t0 + cfg.attack * 0.45);
+      g.gain.linearRampToValueAtTime(0.0001, t0 + cfg.tail);
       osc.connect(g).connect(bus);
       osc.start(t0);
       osc.stop(t0 + cfg.tail + 0.2);
@@ -11794,6 +11799,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1819<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1821<!--/VERSION--></div>
 </body>
 </html>
