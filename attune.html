@@ -8733,12 +8733,28 @@ function startSessionLog() {
   sessionLog.currentFocusStart = Date.now();
   sessionLog.initialParams = captureSongParams();
   breakPeriods=[];
-  // NOTE: rmssdHistory / hrHistory / rmssdTimes / fatigueHistory are all
-  // intentionally NOT cleared here. Pre-Start BLE warmup should stay visible
-  // on the chart (otherwise clicking Start looks like data loss to the user).
-  // Session-scoped metrics are computed by filtering to samples with
-  // timestamp >= sessionLog.started in buildCurrentSession(); the fatigue
-  // chart row does the same filter at render time.
+  // Trim biometric history to the last ~30s so the chart isn't littered with
+  // previous-session data, but Start doesn't look like data loss either.
+  // Keep pre-Start BLE warmup up to 30s; drop anything older.
+  {
+    const cutoff = Date.now() - 30000;
+    // rmssdHistory and rmssdTimes are parallel arrays — trim together.
+    if (rmssdHistory.length && rmssdTimes.length === rmssdHistory.length) {
+      let firstKeep = rmssdTimes.length;
+      for (let i = 0; i < rmssdTimes.length; i++) {
+        if (rmssdTimes[i] >= cutoff) { firstKeep = i; break; }
+      }
+      rmssdHistory.splice(0, firstKeep);
+      rmssdTimes.splice(0, firstKeep);
+    } else if (rmssdHistory.length) {
+      // Defensive: if times array is out of sync, drop all history — better
+      // than leaving stale unlabelled samples that can't be correctly plotted.
+      rmssdHistory.length = 0;
+      rmssdTimes.length = 0;
+    }
+    hrHistory = hrHistory.filter(h => h.time >= cutoff);
+    fatigueHistory = fatigueHistory.filter(d => d.time >= cutoff);
+  }
   sessionSongCount = 0; // first song of session gets chill-bias when adaptive
   // Reset today's adaptive baseline state; refresh long-term from history.
   todayBaseline = null;
@@ -10215,7 +10231,13 @@ function enterBreathingMode() {
   $('calCircleText').textContent = '90s';
   $('calPhase').textContent = '';
 
-  // Fade music to near-silent over 8s
+  // Fast duck first so the chime is clearly audible over the music, then
+  // continue the longer fade toward near-silent over 8s. Without the fast
+  // duck the chime (bus peak ~0.08 amplitude) was getting masked by full-
+  // volume music (~0.3–0.5+) and users reported missing it entirely.
+  masterGain.gain.cancelScheduledValues(ac.currentTime);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, ac.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.08, ac.currentTime + 0.5);
   masterGain.gain.linearRampToValueAtTime(0.03, ac.currentTime + 8);
 
   // Enable breath cue at higher volume — skipped in silent mode, which the
@@ -10651,17 +10673,21 @@ function handleHRM(ev){
           const prevPeak = breathingPeakRmssd;
           if (rmssd > breathingPeakRmssd) breathingPeakRmssd = rmssd;
 
-          // Spoken encouragement — once per milestone. Skipped once recovery
-          // countdown has started, since the wrap-up speech covers it and it's
-          // confusing to say "almost there" after the target's already hit.
+          // Spoken encouragement — once per milestone. Short phrases so the
+          // positive signal lands fast. Skipped once recovery countdown has
+          // started (the wrap-up speech covers it; "almost there" after the
+          // target is already hit is confusing).
           const improved = rmssd - breathingStartRmssd;
           if (recoveryCount === 0) {
-            if (!breathingSpokenMilestone && improved > 5) {
+            if (!breathingSpokenMilestone && improved > 3) {
               breathingSpokenMilestone = 1;
-              speak("That's working. Keep going.");
-            } else if (breathingSpokenMilestone === 1 && improved > 15) {
+              speak("There it is.");
+            } else if (breathingSpokenMilestone === 1 && improved > 10) {
               breathingSpokenMilestone = 2;
-              speak("Really nice. Your body is responding.");
+              speak("Nice rebound.");
+            } else if (breathingSpokenMilestone === 2 && improved > 18) {
+              breathingSpokenMilestone = 3;
+              speak("Beautiful. Stay with it.");
             }
           }
 
@@ -11598,6 +11624,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1724<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1729<!--/VERSION--></div>
 </body>
 </html>
