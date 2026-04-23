@@ -8379,34 +8379,28 @@ function drawVizExpanded() {
   };
 }
 
-// Background animation is *extremely* slow (sin(t*.1) → 63s period) so 60fps
-// is pure waste. Throttle to ~12fps. Also: only resize the canvas when the
-// viewport actually changed — setting canvas.width reallocates the backing
-// store (retina-size = 8M+ pixels) and was the single biggest CPU sink.
-let _drawBgLast = 0;
-let _drawBgDims = { w: 0, h: 0, dpr: 0 };
-function drawBg(ts){
-  if(!playing)return;
-  requestAnimationFrame(drawBg);
-  const now = ts || performance.now();
-  if (now - _drawBgLast < 80) return; // ~12fps
-  _drawBgLast = now;
-  const cv=$('bgCanvas'),c=cv.getContext('2d'),dpr=window.devicePixelRatio||1;
+// Draw the layered background once and on resize — no RAF. The previous
+// animation drifted gradients at sin(t*.1) (63s period) under a near-black
+// fill, which was visually indistinguishable from a static image but cost a
+// canvas-backing-store reallocation every frame. Body already has a CSS
+// radial gradient; this canvas adds three subtle hue layers on top.
+let _bgDrawn = false;
+function drawBg(){
+  const cv=$('bgCanvas'); if(!cv) return;
+  const c=cv.getContext('2d'),dpr=window.devicePixelRatio||1;
   const ww=window.innerWidth, hh=window.innerHeight;
-  if (_drawBgDims.w !== ww || _drawBgDims.h !== hh || _drawBgDims.dpr !== dpr) {
-    cv.width=ww*dpr; cv.height=hh*dpr;
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    _drawBgDims = { w: ww, h: hh, dpr };
-  }
-  const w=ww,h=hh,t=now/1000;
-  c.fillStyle='#0a0a0f';c.fillRect(0,0,w,h);
+  cv.width=ww*dpr; cv.height=hh*dpr;
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle='#0a0a0f'; c.fillRect(0,0,ww,hh);
   for(let i=0;i<3;i++){
-    const x=w*.5+Math.sin(t*.1+i*2.1)*w*.2,y=h*.5+Math.cos(t*.08+i*1.7)*h*.2;
-    const g=c.createRadialGradient(x,y,0,x,y,Math.min(w,h)*.4);
-    g.addColorStop(0,`hsla(${220+i*30},40%,15%,0.15)`);g.addColorStop(1,'transparent');
-    c.fillStyle=g;c.fillRect(0,0,w,h);
+    const x=ww*.5 + (i-1)*ww*.18, y=hh*.5 + (i-1)*hh*.12;
+    const g=c.createRadialGradient(x,y,0,x,y,Math.min(ww,hh)*.4);
+    g.addColorStop(0,`hsla(${220+i*30},40%,15%,0.15)`); g.addColorStop(1,'transparent');
+    c.fillStyle=g; c.fillRect(0,0,ww,hh);
   }
+  _bgDrawn = true;
 }
+window.addEventListener('resize', () => { if (_bgDrawn) drawBg(); });
 
 // =====================================================
 // BLUETOOTH HRV
@@ -12041,6 +12035,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-1409<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-1423<!--/VERSION--></div>
 </body>
 </html>
