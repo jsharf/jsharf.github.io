@@ -7674,15 +7674,21 @@ function drawViz(){
 
       drawBreakBands(r);
 
-      // Baseline reference
-      if(rmssdBaseline){
-        const by=ry(rmssdBaseline);
-        if(by>r.top&&by<r.top+r.h){
-          c.strokeStyle='rgba(255,255,100,0.3)';c.lineWidth=1;c.setLineDash([4,4]);
-          c.beginPath();c.moveTo(pad.left,by);c.lineTo(pad.left+plotW,by);c.stroke();
-          c.setLineDash([]);
-          c.fillStyle='rgba(255,255,100,0.6)';c.font='9px sans-serif';
-          c.fillText('baseline '+rmssdBaseline.toFixed(0)+'ms',pad.left+plotW-80,by-3);
+      // Baseline reference — show whatever the classifier is actually using
+      // (calibration > today-window > long-term), so the line is visible even
+      // for users who skipped explicit calibration.
+      {
+        const bi = (typeof effectiveBaseline === 'function') ? effectiveBaseline() : { value: rmssdBaseline, source: 'calibration' };
+        if (bi.value) {
+          const by = ry(bi.value);
+          if (by > r.top && by < r.top + r.h) {
+            c.strokeStyle='rgba(255,255,100,0.3)';c.lineWidth=1;c.setLineDash([4,4]);
+            c.beginPath();c.moveTo(pad.left,by);c.lineTo(pad.left+plotW,by);c.stroke();
+            c.setLineDash([]);
+            c.fillStyle='rgba(255,255,100,0.6)';c.font='9px sans-serif';
+            const label = bi.source === 'long-term' ? 'avg' : (bi.source === 'calibration' ? 'baseline' : 'today');
+            c.fillText(label + ' ' + bi.value.toFixed(0) + 'ms', pad.left+plotW-80, by-3);
+          }
         }
       }
 
@@ -8168,7 +8174,11 @@ function drawVizExpanded() {
       }
     }
   } else {
-    baselineForRow = rmssdBaseline;
+    // Live view: show whatever baseline the classifier is using, not just
+    // the legacy calibration value. Otherwise users on pure adaptive / long-
+    // term baselines see a blank graph with no reference line.
+    const bi = (typeof effectiveBaseline === 'function') ? effectiveBaseline() : { value: rmssdBaseline };
+    baselineForRow = bi.value;
     if (rmssdHistory.length > 1) {
       // Prefer the real timestamps we now capture; fall back to 1Hz assumption
       // for samples that predate rmssdTimes being populated (shouldn't happen
@@ -10503,35 +10513,41 @@ function handleHRM(ev){
         if(recentAvg < prevAvg * 0.9) Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 0.1);
       }
       if(!Breaks.inMode && !inBreathingMode && playing && !shamanicMode && !jhanaMode && !bedtimeMode) {
-        // Per-tick follow-up: if we fired a cue, acknowledge the rebound the
-        // moment RMSSD comes back. We compare a short rolling mean (last 5
-        // samples ≈ 5s) to the baseline captured at fire time, so a real
-        // parasympathetic bump registers within a few seconds of showing up
-        // instead of waiting on a single noisy sample to cross the threshold.
+        // Behavioral follow-up: at the first tick past 5s post-fire, give the
+        // user closure on the cue. Positive phrasing if RMSSD moved up even
+        // slightly, neutral acknowledgement if flat, silent if it dropped
+        // (don't pretend it worked). Tight timing matters more than precise
+        // HRV accounting — this is associative feedback, not biometric proof.
         if (activeCue) {
           const elapsed = Date.now() - activeCue.firedAt;
           const base = activeCue.rmssdAtFire;
           const suppressed = inBreathingMode || Breaks.inMode || Breaks.suggestionShown;
-          const tail = rmssdHistory.slice(-5);
-          const recentAvg = tail.length ? tail.reduce((a,b)=>a+b,0) / tail.length : rmssd;
-          if (!suppressed && base != null && elapsed > 4000 && recentAvg > base * 1.05) {
-            speak("Nice — that's better.");
-            logEvent('micro_cue_followup', {
-              type: activeCue.type,
-              rmssdBefore: +base.toFixed(1),
-              rmssdAfter: +recentAvg.toFixed(1),
-              elapsedMs: elapsed,
-              rebound: true,
-            });
-            activeCue = null;
-          } else if (elapsed > CUE_FOLLOWUP_WINDOW_MS) {
+          if (elapsed >= 5000 && !activeCue.followedUp) {
+            activeCue.followedUp = true;
+            const tail = rmssdHistory.slice(-5);
+            const recentAvg = tail.length ? tail.reduce((a,b)=>a+b,0) / tail.length : rmssd;
+            const delta = (base != null && base > 0) ? (recentAvg - base) / base : 0;
+            let verdict;
+            if (!suppressed) {
+              if (delta >= 0.02) {
+                speak("Nice — that's better.");
+                verdict = 'up';
+              } else if (delta >= -0.02) {
+                speak("Good.");
+                verdict = 'flat';
+              } else {
+                verdict = 'down';
+              }
+            } else {
+              verdict = 'suppressed';
+            }
             logEvent('micro_cue_followup', {
               type: activeCue.type,
               rmssdBefore: base != null ? +base.toFixed(1) : null,
-              rmssdAfter: +rmssd.toFixed(1),
+              rmssdAfter: +recentAvg.toFixed(1),
               elapsedMs: elapsed,
-              rebound: false,
-              timedOut: true,
+              delta: +delta.toFixed(3),
+              verdict,
             });
             activeCue = null;
           }
@@ -11612,6 +11628,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1750<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1754<!--/VERSION--></div>
 </body>
 </html>
