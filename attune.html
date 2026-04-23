@@ -487,6 +487,8 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="break-menu-item" data-break="eyes" data-guided="true">Eye Rest (3m guided)</div>
 <div class="break-menu-item" data-break="guidedwalk" data-guided="true">Walk (5m guided)</div>
 <div class="break-menu-item" data-break="paced" data-guided="true">Paced Breathing (4m)</div>
+<div class="break-menu-item" data-break="posture" data-guided="true">Posture Reset (1m)</div>
+<div class="break-menu-item" data-break="coldface" data-guided="true">Cold Face Splash (2m)</div>
 <div class="break-menu-item" data-break="meditation" data-guided="true">Meditation ⚙</div>
 <div class="break-menu-sep"></div>
 <div class="break-menu-item" data-break="bathroom">Bathroom</div>
@@ -8753,6 +8755,7 @@ function startSessionLog() {
   // chart line is continuous at the Start boundary. Thresholds (60/85) are
   // far above anything warmup could plausibly accumulate.
   sessionBreathingInterventions = 0;
+  MicroCues.reset();
 }
 
 function logIntervention() {
@@ -8887,7 +8890,7 @@ const Breaks = {
     Breaks.suggestionShown = true;
     Breaks.suggestionUrgent = urgent;
     // Auto-suggest rotation — exclude the 10m stretch (too long to push on a stressed user).
-    const autoSuggest = SUGGESTED_BREAKS.filter(b => b.type !== 'stretch10');
+    const autoSuggest = SUGGESTED_BREAKS.filter(b => b.type !== 'stretch10' && b.type !== 'coldface');
     Breaks.lastSuggestedIdx = (Breaks.lastSuggestedIdx + 1) % autoSuggest.length;
     const next = autoSuggest[Breaks.lastSuggestedIdx];
 
@@ -9042,7 +9045,7 @@ const Breaks = {
     $('calSkip').classList.remove('as-container');
     $('calSkip').innerHTML = '';
     if(!brk){
-      const autoSuggest = SUGGESTED_BREAKS.filter(b => b.type !== 'stretch10');
+      const autoSuggest = SUGGESTED_BREAKS.filter(b => b.type !== 'stretch10' && b.type !== 'coldface');
       Breaks.lastSuggestedIdx = Breaks.lastSuggestedIdx % autoSuggest.length;
       brk = autoSuggest[Breaks.lastSuggestedIdx];
     }
@@ -9952,7 +9955,106 @@ const SUGGESTED_BREAKS = [
     { text: 'Take a few deep breaths before sitting down', dur: 30,
       cues: [{at:1,say:'Breathe in'},{at:5,say:'Breathe out'},{at:10,say:'Breathe in'},{at:15,say:'Breathe out'},{at:20,say:'One more deep breath'},{at:27,say:'Welcome back'}] },
   ]},
+  { type: 'posture', label: 'Posture Reset', labelZh: '调整姿势', durMin: 1, activities: [
+    { text: 'Stand up and reach for the sky', dur: 15,
+      cues: [{at:1,say:'Stand up, reach both hands toward the ceiling'},{at:6,say:'Breathe in as you stretch tall'},{at:11,say:'Three more seconds'}] },
+    { text: 'Roll your shoulders back slowly', dur: 15,
+      cues: [{at:1,say:'Roll your shoulders back, slowly'},{at:6,say:'Feel your chest open'},{at:11,say:'Two more rolls'}] },
+    { text: 'Tuck your chin, then gently look up', dur: 15,
+      cues: [{at:1,say:'Tuck your chin toward your chest'},{at:6,say:'Now gently look up at the ceiling'},{at:11,say:'Back to center'}] },
+    { text: 'Side bend left, then right', dur: 15,
+      cues: [{at:1,say:'Reach your right arm up and lean left'},{at:6,say:'And the other side'},{at:12,say:'Back to center, sit when ready'}] },
+  ]},
+  { type: 'coldface', label: 'Cold Face Splash', labelZh: '冷水洗脸', durMin: 2, activities: [
+    { text: 'Walk to a sink with cold water', dur: 25,
+      cues: [{at:1,say:'Head to a sink with cold water'},{at:12,say:'Cold on your face triggers a reflex that lowers heart rate and calms the nervous system'}] },
+    { text: 'Splash cold water on your face three or four times', dur: 40,
+      cues: [{at:1,say:'Cup your hands, splash cold water on your forehead and cheeks'},{at:12,say:'Again — the colder the better'},{at:24,say:'One or two more splashes'},{at:35,say:'Nice'}] },
+    { text: 'Pat dry and take a few slow breaths', dur: 30,
+      cues: [{at:1,say:'Dry your face'},{at:8,say:'Take a slow breath in'},{at:15,say:'And a long breath out'},{at:22,say:'One more'}] },
+    { text: 'Head back to your desk', dur: 25,
+      cues: [{at:1,say:'Walk back slowly'},{at:12,say:'Notice how your face feels now'},{at:22,say:'Almost there'}] },
+  ]},
 ];
+
+// ============================================================
+// MicroCues — low-friction voice prompts for physiological sigh and vagal
+// humming. These don't take over the screen (no overlay, no preset change);
+// they're TTS cues delivered when fatigue is in the mid-range where a full
+// breathing intervention would feel like overkill. After firing, we check
+// RMSSD ~40s later; if it improved, we give a brief encouragement.
+// ============================================================
+const MicroCues = {
+  enabled: true,
+  active: null,              // { type, firedAt, rmssdAtFire }
+  lastCueAt: 0,
+  cooldownMs: 4 * 60 * 1000, // 4 minutes between any two cues
+  followUpTimer: null,
+  // Fatigue band where micro-cues fire. Below this, no intervention needed;
+  // above this, Breaks.suggest() handles it and we stay out of the way.
+  MIN_FATIGUE: 28,
+  MAX_FATIGUE: 55,
+
+  tryFire() {
+    if (!MicroCues.enabled || MicroCues.active || !playing) return;
+    if (inBreathingMode || Breaks.inMode || Breaks.suggestionShown) return;
+    if (shamanicMode || jhanaMode || bedtimeMode) return;
+    const now = Date.now();
+    if (now - MicroCues.lastCueAt < MicroCues.cooldownMs) return;
+    // Skip the first 2 minutes — RMSSD is noisy at session start.
+    if (sessionLog.started && now - sessionLog.started < 120000) return;
+    const f = Breaks.fatigueScore;
+    if (f < MicroCues.MIN_FATIGUE || f > MicroCues.MAX_FATIGUE) return;
+    // ~0.5% per HRV tick in-band — averages a firing every 3-4 minutes of
+    // sustained mid-range fatigue, matched with the 4-minute cooldown.
+    if (Math.random() > 0.005) return;
+    MicroCues.fire(Math.random() < 0.5 ? 'sigh' : 'hum');
+  },
+
+  fire(type) {
+    const baseline = rmssdHistory.length ? rmssdHistory[rmssdHistory.length - 1] : null;
+    MicroCues.active = { type, firedAt: Date.now(), rmssdAtFire: baseline };
+    MicroCues.lastCueAt = Date.now();
+    logEvent('micro_cue_fire', {
+      type,
+      rmssd: baseline != null ? +baseline.toFixed(1) : null,
+      fatigueScore: +Breaks.fatigueScore.toFixed(1),
+    });
+    if (type === 'sigh') {
+      speak("Try a physiological sigh. Two quick breaths in through the nose, then one long breath out.");
+    } else {
+      speak("Let's hum for thirty seconds. Low 'vooo' sound on your exhale — it activates the vagus nerve.");
+    }
+    if (MicroCues.followUpTimer) clearTimeout(MicroCues.followUpTimer);
+    MicroCues.followUpTimer = setTimeout(MicroCues.followUp, 40000);
+  },
+
+  followUp() {
+    MicroCues.followUpTimer = null;
+    if (!MicroCues.active) return;
+    // Don't talk over an overlay or intervention that started meanwhile.
+    const suppressed = inBreathingMode || Breaks.inMode || Breaks.suggestionShown;
+    const cur = rmssdHistory.length ? rmssdHistory[rmssdHistory.length - 1] : null;
+    const base = MicroCues.active.rmssdAtFire;
+    logEvent('micro_cue_followup', {
+      type: MicroCues.active.type,
+      rmssdBefore: base != null ? +base.toFixed(1) : null,
+      rmssdAfter: cur != null ? +cur.toFixed(1) : null,
+      suppressed,
+    });
+    if (!suppressed && base != null && cur != null && cur > base * 1.10) {
+      speak("Nice — that's better.");
+    }
+    MicroCues.active = null;
+  },
+
+  reset() {
+    if (MicroCues.followUpTimer) { clearTimeout(MicroCues.followUpTimer); MicroCues.followUpTimer = null; }
+    MicroCues.active = null;
+    MicroCues.lastCueAt = 0;
+  },
+};
+
 function applyPreset(name) {
   const p = PRESETS[name];
   if (!p) return;
@@ -10449,6 +10551,10 @@ function handleHRM(ev){
           if(!Breaks.suggestionShown || !Breaks.suggestionUrgent) Breaks.suggest(true);
         } else if(Breaks.fatigueScore >= Breaks.SUGGEST_THRESHOLD && !Breaks.suggestionShown) {
           Breaks.suggest(false);
+        } else {
+          // Mid-range fatigue: try a low-friction voice cue (sigh / hum).
+          // tryFire() guards cooldown, session-elapsed, and fatigue band.
+          MicroCues.tryFire();
         }
       }
 
@@ -11492,6 +11598,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1710<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1724<!--/VERSION--></div>
 </body>
 </html>
