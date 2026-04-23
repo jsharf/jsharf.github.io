@@ -1566,6 +1566,9 @@ $('calSkip').addEventListener('click', (e) => {
     exitBreathingMode();
   } else if (Breaks.inMode) {
     Breaks.exit();
+  } else {
+    // Passive overlay (e.g. Stats view) — just dismiss.
+    $('calOverlay').classList.remove('active');
   }
 });
 
@@ -8724,12 +8727,13 @@ function startSessionLog() {
   sessionLog.annotations = [];
   sessionLog.currentFocusStart = Date.now();
   sessionLog.initialParams = captureSongParams();
-  fatigueHistory=[];breakPeriods=[];
-  // NOTE: rmssdHistory / hrHistory / rmssdTimes are intentionally NOT cleared
-  // here. Pre-Start BLE warmup should stay visible on the chart (otherwise
-  // clicking Start looks like data loss to the user). Session-scoped metrics
-  // are computed by filtering to samples with timestamp >= sessionLog.started
-  // in buildCurrentSession() instead.
+  breakPeriods=[];
+  // NOTE: rmssdHistory / hrHistory / rmssdTimes / fatigueHistory are all
+  // intentionally NOT cleared here. Pre-Start BLE warmup should stay visible
+  // on the chart (otherwise clicking Start looks like data loss to the user).
+  // Session-scoped metrics are computed by filtering to samples with
+  // timestamp >= sessionLog.started in buildCurrentSession(); the fatigue
+  // chart row does the same filter at render time.
   sessionSongCount = 0; // first song of session gets chill-bias when adaptive
   // Reset today's adaptive baseline state; refresh long-term from history.
   todayBaseline = null;
@@ -8742,7 +8746,9 @@ function startSessionLog() {
     longTermBaseline: longTermBaseline ? +longTermBaseline.toFixed(1) : null,
     longTermWeight: +longTermBaselineWeight.toFixed(2),
   });
-  Breaks.fatigueScore = 0;
+  // Don't zero Breaks.fatigueScore — let it carry over from warmup so the
+  // chart line is continuous at the Start boundary. Thresholds (60/85) are
+  // far above anything warmup could plausibly accumulate.
   sessionBreathingInterventions = 0;
 }
 
@@ -11450,6 +11456,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1658<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1705<!--/VERSION--></div>
 </body>
 </html>
