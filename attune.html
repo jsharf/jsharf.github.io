@@ -9670,6 +9670,7 @@ const Breaks = {
   exit() {
     if (!Breaks.inMode) return;
     Breaks.inMode = false;
+    lastInterventionEndAt = Date.now();
     clearTimeout(Breaks.timer);
     clearInterval(Breaks.timer);
     if (Breaks.liveInterval) { clearInterval(Breaks.liveInterval); Breaks.liveInterval = null; }
@@ -10135,7 +10136,9 @@ const SUGGESTED_BREAKS = [
 let lastCueAt = 0;
 let activeCue = null; // { type, firedAt, rmssdAtFire }
 let lastCueType = null;
+let lastInterventionEndAt = 0; // updated when breathing or breaks ends — cues defer after this
 const CUE_COOLDOWN_MS = 4 * 60 * 1000;
+const CUE_POST_INTERVENTION_QUIET_MS = 2 * 60 * 1000;
 const CUE_FOLLOWUP_WINDOW_MS = 90 * 1000;
 const CUE_MIN_FATIGUE = 28;
 const CUE_MAX_FATIGUE = 55;
@@ -10385,6 +10388,7 @@ function doBreathCycle() {
 function exitBreathingMode() {
   if (!inBreathingMode || !ac) return;
   inBreathingMode = false;
+  lastInterventionEndAt = Date.now();
   const lastBP2 = breakPeriods[breakPeriods.length-1];
   if(lastBP2 && !lastBP2.end) lastBP2.end = Date.now();
   clearTimeout(breathingInterval);
@@ -10714,6 +10718,8 @@ function handleHRM(ev){
           const elapsedSession = sessionLog.started ? now - sessionLog.started : 0;
           if (now - lastCueAt >= CUE_COOLDOWN_MS &&
               elapsedSession >= 120000 &&
+              !inBreathingMode && !Breaks.inMode && !Breaks.suggestionShown &&
+              now - lastInterventionEndAt >= CUE_POST_INTERVENTION_QUIET_MS &&
               Breaks.fatigueScore >= CUE_MIN_FATIGUE &&
               Breaks.fatigueScore <= CUE_MAX_FATIGUE &&
               Math.random() < 0.005) {
@@ -11806,6 +11812,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1827<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1830<!--/VERSION--></div>
 </body>
 </html>
