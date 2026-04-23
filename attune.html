@@ -594,6 +594,9 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="state-spectrum-cell" data-state="STRESS">Stress</div>
 </div>
 <div class="state-spectrum-axis"><span>← under-aroused</span><span>★ optimal ★</span><span>over-aroused →</span></div>
+<div id="breathRow" style="display:none;margin-top:4px;font-size:11px;color:#9aaac0;letter-spacing:.04em;justify-content:center;gap:6px" title="Breathing rate derived from heartbeat patterns (RSA) or raw ECG amplitude (AM). Lower is generally more parasympathetic.">
+<span>Breath</span><span id="breathRate" style="color:#c0d0e0">--</span><span>/ min</span><span id="breathSrc" style="opacity:.5;font-size:10px"></span>
+</div>
 <div class="hrv-stat-value" id="pnn50Val" style="display:none"></div>
 <div style="position:relative"><canvas class="viz-canvas" id="hrvViz"></canvas><div id="vizTooltip" style="display:none;position:absolute;pointer-events:none;background:rgba(15,15,30,.92);border:1px solid rgba(100,100,150,.4);border-radius:6px;padding:4px 8px;font-size:12px;color:#ddd;white-space:nowrap;z-index:5;backdrop-filter:blur(8px)"></div></div>
 <div id="ecgWrap" style="display:none;position:relative;margin-top:6px"><canvas id="ecgCanvas" style="width:100%;height:80px;display:block;background:rgba(5,15,10,.6);border:1px solid rgba(80,200,120,.2);border-radius:6px"></canvas><div style="position:absolute;top:4px;left:8px;font-size:10px;color:#70b090;letter-spacing:.08em">ECG · 130 Hz</div></div>
@@ -8704,6 +8707,7 @@ async function startBatteryMonitor(server) {
 $('bleBtn').addEventListener('click',async()=>{
   if(bleDevice){if(bleDevice.gatt.connected)bleDevice.gatt.disconnect();bleDevice=null;
     stopEcgStream();
+    stopBreathMonitor();
     $('bleBtn').textContent='Connect';$('bleBtn').classList.remove('connected');
     $('bioTitle').textContent='Biofeedback';
     $('hrVal').textContent='--';$('rmssdVal').textContent='--';$('pnn50Val').textContent='--';$('stateVal').textContent='--';
@@ -8727,6 +8731,7 @@ $('bleBtn').addEventListener('click',async()=>{
       $('bioTitle').textContent='Biofeedback';
       $('bioIndicator').style.display='none';
       stopEcgStream();
+      stopBreathMonitor();
       updateAdaptiveLabel();
       logEvent('ble_disconnected');
       if(playing){
@@ -8747,6 +8752,7 @@ $('bleBtn').addEventListener('click',async()=>{
     // the HRM dies mid-session. 0x180F / 0x2A19 is stock BLE and supported
     // by Polar H10, COOSPO H9Z, and most other HRMs.
     startBatteryMonitor(server);
+    startBreathMonitor();
     $('bleBtn').textContent='Disconnect';$('bleBtn').classList.add('connected');
     const devName = (bleDevice.name && bleDevice.name.trim()) || 'Heart Rate Monitor';
     $('bioTitle').textContent = 'Biofeedback — ' + devName;
@@ -10459,6 +10465,209 @@ function updateStateSpectrum(st, cl) {
   });
 }
 
+// -------------------------- Breath-rate estimation --------------------------
+// Two methods, whichever has higher confidence wins:
+//   RSA: RR-interval oscillation (breath speeds up HR / slows HR). Universal —
+//        works off the same rrIntervals buffer HRV uses. Shrinks under stress
+//        as the parasympathetic modulation drops.
+//   AM:  R-peak amplitude modulation from 130Hz raw ECG (H10 only, via PMD).
+//        Chest wall expansion rotates the lead vector → amplitude rises/falls
+//        with breathing. Holds up under stress when RSA collapses.
+let breathRate = null;       // last estimate (br/min) or null
+let breathConfidence = 0;    // 0..1
+let breathSource = null;     // 'rsa' | 'am' | null
+const BREATH_WIN_SEC = 30;
+const BREATH_FS = 4;         // Hz (resample target)
+const BREATH_MIN_BR = 5;     // /min — below this is almost certainly artifact
+const BREATH_MAX_BR = 35;    // /min — above this too
+
+// Resample irregular (t, v) samples onto an evenly-spaced grid at BREATH_FS over
+// the most recent BREATH_WIN_SEC. tNow is the "now" reference (ms). Returns
+// null if we don't have enough coverage.
+function resampleUniform(points, tNow) {
+  if (points.length < 5) return null;
+  const winMs = BREATH_WIN_SEC * 1000;
+  const t0 = tNow - winMs;
+  // Need points spanning most of the window
+  if (points[0].t > t0 + 5000 || points[points.length-1].t < tNow - 3000) return null;
+  const n = BREATH_WIN_SEC * BREATH_FS;
+  const out = new Float32Array(n);
+  let pi = 0;
+  for (let i = 0; i < n; i++) {
+    const ts = t0 + (i / BREATH_FS) * 1000;
+    while (pi < points.length - 1 && points[pi+1].t < ts) pi++;
+    const a = points[pi], b = points[Math.min(pi+1, points.length-1)];
+    if (b.t === a.t) { out[i] = a.v; continue; }
+    const u = Math.max(0, Math.min(1, (ts - a.t) / (b.t - a.t)));
+    out[i] = a.v * (1 - u) + b.v * u;
+  }
+  return out;
+}
+
+// Given an evenly-sampled signal, return {rate, confidence}.
+// rate is breaths/min; confidence is 0..1 based on amplitude regularity.
+function estimateRateFromSignal(x) {
+  const n = x.length;
+  if (n < 20) return { rate: null, confidence: 0 };
+  // Detrend: subtract mean
+  let mean = 0; for (let i=0;i<n;i++) mean += x[i]; mean /= n;
+  const y = new Float32Array(n);
+  for (let i=0;i<n;i++) y[i] = x[i] - mean;
+  // Smooth with 5-tap boxcar (~1.25s at 4Hz) → lowpass ~0.4Hz
+  const s = new Float32Array(n);
+  for (let i=0;i<n;i++) {
+    let sum = 0, cnt = 0;
+    for (let k=-2;k<=2;k++) { const j=i+k; if (j>=0 && j<n) { sum+=y[j]; cnt++; } }
+    s[i] = sum / cnt;
+  }
+  // Positive-peak count with refractory of 2s (= 8 samples at 4Hz) — caps max
+  // detectable at 30/min. Peak must be above mean (already detrended → > 0).
+  const peaks = [];
+  const refractory = 8;
+  for (let i=1;i<n-1;i++) {
+    if (s[i] > 0 && s[i] >= s[i-1] && s[i] > s[i+1]) {
+      if (peaks.length === 0 || i - peaks[peaks.length-1] >= refractory) {
+        peaks.push(i);
+      } else if (s[i] > s[peaks[peaks.length-1]]) {
+        peaks[peaks.length-1] = i; // replace with stronger peak inside refractory
+      }
+    }
+  }
+  if (peaks.length < 2) return { rate: null, confidence: 0 };
+  // Mean inter-peak interval → rate
+  const intervals = [];
+  for (let i=1;i<peaks.length;i++) intervals.push((peaks[i] - peaks[i-1]) / BREATH_FS);
+  const meanI = intervals.reduce((a,b)=>a+b,0) / intervals.length;
+  const rate = 60 / meanI;
+  if (rate < BREATH_MIN_BR || rate > BREATH_MAX_BR) return { rate: null, confidence: 0 };
+  // Confidence: combine regularity (low interval variance) and amplitude.
+  let varI = 0; for (const v of intervals) varI += (v - meanI) * (v - meanI);
+  varI /= intervals.length;
+  const cvI = Math.sqrt(varI) / meanI; // 0 = perfectly regular
+  const regularity = Math.max(0, 1 - cvI * 2); // cv=0.5 → 0 confidence
+  // Amplitude: 95th - 5th pct of smoothed detrended signal, normalized by mean
+  const sorted = Array.from(s).sort((a,b)=>a-b);
+  const lo = sorted[Math.floor(n*0.05)], hi = sorted[Math.floor(n*0.95)];
+  const amp = hi - lo;
+  // Amplitude normalization is signal-specific; caller scales. Here we just
+  // return raw amp; confidence = regularity * saturatingAmplitude(amp).
+  return { rate, confidence: regularity, peaks: peaks.length, amp };
+}
+
+// RSA: instantaneous HR (60000/rr) sampled at beat times, resampled to 4Hz.
+function computeBreathFromRR() {
+  const now = Date.now();
+  const rr = rrIntervals.filter(r => r.time > now - BREATH_WIN_SEC * 1000);
+  if (rr.length < 15) return null;
+  const points = rr.map(r => ({ t: r.time, v: 60000 / r.rr }));
+  const sig = resampleUniform(points, now);
+  if (!sig) return null;
+  const est = estimateRateFromSignal(sig);
+  if (est.rate == null) return null;
+  // For RSA, a meaningful breath oscillation is ~1+ bpm swing in HR.
+  // Saturate amplitude contribution at 3 bpm.
+  const ampConf = Math.min(1, (est.amp || 0) / 3);
+  return { rate: est.rate, confidence: est.confidence * ampConf, source: 'rsa' };
+}
+
+// AM: scan recent ECG for R-peaks, take their amplitude series, resample to 4Hz.
+function computeBreathFromECG() {
+  if (!ecgAnimating || ecgTotalWritten < ECG_SR * BREATH_WIN_SEC) return null;
+  const N = ecgBuffer.length;
+  const want = ECG_SR * BREATH_WIN_SEC;
+  // Walk back `want` samples from the write head. Timestamps are reconstructed
+  // assuming uniform 130Hz arrival; BREATH_FS << ECG_SR so jitter is negligible.
+  const start = (ecgWriteIdx - want + N) % N;
+  // Compute threshold from the window: mean + 0.4 * (max - mean).
+  let maxV = -Infinity, meanV = 0;
+  for (let i=0;i<want;i++) {
+    const v = ecgBuffer[(start + i) % N];
+    if (v > maxV) maxV = v;
+    meanV += v;
+  }
+  meanV /= want;
+  const thr = meanV + 0.4 * (maxV - meanV);
+  // Find R-peaks with 250ms refractory (= 32 samples at 130Hz)
+  const refr = 32;
+  const rpeaks = []; // {sampleIdx, amp}
+  let lastPeakI = -refr;
+  for (let i=1;i<want-1;i++) {
+    const prev = ecgBuffer[(start + i - 1) % N];
+    const cur  = ecgBuffer[(start + i    ) % N];
+    const next = ecgBuffer[(start + i + 1) % N];
+    if (cur > thr && cur >= prev && cur > next) {
+      if (i - lastPeakI >= refr) {
+        rpeaks.push({ i, amp: cur });
+        lastPeakI = i;
+      } else if (cur > rpeaks[rpeaks.length-1].amp) {
+        rpeaks[rpeaks.length-1] = { i, amp: cur };
+        lastPeakI = i;
+      }
+    }
+  }
+  if (rpeaks.length < BREATH_WIN_SEC * 0.6) return null; // too few beats; noisy ECG
+  // Build (time, amplitude) points. "now" = last sample time; walk backwards.
+  const tNow = Date.now();
+  const points = rpeaks.map(p => ({
+    t: tNow - ((want - 1 - p.i) / ECG_SR) * 1000,
+    v: p.amp,
+  }));
+  const sig = resampleUniform(points, tNow);
+  if (!sig) return null;
+  const est = estimateRateFromSignal(sig);
+  if (est.rate == null) return null;
+  // AM amplitude is in raw ECG units (microvolts range). We just need relative
+  // modulation to be meaningful — saturate at some fraction of the peak's
+  // mean amplitude.
+  const meanAmp = rpeaks.reduce((a,p)=>a+p.amp,0) / rpeaks.length;
+  const ampConf = meanAmp > 0 ? Math.min(1, (est.amp || 0) / (meanAmp * 0.08)) : 0;
+  return { rate: est.rate, confidence: est.confidence * ampConf, source: 'am' };
+}
+
+function updateBreathRate() {
+  if (!bleDevice) return;
+  const rsa = computeBreathFromRR();
+  const am  = computeBreathFromECG();
+  let pick = null;
+  if (rsa && am) pick = (am.confidence >= rsa.confidence) ? am : rsa;
+  else pick = rsa || am;
+  if (!pick || pick.confidence < 0.15) {
+    breathRate = null; breathConfidence = 0; breathSource = null;
+    const row = $('breathRow'); if (row) row.style.display = 'none';
+    return;
+  }
+  breathRate = pick.rate;
+  breathConfidence = pick.confidence;
+  breathSource = pick.source;
+  const row = $('breathRow');
+  if (row) {
+    row.style.display = 'flex';
+    $('breathRate').textContent = breathRate.toFixed(1);
+    $('breathSrc').textContent = '(' + pick.source + (pick.confidence < 0.35 ? ' low' : '') + ')';
+    $('breathRate').style.opacity = pick.confidence < 0.35 ? '0.55' : '1';
+  }
+  logEvent('breath_rate', {
+    rate: +pick.rate.toFixed(1),
+    confidence: +pick.confidence.toFixed(2),
+    source: pick.source,
+    rsaRate: rsa ? +rsa.rate.toFixed(1) : null,
+    rsaConf: rsa ? +rsa.confidence.toFixed(2) : null,
+    amRate: am ? +am.rate.toFixed(1) : null,
+    amConf: am ? +am.confidence.toFixed(2) : null,
+  });
+}
+
+let breathInterval = null;
+function startBreathMonitor() {
+  if (breathInterval) return;
+  breathInterval = setInterval(updateBreathRate, 3000);
+}
+function stopBreathMonitor() {
+  if (breathInterval) { clearInterval(breathInterval); breathInterval = null; }
+  breathRate = null; breathConfidence = 0; breathSource = null;
+  const row = $('breathRow'); if (row) row.style.display = 'none';
+}
+
 function handleHRM(ev){
   const v=ev.target.value,fl=v.getUint8(0);
   let hr,off;
@@ -11796,6 +12005,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-0953<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-1231<!--/VERSION--></div>
 </body>
 </html>
