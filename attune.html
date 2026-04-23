@@ -8462,12 +8462,16 @@ function checkForStableBaselineWindow(currentRmssd, currentHr) {
   // EWMA). This can happen if the reject-low guard was too permissive when
   // the window was first adopted. Without this the session stays stuck with
   // ratio≈1 and interventions never fire even after restarting HRV capture.
-  if (todayBaseline && todayBaseline.source === 'window') {
+  // Covers both adoption sources: stable-window and post-intervention. The
+  // post-intervention path runs once at exitBreathingMode and can latch a
+  // stress tail as "today's baseline" if the user never fully recovered.
+  if (todayBaseline) {
     const refFloor = Math.max(longTermBaseline || 0, rmssdBaseline || 0);
     if (refFloor && todayBaseline.rmssd < refFloor * 0.75) {
       logEvent('today_baseline_invalidate', {
         was: +todayBaseline.rmssd.toFixed(1),
         refFloor: +refFloor.toFixed(1),
+        source: todayBaseline.source,
       });
       todayBaseline = null;
     }
@@ -8656,13 +8660,20 @@ function stopEcgStream() {
 // so the user knows to charge before mid-session death. Only warns once per
 // connection to avoid nagging as the level hovers at the threshold.
 let batteryLowWarned = false;
+let lastBatteryLogged = null;
 async function startBatteryMonitor(server) {
   batteryLowWarned = false;
+  lastBatteryLogged = null;
   try {
     const sv = await server.getPrimaryService('battery_service');
     const ch = await sv.getCharacteristic('battery_level');
     const handle = (val) => {
-      logEvent('battery_level', { pct: val });
+      // Some HRMs push battery notifications continuously at the same level —
+      // only log on change to avoid spamming session exports.
+      if (val !== lastBatteryLogged) {
+        logEvent('battery_level', { pct: val });
+        lastBatteryLogged = val;
+      }
       if (val <= 5 && !batteryLowWarned) {
         batteryLowWarned = true;
         const name = (bleDevice && bleDevice.name && bleDevice.name.trim()) || 'Heart rate monitor';
@@ -10352,12 +10363,25 @@ function exitBreathingMode() {
   // don't settle naturally — we've actively brought them down; their HRV here
   // reveals what their system can reach today. Take the last ~25 seconds of
   // RMSSD during the intervention as today's baseline.
+  //
+  // Same refFloor guard as the stable-window path: if the candidate is way
+  // below our strongest reference (calibration or long-term EWMA), the user
+  // didn't actually recover — they just ran out the breathing timer while
+  // still stressed. Adopting that as "today's baseline" would permanently
+  // re-anchor the ratio and silently kill interventions for the rest of the
+  // session (field-confirmed 2026-04-23: adopted 26ms vs calibration 51ms,
+  // then no intervention fired for 19 minutes of 17-19ms RMSSD).
   if (rmssdHistory.length >= 25) {
     const tail = rmssdHistory.slice(-25);
     const avg = tail.reduce((a,b)=>a+b, 0) / tail.length;
     if (avg > 10) {
-      todayBaseline = { rmssd: +avg.toFixed(1), source: 'post-intervention' };
-      logEvent('today_baseline_update', { source: 'post-intervention', rmssd: +avg.toFixed(1) });
+      const refFloor = Math.max(longTermBaseline || 0, rmssdBaseline || 0);
+      if (refFloor && avg < refFloor * 0.75) {
+        logEvent('today_baseline_reject_low', { source: 'post-intervention', candidate: +avg.toFixed(1), longTerm: longTermBaseline ? +longTermBaseline.toFixed(1) : null, calibration: rmssdBaseline ? +rmssdBaseline.toFixed(1) : null });
+      } else {
+        todayBaseline = { rmssd: +avg.toFixed(1), source: 'post-intervention' };
+        logEvent('today_baseline_update', { source: 'post-intervention', rmssd: +avg.toFixed(1) });
+      }
     }
   }
   // Post-breathing cooldown — wider than 60s, because during high-stress work
@@ -10590,9 +10614,14 @@ function handleHRM(ev){
       // Effective ratio: real ratio if we have a baseline, else a synthetic one
       // derived from absolute thresholds. ABSOLUTE_STRESS_RMSSD=20 maps to 0.7
       // so the <0.7 test below still captures clear stress.
+      //
+      // We do NOT take min(rmssd/baseline, rmssd/absFloor) — a user with a
+      // genuinely low baseline (e.g. 18ms) would be flagged stressed forever
+      // since 18/28.5 = 0.63. Bogus-baseline protection lives in the refFloor
+      // adoption guard + invalidator instead.
       const ratio = hasBaseline
         ? (rmssd / bVal)
-        : (rmssd / (ABSOLUTE_STRESS_RMSSD / 0.7)); // ~= rmssd / 28.5
+        : (rmssd / (ABSOLUTE_STRESS_RMSSD / 0.7));
       const st = $('stateVal').textContent;
       if(rmssdHistory.length % 30 === 0) logEvent('hrv_snapshot', { hr: +$('hrVal').textContent, rmssd: +rmssd.toFixed(1), state: st, ratio: +ratio.toFixed(2), fatigueScore: +Breaks.fatigueScore.toFixed(1), tempo: +$('bpm').value, hasBaseline });
 
@@ -10747,6 +10776,15 @@ function handleHRM(ev){
           speak(nudge);
           $('sectionInfo').textContent = '⟡ ' + nudge;
           $('sectionInfo').style.color = '#f8d88a';
+          // Hook into the same 5s follow-up loop the sigh/hum cues use, so a
+          // quick rebound after a nudge gets a "Nice — that's better." ack.
+          // Only if no cue is already waiting (don't stomp an in-flight sigh).
+          if (!activeCue) {
+            const nudgeTail = rmssdHistory.slice(-5);
+            const nudgeBase = nudgeTail.length ? nudgeTail.reduce((a,b)=>a+b,0) / nudgeTail.length : null;
+            activeCue = { type: 'nudge', firedAt: Date.now(), rmssdAtFire: nudgeBase };
+            logEvent('micro_cue_fire', { type: 'nudge', rmssd: nudgeBase != null ? +nudgeBase.toFixed(1) : null });
+          }
         }
         // Phase 2: Breathing intervention if calm didn't help.
         // Conservative first-session gate: for a user with no history at all
@@ -11757,6 +11795,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1833<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1859<!--/VERSION--></div>
 </body>
 </html>
