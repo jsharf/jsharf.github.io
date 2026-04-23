@@ -8457,6 +8457,21 @@ function refreshLongTermBaseline() {
 function checkForStableBaselineWindow(currentRmssd, currentHr) {
   // Don't overwrite post-intervention (higher-quality) baseline
   if (todayBaseline && todayBaseline.source === 'post-intervention') return;
+  // Invalidate a previously-adopted today-baseline if it's clearly bogus
+  // compared to our stronger references (explicit calibration or long-term
+  // EWMA). This can happen if the reject-low guard was too permissive when
+  // the window was first adopted. Without this the session stays stuck with
+  // ratio≈1 and interventions never fire even after restarting HRV capture.
+  if (todayBaseline && todayBaseline.source === 'window') {
+    const refFloor = Math.max(longTermBaseline || 0, rmssdBaseline || 0);
+    if (refFloor && todayBaseline.rmssd < refFloor * 0.75) {
+      logEvent('today_baseline_invalidate', {
+        was: +todayBaseline.rmssd.toFixed(1),
+        refFloor: +refFloor.toFixed(1),
+      });
+      todayBaseline = null;
+    }
+  }
   baselineWindowRmssdSamples.push(currentRmssd);
   baselineWindowHrSamples.push(currentHr);
   // Trim to 60 samples (~60s at 1 sample/sec)
@@ -8475,9 +8490,17 @@ function checkForStableBaselineWindow(currentRmssd, currentHr) {
     // Reject a stable-but-low window: a chronically stressed user can have a
     // flat-low RMSSD that passes the stability checks, and locking that in as
     // today's baseline makes ratio≈1 and silently disables stress interventions.
-    // If long-term history says the user normally runs much higher, don't adopt.
-    if (longTermBaseline && rAvg < longTermBaseline * 0.65) {
-      logEvent('today_baseline_reject_low', { candidate: +rAvg.toFixed(1), longTerm: +longTermBaseline.toFixed(1) });
+    // Compare against the max of long-term EWMA and explicit calibration — the
+    // calibration value is a *stronger* reference (measured in a deliberately
+    // relaxed state) and should anchor the floor. Threshold is 0.75 so a
+    // stress-suppressed window that's half the calibration doesn't get adopted.
+    const refFloor = Math.max(longTermBaseline || 0, rmssdBaseline || 0);
+    if (refFloor && rAvg < refFloor * 0.75) {
+      logEvent('today_baseline_reject_low', {
+        candidate: +rAvg.toFixed(1),
+        longTerm: longTermBaseline ? +longTermBaseline.toFixed(1) : null,
+        calibration: rmssdBaseline ? +rmssdBaseline.toFixed(1) : null,
+      });
       // Slide window forward by shedding oldest sample so we re-evaluate next tick
       baselineWindowRmssdSamples.shift();
       baselineWindowHrSamples.shift();
@@ -11632,6 +11655,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1758<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1801<!--/VERSION--></div>
 </body>
 </html>
