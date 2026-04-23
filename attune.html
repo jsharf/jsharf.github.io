@@ -8656,6 +8656,43 @@ function stopEcgStream() {
 // server. Logged via dbg() so users can paste the output to report what their
 // HRM actually exposes (e.g. COOSPO H9Z non-standard services). Driven only
 // by what's listed in BLE_OPTIONAL_SERVICES — unlisted UUIDs stay invisible.
+// Read battery level once on connect and subscribe to updates. Alerts at ≤5%
+// so the user knows to charge before mid-session death. Only warns once per
+// connection to avoid nagging as the level hovers at the threshold.
+let batteryLowWarned = false;
+async function startBatteryMonitor(server) {
+  batteryLowWarned = false;
+  try {
+    const sv = await server.getPrimaryService('battery_service');
+    const ch = await sv.getCharacteristic('battery_level');
+    const handle = (val) => {
+      logEvent('battery_level', { pct: val });
+      if (val <= 5 && !batteryLowWarned) {
+        batteryLowWarned = true;
+        const name = (bleDevice && bleDevice.name && bleDevice.name.trim()) || 'Heart rate monitor';
+        $('status').textContent = `${name} battery ${val}% — charge soon`;
+        $('status').className = 'status status-suggest urgent';
+        try { speak(`${name} battery is low. ${val} percent. Consider charging soon.`); } catch(_) {}
+      }
+    };
+    // Initial read
+    try {
+      const dv = await ch.readValue();
+      if (dv && dv.byteLength >= 1) handle(dv.getUint8(0));
+    } catch(_) {}
+    // Notifications (device-dependent — not all HRMs push updates)
+    try {
+      await ch.startNotifications();
+      ch.addEventListener('characteristicvaluechanged', (e) => {
+        const dv = e.target.value;
+        if (dv && dv.byteLength >= 1) handle(dv.getUint8(0));
+      });
+    } catch(_) {}
+  } catch (e) {
+    dbg('battery_monitor.error', { error: String(e && e.message || e) });
+  }
+}
+
 async function probeBleServices(server) {
   try {
     const services = await server.getPrimaryServices();
@@ -8749,6 +8786,10 @@ $('bleBtn').addEventListener('click',async()=>{
     if (bleDevice.name && /polar\s*h10/i.test(bleDevice.name)) {
       startEcgStream(server);
     }
+    // Battery monitoring — alert when ≤ 5% so the user can charge before
+    // the HRM dies mid-session. 0x180F / 0x2A19 is stock BLE and supported
+    // by Polar H10, COOSPO H9Z, and most other HRMs.
+    startBatteryMonitor(server);
     $('bleBtn').textContent='Disconnect';$('bleBtn').classList.add('connected');
     const devName = (bleDevice.name && bleDevice.name.trim()) || 'Heart Rate Monitor';
     $('bioTitle').textContent = 'Biofeedback — ' + devName;
@@ -10173,6 +10214,19 @@ async function playAttentionChime(variant = 'breathing') {
   // Schedule 100ms into the future so a just-resumed audio thread has time to
   // pick up state before the first ramp target arrives.
   const now = ac.currentTime + 0.1;
+  // Duck music under the chime. The chime bypasses masterGain (so its own
+  // fades don't muffle it), but music *through* masterGain competes with it.
+  // Without a duck, the chime gets masked — confirmed in field: a chime event
+  // logged with acState=running, yet user reported not hearing it against
+  // active music. Drop to 35% of current, hold through the chime, restore.
+  if (masterGain) {
+    const preDuck = masterGain.gain.value;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setValueAtTime(preDuck, now);
+    masterGain.gain.linearRampToValueAtTime(preDuck * 0.35, now + 0.15);
+    masterGain.gain.setValueAtTime(preDuck * 0.35, now + cfg.total - 0.4);
+    masterGain.gain.linearRampToValueAtTime(preDuck, now + cfg.total + 0.2);
+  }
   // Shared warm lowpass + master envelope so voices blend
   const bus = ac.createGain();
   bus.gain.value = 0;
@@ -11740,6 +11794,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1814<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-22-1819<!--/VERSION--></div>
 </body>
 </html>
