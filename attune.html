@@ -11195,15 +11195,11 @@ function stopBreathMonitor() {
 const APNEA_WIN_SEC = 12;
 const APNEA_FS = 4;
 const APNEA_UPDATE_MS = 1000;
-const APNEA_COLLAPSE_RATIO = 0.4;  // current amp < this * baseline = collapse
-                                   // 0.5 was too loose — shallow-breathing
-                                   // valleys regularly touched it and got
-                                   // misclassified as holds. 0.4 keeps the
-                                   // discriminator strict.
+const APNEA_COLLAPSE_RATIO = 0.45; // current amp < this * baseline = collapse.
+                                   // 0.5 over-fired on shallow-breathing
+                                   // valleys; 0.4 under-fired on softer real
+                                   // collapses. 0.45 splits the band.
 const APNEA_SOFT_CUE_SEC = 6;      // sustained seconds before soft cue.
-                                   // Short by design — at the tighter 0.4
-                                   // collapse ratio, 6s of ratio<0.4 is
-                                   // already a genuine hold, not a valley.
 const APNEA_FIRM_CUE_SEC = 14;     // sustained seconds before firm cue
 const APNEA_MIN_BASELINE_SAMPLES = 10; // need ~10s of confident data before firing
 const APNEA_TICK_LOG_MS = 5000;    // telemetry cadence (not every second)
@@ -12900,6 +12896,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-2223<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-2229<!--/VERSION--></div>
 </body>
 </html>
