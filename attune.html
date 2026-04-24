@@ -95,7 +95,7 @@ input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 2px 12px rgba(138,180
 .hrv-stat-value{font-size:28px;font-weight:300;color:#8888aa;font-variant-numeric:tabular-nums}
 .hrv-stat-label{font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:#7777a0;margin-top:2px}
 .hrv-stat-value.good{color:#8af8b4}.hrv-stat-value.warn{color:#f8d88a}.hrv-stat-value.bad{color:#f88a8a}
-.viz-canvas{width:100%;height:200px;border-radius:6px;margin-top:10px}
+.viz-canvas{width:100%;height:260px;border-radius:6px;margin-top:10px}
 .status{text-align:center;font-size:12px;color:#555580;padding:4px}
 .section-info{font-size:16px;color:#555580;text-align:center;margin-bottom:8px;min-height:16px}
 .song-select{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;justify-content:center;max-width:520px;margin-left:auto;margin-right:auto}
@@ -235,14 +235,178 @@ input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 2px 12px rgba(138,180
 
 /* === UI overhaul: consistent two-column layout + aesthetic refresh === */
 :root{
+  /* Text hierarchy */
   --fg-0:#e8e8f0; --fg-1:#c8c8d8; --fg-2:#9999b8; --fg-3:#6a6a8a;
-  --accent:#8ab4f8; --accent-soft:rgba(138,180,248,.14);
-  --good:#8af8b4; --warn:#f8d88a; --bad:#f88a8a;
-  --border:rgba(80,80,120,.22); --border-strong:rgba(120,140,200,.35);
+  --text-muted:#8888aa; --text-dim:#555580;
+  /* Page + surfaces */
+  --bg-page-a:#101024; --bg-page-b:#07070c;
+  --bg-canvas:#0a0a0f;
+  --surface-1:rgba(20,20,35,.5); --surface-2:rgba(20,20,35,.65);
+  --surface-3:rgba(20,20,35,.96); --surface-4:rgba(15,15,30,.3);
+  --surface-input:rgba(15,15,30,.6); --surface-input-strong:rgba(15,15,30,.8);
+  --surface-overlay:rgba(5,5,12,.94);
+  /* Accents */
+  --accent:#8ab4f8; --accent-rgb:138,180,248;
+  --accent-soft:rgba(138,180,248,.14);
+  --accent-hover:rgba(138,180,248,.25);
+  --good:#8af8b4; --good-rgb:138,248,180;
+  --warn:#f8d88a; --warn-rgb:248,216,138;
+  --bad:#f88a8a; --bad-rgb:248,138,138;
+  /* Borders */
+  --border-soft:rgba(60,60,90,.2);
+  --border:rgba(80,80,120,.22);
+  --border-medium:rgba(90,90,130,.4);
+  --border-strong:rgba(120,140,200,.35);
+  /* Shadows */
+  --shadow-1:0 4px 24px rgba(0,0,0,.2);
+  --shadow-2:0 8px 30px rgba(0,0,0,.4);
+  --shadow-lift:0 10px 40px rgba(0,0,0,.45);
+  /* Canvas draw (read by JS) */
+  --canvas-ink:#e8e8f0; --canvas-ink-soft:rgba(232,232,240,0.6);
+  --canvas-grid:rgba(150,150,180,0.08); --canvas-axis:rgba(150,150,180,0.3);
   --radius-lg:18px;
   --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
 }
-body{background:radial-gradient(ellipse at 20% 0%,#101024 0%,#07070c 55%) fixed}
+:root[data-theme="light"]{
+  --fg-0:#14162b; --fg-1:#2a2d48; --fg-2:#5a5e7a; --fg-3:#8488a8;
+  --text-muted:#6a6e88; --text-dim:#8488a8;
+  --bg-page-a:#f6f7fb; --bg-page-b:#e8ecf4;
+  --bg-canvas:#f2f4fa;
+  --surface-1:rgba(255,255,255,.82); --surface-2:rgba(255,255,255,.88);
+  --surface-3:rgba(252,253,255,.98); --surface-4:rgba(250,251,255,.85);
+  --surface-input:rgba(255,255,255,.92); --surface-input-strong:rgba(255,255,255,.96);
+  --surface-overlay:rgba(230,234,242,.94);
+  --accent:#3566d6; --accent-rgb:53,102,214;
+  --accent-soft:rgba(53,102,214,.1);
+  --accent-hover:rgba(53,102,214,.2);
+  --good:#1f9d5a; --good-rgb:31,157,90;
+  --warn:#c08b1c; --warn-rgb:192,139,28;
+  --bad:#c93838; --bad-rgb:201,56,56;
+  --border-soft:rgba(80,95,140,.14);
+  --border:rgba(80,95,140,.22);
+  --border-medium:rgba(80,95,140,.35);
+  --border-strong:rgba(80,95,140,.45);
+  --shadow-1:0 4px 24px rgba(30,40,80,.08);
+  --shadow-2:0 8px 30px rgba(30,40,80,.12);
+  --shadow-lift:0 10px 40px rgba(30,40,80,.15);
+  --canvas-ink:#14162b; --canvas-ink-soft:rgba(20,22,43,0.6);
+  --canvas-grid:rgba(80,95,140,0.12); --canvas-axis:rgba(80,95,140,0.4);
+}
+body{background:radial-gradient(ellipse at 20% 0%,var(--bg-page-a) 0%,var(--bg-page-b) 55%) fixed;color:var(--fg-1)}
+/* === Light theme overrides for hardcoded colors scattered across rules === */
+:root[data-theme="light"] body{color:var(--fg-1)}
+[data-theme="light"] h1{color:var(--fg-0);text-shadow:0 0 30px rgba(var(--accent-rgb),.12)}
+[data-theme="light"] .bio-indicator{background:var(--surface-2);border-color:var(--border);color:var(--text-muted)}
+[data-theme="light"] .main-btn{border-color:var(--border-medium);background:radial-gradient(circle at 40% 40%,#ffffff,#e8ecf4);color:var(--text-muted)}
+[data-theme="light"] .main-btn:hover{border-color:var(--border-strong);color:var(--fg-1);box-shadow:0 0 20px rgba(var(--accent-rgb),.1)}
+[data-theme="light"] .main-btn.active{border-color:var(--accent);background:radial-gradient(circle at 40% 40%,#ffffff,#dfe8fa);color:var(--accent);box-shadow:0 0 50px rgba(var(--accent-rgb),.2)}
+[data-theme="light"] .preset-btn,[data-theme="light"] .song-btn,[data-theme="light"] .profile-bar button{border-color:var(--border-soft);background:var(--surface-4);color:var(--text-muted)}
+[data-theme="light"] .preset-btn:hover,[data-theme="light"] .song-btn:hover,[data-theme="light"] .profile-bar button:hover{border-color:var(--border-medium);color:var(--fg-1);background:var(--surface-1)}
+[data-theme="light"] .preset-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);box-shadow:0 0 16px rgba(var(--accent-rgb),.08)}
+[data-theme="light"] .section{background:var(--surface-1);border-color:var(--border-soft);box-shadow:var(--shadow-1)}
+[data-theme="light"] .section-title{color:var(--fg-2)}
+[data-theme="light"] .ctrl-label{color:var(--fg-2)}
+[data-theme="light"] .ctrl-val{color:var(--fg-2)}
+[data-theme="light"] .mixer-row label{color:var(--fg-2)}
+[data-theme="light"] .mixer-row .ctrl-val{color:var(--text-muted)}
+[data-theme="light"] .toggle-row label{color:var(--fg-2)}
+[data-theme="light"] input[type=range]{background:rgba(80,95,140,.15)}
+[data-theme="light"] .ble-btn{background:var(--surface-4);border-color:var(--border-soft);color:var(--text-muted)}
+[data-theme="light"] .ble-btn:hover{border-color:var(--border-medium);color:var(--fg-1);background:var(--surface-1)}
+[data-theme="light"] .ble-btn.connected{border-color:var(--good);color:var(--good);background:rgba(var(--good-rgb),.08)}
+[data-theme="light"] .hrv-stat-value{color:var(--text-muted)}
+[data-theme="light"] .hrv-stat-label{color:var(--fg-3)}
+[data-theme="light"] .state-spectrum-cell{color:var(--fg-3);background:rgba(80,95,140,.08)}
+[data-theme="light"] .state-spectrum-cell.active{color:var(--fg-0);background:rgba(var(--accent-rgb),.14);border-color:rgba(var(--accent-rgb),.4)}
+[data-theme="light"] .state-spectrum-axis{color:var(--fg-3)}
+[data-theme="light"] .status,[data-theme="light"] .section-info{color:var(--text-dim)}
+[data-theme="light"] .song-label{color:var(--fg-3)}
+[data-theme="light"] .profile-bar select{background:var(--surface-input);color:var(--fg-1);border-color:var(--border-soft)}
+[data-theme="light"] .profile-bar select:focus{border-color:var(--accent)}
+[data-theme="light"] .cal-overlay,[data-theme="light"] .history-overlay,[data-theme="light"] .guided-menu,[data-theme="light"] .profile-prompt-overlay{background:var(--surface-overlay)}
+[data-theme="light"] .cal-title{color:var(--fg-0)}
+[data-theme="light"] .cal-sub,[data-theme="light"] .cal-phase{color:var(--fg-1)}
+[data-theme="light"] .cal-progress{background:rgba(80,95,140,.18)}
+[data-theme="light"] .cal-skip{color:var(--text-dim);border-color:var(--border-soft)}
+[data-theme="light"] .cal-skip:hover{color:var(--text-muted);border-color:var(--border-medium);background:var(--surface-1)}
+[data-theme="light"] .guided-menu h2{color:var(--fg-1)}
+[data-theme="light"] .guided-btn{background:var(--surface-1);border-color:var(--border);color:var(--fg-0)}
+[data-theme="light"] .guided-btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+[data-theme="light"] .guided-btn .guided-btn-sub{color:var(--text-muted)}
+[data-theme="light"] .guided-close{color:var(--text-dim)}
+[data-theme="light"] .guided-close:hover{color:var(--fg-1)}
+[data-theme="light"] .history-title{color:var(--fg-0)}
+[data-theme="light"] .history-stat{background:var(--surface-1);border-color:var(--border-soft)}
+[data-theme="light"] .history-stat-val{color:var(--fg-0)}
+[data-theme="light"] .history-stat-label{color:var(--fg-3)}
+[data-theme="light"] .history-table th{color:var(--fg-3);border-bottom-color:var(--border-soft)}
+[data-theme="light"] .history-table td{color:var(--fg-1);border-bottom-color:var(--border-soft)}
+[data-theme="light"] .history-table tr:hover td{background:rgba(80,95,140,.05)}
+[data-theme="light"] .history-export-btn,[data-theme="light"] .history-toolbar button,[data-theme="light"] .song-rate-btn,[data-theme="light"] .pca-rate-btn{color:var(--text-muted);border-color:var(--border-soft)}
+[data-theme="light"] .history-export-btn:hover,[data-theme="light"] .history-toolbar button:hover{color:var(--fg-1);border-color:var(--border-medium)}
+[data-theme="light"] .song-history-row{color:var(--text-muted);border-bottom-color:var(--border-soft)}
+[data-theme="light"] .song-history-row:hover{background:rgba(80,95,140,.05)}
+[data-theme="light"] .song-history-row button{color:var(--text-muted);border-color:var(--border-soft)}
+[data-theme="light"] .pca-canvas{background:var(--surface-1);border-color:var(--border-soft)}
+[data-theme="light"] .pca-selected{color:var(--text-muted)}
+[data-theme="light"] .overlay-close{background:var(--surface-2);border-color:var(--border-medium);color:var(--fg-0)}
+[data-theme="light"] .overlay-close:hover{background:var(--surface-3);border-color:var(--border-strong)}
+[data-theme="light"] .breath-circle-text,[data-theme="light"] .breath-stat-value,[data-theme="light"] .cal-sub{color:var(--fg-1)}
+[data-theme="light"] .breath-stat-label{color:var(--fg-3)}
+[data-theme="light"] .breath-stat.current .breath-stat-value{color:var(--fg-0)}
+[data-theme="light"] .breath-stat-arrow{color:var(--fg-3)}
+[data-theme="light"] .breath-bar{background:rgba(80,95,140,.15)}
+[data-theme="light"] .break-menu{background:var(--surface-3);border-color:var(--border);box-shadow:var(--shadow-2)}
+[data-theme="light"] .break-menu-item{color:var(--text-muted)}
+[data-theme="light"] .break-menu-item:hover{background:var(--accent-soft);color:var(--accent)}
+[data-theme="light"] .break-lang-row{border-bottom-color:var(--border-soft);color:var(--fg-3)}
+[data-theme="light"] .break-lang-btn{color:var(--text-muted);border-color:var(--border-medium)}
+[data-theme="light"] .break-lang-btn:hover{border-color:var(--accent);color:var(--accent)}
+[data-theme="light"] .break-lang-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+[data-theme="light"] .med-cfg-label{color:var(--text-muted)}
+[data-theme="light"] .med-cfg-pill{color:var(--text-muted);border-color:var(--border-medium)}
+[data-theme="light"] .med-cfg-pill:hover{border-color:var(--accent);color:var(--accent)}
+[data-theme="light"] .med-cfg-pill.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+[data-theme="light"] .settings-btn{background:var(--surface-2)}
+[data-theme="light"] .settings-panel{background:var(--surface-3);box-shadow:-12px 0 40px rgba(30,40,80,.15)}
+[data-theme="light"] .settings-panel .section{background:var(--surface-1)}
+[data-theme="light"] .settings-panel-title{color:var(--fg-3)}
+[data-theme="light"] .settings-backdrop{background:rgba(180,190,210,.4)}
+[data-theme="light"] .song-progress-seg{background:rgba(80,95,140,.15)}
+[data-theme="light"] .song-progress-seg.done{background:rgba(var(--accent-rgb),.35)}
+[data-theme="light"] .tutorial-panel{background:var(--surface-3);border-color:var(--border-medium);box-shadow:var(--shadow-2)}
+[data-theme="light"] .tutorial-step-title{color:var(--fg-0)}
+[data-theme="light"] .tutorial-step-hint,[data-theme="light"] .tutorial-step-opt{color:var(--fg-2)}
+[data-theme="light"] .tutorial-step-action{color:var(--text-muted);border-color:var(--border-medium);background:var(--surface-1)}
+[data-theme="light"] .tutorial-step-action:hover{color:var(--fg-0);border-color:var(--border-strong);background:var(--surface-2)}
+[data-theme="light"] .profile-prompt-card{background:var(--surface-3);border-color:var(--border-strong);box-shadow:var(--shadow-lift)}
+[data-theme="light"] .profile-prompt-title{color:var(--fg-0)}
+[data-theme="light"] .profile-prompt-sub{color:var(--fg-2)}
+[data-theme="light"] .profile-prompt-input{background:var(--surface-input);border-color:var(--border);color:var(--fg-0)}
+[data-theme="light"] .profile-prompt-input:focus{border-color:var(--accent)}
+[data-theme="light"] .profile-prompt-confirm{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+[data-theme="light"] .profile-prompt-confirm:hover{background:var(--accent-hover)}
+/* Inline-styled overlays: override by id */
+[data-theme="light"] #dbgLogsOverlay,[data-theme="light"] #vizExpandOverlay,[data-theme="light"] #jhanaScaffoldingOverlay,[data-theme="light"] #jhanaJournalOverlay{background:var(--surface-overlay)!important}
+[data-theme="light"] #dbgLogsWindow{background:var(--surface-input)!important;border-color:var(--border)!important;color:var(--fg-0)!important}
+[data-theme="light"] #dbgLogsCopy,[data-theme="light"] #dbgLogsDownload{background:var(--accent-soft)!important;border-color:var(--accent)!important;color:var(--accent)!important}
+[data-theme="light"] #dbgLogsOutput{background:var(--surface-1)!important;border-color:var(--border)!important;color:var(--fg-1)!important}
+[data-theme="light"] #vizExpandCanvas{background:var(--surface-1)!important;border-color:var(--border)!important}
+[data-theme="light"] #vizTooltip,[data-theme="light"] #vizExpandTooltip{background:var(--surface-3)!important;border-color:var(--border-medium)!important;color:var(--fg-0)!important}
+[data-theme="light"] #ecgCanvas{background:rgba(235,250,240,.8)!important;border-color:rgba(60,180,100,.3)!important}
+[data-theme="light"] #ecgWrap > div{color:#2a7a50!important}
+[data-theme="light"] #calClientId{background:var(--surface-input)!important;border-color:var(--border)!important;color:var(--fg-0)!important}
+[data-theme="light"] .jhana-scaff-btn{background:rgba(60,120,160,.08)!important;border-color:rgba(60,120,160,.3)!important;color:#1a4a6a!important}
+[data-theme="light"] .jhana-scaff-btn span{color:#4a6a8a!important}
+[data-theme="light"] #jhanaScaffoldingOverlay > div,[data-theme="light"] #jhanaJournalOverlay > div{background:var(--surface-3)!important;border-color:rgba(60,120,160,.4)!important}
+[data-theme="light"] #jhanaJournalInput{background:var(--surface-input)!important;border-color:rgba(60,120,160,.3)!important;color:var(--fg-0)!important}
+[data-theme="light"] #jhanaJournalSave{background:rgba(60,120,160,.14)!important;border-color:rgba(60,120,160,.5)!important;color:#1a4a6a!important}
+/* Section title caret icon used inline via `color:#555580` */
+[data-theme="light"] .section-title span[style*="#555580"]{color:var(--fg-3)!important}
+/* History-overlay mode-tags with dark-on-color look — give better contrast */
+[data-theme="light"] .mode-tag.jhana{background:rgba(60,120,160,.25);color:#1a4a6a}
+[data-theme="light"] .mode-tag.shamanic{background:rgba(180,120,60,.25);color:#6a3a1a}
+[data-theme="light"] .mode-tag.bedtime{background:rgba(110,90,180,.25);color:#3a2a6a}
 h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 .hrv-stat-value{font-family:var(--mono);font-weight:400}
 .ctrl-val{font-family:var(--mono)}
@@ -284,6 +448,33 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 #nextSongBtn.flashing{animation:nextsong-flash .6s ease-out}
 .section-info.dimmed{opacity:.35;transition:opacity .4s}
 </style>
+<script>
+/* Early theme init — runs before first paint to avoid flash of wrong theme */
+(function(){
+  try {
+    var pref = localStorage.getItem('attune_theme') || 'auto';
+    var apply = function(p){
+      var root = document.documentElement;
+      if (p === 'auto') {
+        var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) root.removeAttribute('data-theme'); else root.setAttribute('data-theme','light');
+      } else if (p === 'light') {
+        root.setAttribute('data-theme','light');
+      } else {
+        root.removeAttribute('data-theme');
+      }
+    };
+    apply(pref);
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      var onChange = function(){ if ((localStorage.getItem('attune_theme')||'auto') === 'auto') apply('auto'); };
+      if (mq.addEventListener) mq.addEventListener('change', onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+    }
+    window.__attuneApplyTheme = apply;
+  } catch(e){}
+})();
+</script>
 </head>
 <body>
 <canvas class="bg-canvas" id="bgCanvas"></canvas>
@@ -291,6 +482,18 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="settings-backdrop" id="settingsBackdrop"></div>
 <div class="settings-panel" id="settingsPanel">
 <div class="settings-panel-title">Advanced Settings</div>
+<div class="section" id="appearanceSection">
+<div class="section-title">Appearance</div>
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<span style="font-size:13px;color:var(--fg-2);letter-spacing:.06em;text-transform:uppercase">Theme</span>
+<div id="themePills" style="display:flex;gap:6px">
+<button class="med-cfg-pill" data-theme-pref="auto">Auto</button>
+<button class="med-cfg-pill" data-theme-pref="light">Light</button>
+<button class="med-cfg-pill" data-theme-pref="dark">Dark</button>
+</div>
+</div>
+<div style="font-size:11px;color:var(--fg-3);margin-top:8px;line-height:1.4">Auto follows your system preference.</div>
+</div>
 <div id="settingsContent"></div>
 </div>
 <!-- Guided experiences menu -->
@@ -792,6 +995,8 @@ function reconcileLifetime(profile) {
     interventions: sessions.reduce((s, x) => s + (x.interventions || 0), 0),
     rmssdSum: +sessions.reduce((s, x) => s + (x.avgRmssd || 0), 0).toFixed(1),
     rmssdCount: sessions.filter(x => x.avgRmssd != null).length,
+    breathSum: +sessions.reduce((s, x) => s + (x.avgBreathRate || 0), 0).toFixed(1),
+    breathCount: sessions.filter(x => x.avgBreathRate != null).length,
     breaks: sessions.reduce((s, x) => s + (x.breaks || 0), 0),
     breakMinutes: +sessions.reduce((s, x) => s + (x.breakMinutes || 0), 0).toFixed(1),
   };
@@ -866,6 +1071,9 @@ $('profileStatsBtn').addEventListener('click', () => {
   const recent10 = recent.slice(-10);
   const recentRmssd = recent10.map(s => s.avgRmssd).filter(v => v != null);
   const recentAvg = recentRmssd.length ? (recentRmssd.reduce((a,b) => a+b) / recentRmssd.length).toFixed(0) : '--';
+  const avgBreath = lt.breathCount ? (lt.breathSum / lt.breathCount).toFixed(1) : '--';
+  const recentBreath = recent10.map(s => s.avgBreathRate).filter(v => v != null);
+  const recentBreathAvg = recentBreath.length ? (recentBreath.reduce((a,b) => a+b) / recentBreath.length).toFixed(1) : '--';
 
   $('calOverlay').classList.add('active');
   $('calCircle').className = 'breath-circle';
@@ -878,6 +1086,7 @@ $('profileStatsBtn').addEventListener('click', () => {
     <strong>${lt.focusSpans || 0}</strong> focus spans · <strong>${lt.interventions || 0}</strong> breathing interventions<br>
     <strong>${lt.breaks || 0}</strong> breaks · <strong>${((lt.breakMinutes || 0)).toFixed(0)}</strong> min break time<br>
     Avg HRV: <strong>${avgRmssd}ms</strong> (all time) · <strong>${recentAvg}ms</strong> (last 10)<br>
+    Avg breath: <strong>${avgBreath}/min</strong> (all time) · <strong>${recentBreathAvg}/min</strong> (last 10)<br>
     Baseline: <strong>${currentProfile.rmssdBaseline ? currentProfile.rmssdBaseline.toFixed(0) + 'ms' : 'uncalibrated'}</strong><br>
     Calibrations: <strong>${currentProfile.calibrationHistory?.length || 0}</strong>
   `;
@@ -996,6 +1205,7 @@ function openHistoryOverlay() {
   const avgRmssd = lt.rmssdCount ? (lt.rmssdSum / lt.rmssdCount).toFixed(0) : '--';
   const recent10 = sessions.slice(0, 10).map(s => s.avgRmssd).filter(v => v != null);
   const recentAvg = recent10.length ? (recent10.reduce((a,b) => a+b) / recent10.length).toFixed(0) : '--';
+  const avgBreath = lt.breathCount ? (lt.breathSum / lt.breathCount).toFixed(1) : '--';
   const avgDuration = sessions.length ? (sessions.reduce((s, x) => s + (x.durationMin || 0), 0) / sessions.length).toFixed(0) : '--';
   const jhanaSessions = sessions.filter(s => s.jhana).length;
   const longestSession = sessions.length ? Math.max(...sessions.map(s => s.durationMin || 0)).toFixed(0) : '--';
@@ -1007,6 +1217,7 @@ function openHistoryOverlay() {
     <div class="history-stat"><div class="history-stat-val">${longestSession}m</div><div class="history-stat-label">Longest</div></div>
     <div class="history-stat"><div class="history-stat-val">${avgRmssd}</div><div class="history-stat-label">Avg HRV</div></div>
     <div class="history-stat"><div class="history-stat-val">${recentAvg}</div><div class="history-stat-label">HRV (Last 10)</div></div>
+    <div class="history-stat"><div class="history-stat-val">${avgBreath}</div><div class="history-stat-label">Avg Breath/min</div></div>
     <div class="history-stat"><div class="history-stat-val">${lt.interventions || 0}</div><div class="history-stat-label">Interventions</div></div>
     <div class="history-stat"><div class="history-stat-val">${jhanaSessions}</div><div class="history-stat-label">Jhana Sessions</div></div>
   `;
@@ -6928,6 +7139,24 @@ function replaySongFromParams(params) {
   document.querySelectorAll('#settingsContent .tune-content, #settingsContent .music-content').forEach(el => el.classList.remove('hidden'));
 })();
 
+// Theme toggle — wire pill group to localStorage-backed preference
+(() => {
+  const pills = document.querySelectorAll('#themePills [data-theme-pref]');
+  if (!pills.length) return;
+  const paint = () => {
+    const cur = localStorage.getItem('attune_theme') || 'auto';
+    pills.forEach(p => p.classList.toggle('active', p.dataset.themePref === cur));
+  };
+  pills.forEach(p => p.addEventListener('click', () => {
+    const pref = p.dataset.themePref;
+    localStorage.setItem('attune_theme', pref);
+    if (window.__attuneApplyTheme) window.__attuneApplyTheme(pref);
+    paint();
+    if (typeof drawBg === 'function') drawBg();
+  }));
+  paint();
+})();
+
 // Wrap left-column items in a .col-left div so the two-column grid works cleanly
 (() => {
   const container = document.querySelector('.container');
@@ -7600,6 +7829,25 @@ $('guidedMenu').addEventListener('click', (e) => { if (e.target.id === 'guidedMe
 let vizChartData = { rows:[], pad:{}, plotW:0, tStart:0, windowMs:0 };
 let _drawVizLast = 0;
 let _drawVizDims = { w: 0, h: 0, dpr: 0 };
+// Viz colors that need to flip between dark/light themes. In dark theme the
+// axis is light-gray on near-black; in light theme it must be dark on near-white.
+// Data-line colors (accent blue, good green, bad red, warn orange) stay the same
+// — their saturation reads fine on either background.
+function vizAxisColor(alpha){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  return isLight
+    ? `rgba(60,70,100,${alpha})`
+    : `rgba(150,150,180,${alpha})`;
+}
+// Baseline/reference-line color. Pale yellow is fine on near-black but washes
+// out to near-invisible on near-white. In light mode swap to a deep amber that
+// still reads as "marker, not data."
+function vizBaselineColor(alpha){
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  return isLight
+    ? `rgba(160,110,20,${alpha})`
+    : `rgba(255,255,100,${alpha})`;
+}
 function drawViz(ts){
   const now0 = ts || performance.now();
   requestAnimationFrame(drawViz);
@@ -7627,18 +7875,19 @@ function drawViz(ts){
   const tStart=now-windowMs;
   function tx(t){return pad.left+Math.max(0,Math.min(1,(t-tStart)/windowMs))*plotW;}
 
-  // 3 rows: RMSSD, HR, Fatigue/Chill
-  const rowH=(h-pad.top-pad.bottom-16)/3; // 16px for gaps between rows (8px each)
+  // 4 rows: RMSSD, HR, Fatigue/Chill, Breath rate
+  const rowH=(h-pad.top-pad.bottom-24)/4; // 24px for 3 gaps × 8px
   const rows=[
     {top:pad.top, h:rowH},
     {top:pad.top+rowH+8, h:rowH},
     {top:pad.top+2*(rowH+8), h:rowH},
+    {top:pad.top+3*(rowH+8), h:rowH},
   ];
 
   // --- Helper: draw time ticks on x-axis for a row ---
   function drawTimeTicks(row){
-    c.font='8px sans-serif';c.fillStyle='rgba(150,150,180,0.3)';
-    c.strokeStyle='rgba(150,150,180,0.06)';c.lineWidth=0.5;
+    c.font='8px sans-serif';c.fillStyle=vizAxisColor(0.55);
+    c.strokeStyle=vizAxisColor(0.1);c.lineWidth=0.5;
     const totalMin = windowMs / 60000;
     const tickStep = totalMin <= 5 ? 1 : totalMin <= 15 ? 2 : totalMin <= 30 ? 5 : 10;
     for(let m=tickStep; m <= totalMin; m += tickStep){
@@ -7708,10 +7957,10 @@ function drawViz(ts){
         if (bi.value) {
           const by = ry(bi.value);
           if (by > r.top && by < r.top + r.h) {
-            c.strokeStyle='rgba(255,255,100,0.3)';c.lineWidth=1;c.setLineDash([4,4]);
+            c.strokeStyle=vizBaselineColor(0.4);c.lineWidth=1;c.setLineDash([4,4]);
             c.beginPath();c.moveTo(pad.left,by);c.lineTo(pad.left+plotW,by);c.stroke();
             c.setLineDash([]);
-            c.fillStyle='rgba(255,255,100,0.6)';c.font='9px sans-serif';
+            c.fillStyle=vizBaselineColor(0.85);c.font='9px sans-serif';
             const label = bi.source === 'long-term' ? 'avg' : (bi.source === 'calibration' ? 'baseline' : 'today');
             c.fillText(label + ' ' + bi.value.toFixed(0) + 'ms', pad.left+plotW-80, by-3);
           }
@@ -7859,6 +8108,82 @@ function drawViz(ts){
     drawEmptyRow(rows[2],'Fatigue Score','rgba(248,180,138,1)');
   }
 
+  // ========== ROW 4: Breath Rate (with confidence band) ==========
+  if(breathHistory.length>1){
+    const r=rows[3];
+    const visible=breathHistory.filter(d=>d.time>=tStart);
+    if(visible.length>1){
+      const vals=visible.map(d=>d.rate);
+      const mn=Math.max(0, Math.min(...vals)-3), mx=Math.max(...vals)+3;
+      const range=Math.max(mx-mn,6);
+      function by(v){return r.top+r.h-(v-mn)/range*r.h;}
+
+      drawBreakBands(r);
+
+      // Y-axis
+      c.font='8px sans-serif';c.fillStyle='rgba(180,138,248,0.4)';
+      const step=Math.max(2,Math.round((mx-mn)/3/2)*2);
+      for(let v=Math.floor(mn/step)*step;v<=mx;v+=step){
+        const ty=by(v);
+        if(ty>r.top+6&&ty<r.top+r.h-4){
+          c.fillText(v.toFixed(0),pad.left-20,ty+3);
+          c.strokeStyle='rgba(180,138,248,0.06)';c.lineWidth=0.5;
+          c.beginPath();c.moveTo(pad.left,ty);c.lineTo(pad.left+plotW,ty);c.stroke();
+        }
+      }
+
+      // Confidence band: fill between (rate - spread) and (rate + spread),
+      // spread = (1 - confidence) * 4 bpm. High-conf ticks appear as near-zero
+      // width; low-conf ticks render as wide bands showing uncertainty.
+      c.fillStyle='rgba(180,138,248,0.18)';
+      c.beginPath();
+      for(let i=0;i<visible.length;i++){
+        const d=visible[i];
+        const spread=(1-Math.max(0.05,Math.min(1,d.confidence)))*4;
+        const yHi=by(d.rate+spread);
+        const x=tx(d.time);
+        i===0?c.moveTo(x,yHi):c.lineTo(x,yHi);
+      }
+      for(let i=visible.length-1;i>=0;i--){
+        const d=visible[i];
+        const spread=(1-Math.max(0.05,Math.min(1,d.confidence)))*4;
+        const yLo=by(d.rate-spread);
+        const x=tx(d.time);
+        c.lineTo(x,yLo);
+      }
+      c.closePath();c.fill();
+
+      // Center line
+      c.strokeStyle='rgba(180,138,248,0.85)';c.lineWidth=2;c.beginPath();
+      for(let i=0;i<visible.length;i++){
+        const x=tx(visible[i].time),y=by(visible[i].rate);
+        i===0?c.moveTo(x,y):c.lineTo(x,y);
+      }
+      c.stroke();
+
+      // Apnea cue markers — vertical tick + small dot at top of row. Stage
+      // controls color (soft=amber, firm=red). Only those in window.
+      for (const cue of apneaCueHistory) {
+        if (cue.time < tStart || cue.time > now) continue;
+        const x = tx(cue.time);
+        const color = cue.stage === 'firm' ? 'rgba(248,120,120,0.9)'
+                    : cue.stage === 'shallow' ? 'rgba(180,200,248,0.9)'
+                    : 'rgba(248,200,120,0.9)';
+        c.strokeStyle = color; c.lineWidth = 1; c.setLineDash([2,2]);
+        c.beginPath(); c.moveTo(x, r.top); c.lineTo(x, r.top + r.h); c.stroke();
+        c.setLineDash([]);
+        c.fillStyle = color;
+        c.beginPath(); c.arc(x, r.top + 3, 2.5, 0, Math.PI * 2); c.fill();
+      }
+
+      drawTimeTicks(r);
+      c.fillStyle='rgba(180,138,248,0.7)';c.font='10px sans-serif';
+      c.fillText('Breath (/min)',pad.left+2,r.top+11);
+    }
+  } else {
+    drawEmptyRow(rows[3],'Breath (/min)','rgba(180,138,248,1)');
+  }
+
   // Store chart data for tooltip hit-testing
   vizChartData = { rows, pad, plotW, tStart, windowMs, now };
   // (RAF already re-queued at the top of drawViz)
@@ -7914,6 +8239,14 @@ $('hrvViz').addEventListener('mousemove', (e) => {
       if (Math.abs(nearest.time - t) < 5000) {
         const ago = Math.round((now - nearest.time) / 1000);
         label = 'Fatigue'; value = nearest.score.toFixed(1); unit = nearest.state || ''; color = '#f8b48a';
+      }
+    }
+  } else if (rowIdx === 3 && breathHistory.length > 1) {
+    const visible = breathHistory.filter(d => d.time >= tStart);
+    if (visible.length) {
+      const nearest = visible.reduce((best, d) => Math.abs(d.time - t) < Math.abs(best.time - t) ? d : best);
+      if (Math.abs(nearest.time - t) < 5000) {
+        label = 'Breath'; value = nearest.rate.toFixed(1); unit = '/min · conf ' + nearest.confidence.toFixed(2); color = '#b48af8';
       }
     }
   }
@@ -8128,19 +8461,20 @@ function drawVizExpanded() {
 
   c.clearRect(0, 0, w, h);
 
-  const rowH = (h - pad.top - pad.bottom - 24) / 3;
+  const rowH = (h - pad.top - pad.bottom - 36) / 4;
   const rows = [
     { top: pad.top, h: rowH },
     { top: pad.top + rowH + 12, h: rowH },
     { top: pad.top + 2 * (rowH + 12), h: rowH },
+    { top: pad.top + 3 * (rowH + 12), h: rowH },
   ];
 
   // Time ticks
   const totalMin = windowMs / 60000;
   const tickStep = totalMin <= 5 ? 1 : totalMin <= 15 ? 2 : totalMin <= 30 ? 5 : 10;
   function drawTicks(row) {
-    c.font = '10px sans-serif'; c.fillStyle = 'rgba(150,150,180,0.4)';
-    c.strokeStyle = 'rgba(150,150,180,0.08)'; c.lineWidth = 0.5;
+    c.font = '10px sans-serif'; c.fillStyle = vizAxisColor(0.6);
+    c.strokeStyle = vizAxisColor(0.12); c.lineWidth = 0.5;
     if (useRelativeTicks) {
       for (let m = tickStep; m <= totalMin + 0.01; m += tickStep) {
         const t = m * 60000; if (t > now + 1) continue;
@@ -8232,6 +8566,14 @@ function drawVizExpanded() {
     fatigueVisible = fatigueHistory.filter(d => d.time >= tStart);
   }
 
+  let breathVisible = null;
+  if (hist) {
+    const series = hist.breathSeries;
+    if (series && series.length > 1) breathVisible = series.map(([t, rate, conf]) => ({ time: t, rate, confidence: conf }));
+  } else if (breathHistory.length > 1) {
+    breathVisible = breathHistory.filter(d => d.time >= tStart);
+  }
+
   // Shared Y-axis tick renderer for the expanded rows.
   function drawYTicks(r, mn, mx, yFn, colorRgbPrefix, step) {
     c.font = '10px sans-serif';
@@ -8260,10 +8602,10 @@ function drawVizExpanded() {
     if (baselineForRow) {
       const by = ry(baselineForRow);
       if (by > r.top && by < r.top + r.h) {
-        c.strokeStyle = 'rgba(255,255,100,0.3)'; c.lineWidth = 1; c.setLineDash([4, 4]);
+        c.strokeStyle = vizBaselineColor(0.4); c.lineWidth = 1; c.setLineDash([4, 4]);
         c.beginPath(); c.moveTo(pad.left, by); c.lineTo(pad.left + plotW, by); c.stroke();
         c.setLineDash([]);
-        c.fillStyle = 'rgba(255,255,100,0.6)'; c.font = '10px sans-serif';
+        c.fillStyle = vizBaselineColor(0.85); c.font = '10px sans-serif';
         c.fillText('baseline ' + baselineForRow.toFixed(0) + 'ms', pad.left + plotW - 90, by - 3);
       }
     }
@@ -8323,6 +8665,66 @@ function drawVizExpanded() {
     drawExpandedEmpty(rows[2], 'Fatigue Score', 'rgba(248,180,138,1)');
   }
 
+  // Breath rate (with confidence band)
+  if (breathVisible && breathVisible.length > 1) {
+    const r = rows[3];
+    const vals = breathVisible.map(d => d.rate);
+    const mn = Math.max(0, Math.min(...vals) - 3), mx = Math.max(...vals) + 3;
+    const range = Math.max(mx - mn, 6);
+    function by(v) { return r.top + r.h - (v - mn) / range * r.h; }
+    drawBreaks(r);
+    const breathStep = Math.max(2, Math.round((mx - mn) / 4 / 2) * 2);
+    drawYTicks(r, mn, mx, by, 'rgba(180,138,248,', breathStep);
+    // Confidence band
+    c.fillStyle = 'rgba(180,138,248,0.18)';
+    c.beginPath();
+    for (let i = 0; i < breathVisible.length; i++) {
+      const d = breathVisible[i];
+      const spread = (1 - Math.max(0.05, Math.min(1, d.confidence))) * 4;
+      const x = tx(d.time), yHi = by(d.rate + spread);
+      i === 0 ? c.moveTo(x, yHi) : c.lineTo(x, yHi);
+    }
+    for (let i = breathVisible.length - 1; i >= 0; i--) {
+      const d = breathVisible[i];
+      const spread = (1 - Math.max(0.05, Math.min(1, d.confidence))) * 4;
+      const x = tx(d.time), yLo = by(d.rate - spread);
+      c.lineTo(x, yLo);
+    }
+    c.closePath(); c.fill();
+    // Center line
+    c.strokeStyle = 'rgba(180,138,248,0.85)'; c.lineWidth = 2; c.beginPath();
+    for (let i = 0; i < breathVisible.length; i++) {
+      const x = tx(breathVisible[i].time), y = by(breathVisible[i].rate);
+      i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+    }
+    c.stroke();
+    // Apnea cue markers — soft=amber, firm=red. Live: from apneaCueHistory
+    // (absolute timestamps). Historical: pull from saved events (offset times).
+    let cueMarkers;
+    if (hist) {
+      cueMarkers = (hist.events || [])
+        .filter(e => e.type === 'apnea_cue')
+        .map(e => ({ time: e.t, stage: e.stage }));
+    } else {
+      cueMarkers = apneaCueHistory.map(x => ({ time: x.time, stage: x.stage }));
+    }
+    for (const cue of cueMarkers) {
+      if (cue.time < tStart || cue.time > now) continue;
+      const x = tx(cue.time);
+      const color = cue.stage === 'firm' ? 'rgba(248,120,120,0.9)' : 'rgba(248,200,120,0.9)';
+      c.strokeStyle = color; c.lineWidth = 1; c.setLineDash([2, 2]);
+      c.beginPath(); c.moveTo(x, r.top); c.lineTo(x, r.top + r.h); c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = color;
+      c.beginPath(); c.arc(x, r.top + 3, 2.5, 0, Math.PI * 2); c.fill();
+    }
+    drawTicks(r);
+    c.fillStyle = 'rgba(180,138,248,0.7)'; c.font = '12px sans-serif';
+    c.fillText('Breath (/min)', pad.left + 4, r.top + 14);
+  } else {
+    drawExpandedEmpty(rows[3], 'Breath (/min)', 'rgba(180,138,248,1)');
+  }
+
   // --- Stats strip in header (avg / min / max) --------------------------
   try {
     const statsEl = $('vizExpandStats');
@@ -8345,6 +8747,16 @@ function drawVizExpanded() {
         const avg = vs.reduce((a,b)=>a+b,0) / vs.length;
         parts.push(`<span style="color:#f8b48a">Fatigue avg <strong>${avg.toFixed(0)}</strong></span>`);
       }
+      if (breathVisible && breathVisible.length) {
+        // Only include reasonably confident samples in the average — otherwise
+        // outlier / low-conf estimates drag it around. Keep all for min/max.
+        const confVs = breathVisible.filter(d => d.confidence >= 0.3).map(d => d.rate);
+        if (confVs.length) {
+          const avg = confVs.reduce((a,b)=>a+b,0) / confVs.length;
+          const mn = Math.min(...confVs), mx = Math.max(...confVs);
+          parts.push(`<span style="color:#b48af8">Breath avg <strong>${avg.toFixed(1)}</strong> /min</span> <span style="color:#567">(${mn.toFixed(0)}–${mx.toFixed(0)})</span>`);
+        }
+      }
       statsEl.innerHTML = parts.join(' &nbsp;·&nbsp; ');
     }
   } catch(_) {}
@@ -8355,7 +8767,7 @@ function drawVizExpanded() {
   const annotations = hist ? (hist.annotations || []) : (sessionLog && sessionLog.annotations ? sessionLog.annotations : []);
   const annHitBoxes = [];
   const topY = pad.top - 2;
-  const bottomY = pad.top + 2 * (rows[0].h) + 12 + rows[0].h; // bottom of last row
+  const bottomY = rows[rows.length-1].top + rows[rows.length-1].h;
   for (const ann of annotations) {
     if (ann.t < tStart || ann.t > now) continue;
     const x = tx(ann.t);
@@ -8374,7 +8786,7 @@ function drawVizExpanded() {
   // Cache chart state for hover/click handlers on the expanded canvas.
   vizExpandChartData = {
     rows, pad, plotW, tStart, windowMs, now,
-    rmssdVisible, hrVisible, fatigueVisible,
+    rmssdVisible, hrVisible, fatigueVisible, breathVisible,
     annotations, annHitBoxes, hist,
   };
 }
@@ -8391,11 +8803,19 @@ function drawBg(){
   const ww=window.innerWidth, hh=window.innerHeight;
   cv.width=ww*dpr; cv.height=hh*dpr;
   c.setTransform(dpr, 0, 0, dpr, 0, 0);
-  c.fillStyle='#0a0a0f'; c.fillRect(0,0,ww,hh);
+  const cs = getComputedStyle(document.documentElement);
+  const base = (cs.getPropertyValue('--bg-canvas')||'#0a0a0f').trim();
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  c.fillStyle=base; c.fillRect(0,0,ww,hh);
   for(let i=0;i<3;i++){
     const x=ww*.5 + (i-1)*ww*.18, y=hh*.5 + (i-1)*hh*.12;
     const g=c.createRadialGradient(x,y,0,x,y,Math.min(ww,hh)*.4);
-    g.addColorStop(0,`hsla(${220+i*30},40%,15%,0.15)`); g.addColorStop(1,'transparent');
+    if (isLight) {
+      g.addColorStop(0,`hsla(${220+i*30},70%,88%,0.25)`);
+    } else {
+      g.addColorStop(0,`hsla(${220+i*30},40%,15%,0.15)`);
+    }
+    g.addColorStop(1,'transparent');
     c.fillStyle=g; c.fillRect(0,0,ww,hh);
   }
   _bgDrawn = true;
@@ -8794,7 +9214,7 @@ $('bleBtn').addEventListener('click',async()=>{
     // if a session is already running — otherwise a mid-session reconnect
     // loses the first part of the HRV chart.
     rrIntervals=[];baselinesamples=0;bleFirstRrTime=0;rrRejectStreak=0;
-    if (!(sessionLog && sessionLog.started)) { rmssdHistory=[]; rmssdTimes=[]; }
+    if (!(sessionLog && sessionLog.started)) { rmssdHistory=[]; rmssdTimes=[]; breathHistory=[]; apneaCueHistory=[]; }
     // Restore saved profile baseline instead of wiping it
     if(currentProfile && currentProfile.rmssdBaseline){
       rmssdBaseline = currentProfile.rmssdBaseline;
@@ -10194,6 +10614,37 @@ const CHIME_PRESETS = {
     attack: 0.36, tail: 2.4, total: 3.2,
     lpStart: 700, lpPeak: 1800, lpEnd: 900,
   },
+  // Soft single tone — for breath-hold first-stage cue. Short, gentle, not alarming.
+  breathSoft: {
+    notes: [
+      { freqs: [523.25, 784.88], t: 0.00 }, // C5 + G5 (fifth)
+    ],
+    peakFund: 0.16, peakPartial: 0.035,
+    attack: 0.45, tail: 1.6, total: 2.1,
+    lpStart: 600, lpPeak: 1300, lpEnd: 700,
+  },
+  // Very soft single tone — for sustained-shallow-breathing nudge. Gentler
+  // than breathSoft because shallow breathing isn't urgent; the cue just
+  // invites a deeper breath, doesn't demand one.
+  breathShallow: {
+    notes: [
+      { freqs: [392.00, 587.33], t: 0.00 }, // G4 + D5 (fifth)
+    ],
+    peakFund: 0.12, peakPartial: 0.025,
+    attack: 0.6, tail: 1.8, total: 2.4,
+    lpStart: 500, lpPeak: 1100, lpEnd: 600,
+  },
+  // Firmer two-note descent — for breath-hold escalation. Louder and brighter
+  // than breathSoft but shorter than the full breathing-intervention chime.
+  breathFirm: {
+    notes: [
+      { freqs: [659.25, 988.88], t: 0.00 }, // E5 + B5
+      { freqs: [440.00, 660.00], t: 0.38 }, // A4 + E5
+    ],
+    peakFund: 0.36, peakPartial: 0.075,
+    attack: 0.18, tail: 1.6, total: 2.4,
+    lpStart: 1000, lpPeak: 2600, lpEnd: 1200,
+  },
 };
 async function playAttentionChime(variant = 'breathing') {
   if (!ac) { dbg('chime.skip', { reason: 'no-ac', variant }); return; }
@@ -10506,10 +10957,16 @@ function updateStateSpectrum(st, cl) {
 let breathRate = null;       // last estimate (br/min) or null
 let breathConfidence = 0;    // 0..1
 let breathSource = null;     // 'rsa' | 'am' | null
+let breathHistory = [];      // {time, rate, confidence, source} samples (for viz + aggregates)
+let apneaCueHistory = [];    // {time, stage} markers for breath-hold cue annotations
+let breathRecentEstimates = []; // rolling window of last few estimates for display smoothing
+let breathLastConfidentTick = 0; // wall-clock of last ≥0.15-confidence tick
 const BREATH_WIN_SEC = 30;
 const BREATH_FS = 4;         // Hz (resample target)
 const BREATH_MIN_BR = 5;     // /min — below this is almost certainly artifact
 const BREATH_MAX_BR = 35;    // /min — above this too
+const BREATH_DISPLAY_HYSTERESIS_MS = 15000; // keep row visible this long after last confident tick
+const BREATH_DISPLAY_SMOOTH_N = 3;          // median of last N estimates for the number
 
 // Resample irregular (t, v) samples onto an evenly-spaced grid at BREATH_FS over
 // the most recent BREATH_WIN_SEC. tNow is the "now" reference (ms). Returns
@@ -10597,7 +11054,7 @@ function computeBreathFromRR() {
   // For RSA, a meaningful breath oscillation is ~1+ bpm swing in HR.
   // Saturate amplitude contribution at 3 bpm.
   const ampConf = Math.min(1, (est.amp || 0) / 3);
-  return { rate: est.rate, confidence: est.confidence * ampConf, source: 'rsa' };
+  return { rate: est.rate, confidence: est.confidence * ampConf, source: 'rsa', amp: est.amp };
 }
 
 // AM: scan recent ECG for R-peaks, take their amplitude series, resample to 4Hz.
@@ -10651,7 +11108,7 @@ function computeBreathFromECG() {
   // mean amplitude.
   const meanAmp = rpeaks.reduce((a,p)=>a+p.amp,0) / rpeaks.length;
   const ampConf = meanAmp > 0 ? Math.min(1, (est.amp || 0) / (meanAmp * 0.08)) : 0;
-  return { rate: est.rate, confidence: est.confidence * ampConf, source: 'am' };
+  return { rate: est.rate, confidence: est.confidence * ampConf, source: 'am', amp: est.amp };
 }
 
 function updateBreathRate() {
@@ -10661,41 +11118,436 @@ function updateBreathRate() {
   let pick = null;
   if (rsa && am) pick = (am.confidence >= rsa.confidence) ? am : rsa;
   else pick = rsa || am;
-  if (!pick || pick.confidence < 0.15) {
-    breathRate = null; breathConfidence = 0; breathSource = null;
-    const row = $('breathRow'); if (row) row.style.display = 'none';
-    return;
-  }
-  breathRate = pick.rate;
-  breathConfidence = pick.confidence;
-  breathSource = pick.source;
-  const row = $('breathRow');
-  if (row) {
-    row.style.display = 'flex';
-    $('breathRate').textContent = breathRate.toFixed(1);
-    $('breathSrc').textContent = '(' + pick.source + (pick.confidence < 0.35 ? ' low' : '') + ')';
-    $('breathRate').style.opacity = pick.confidence < 0.35 ? '0.55' : '1';
-  }
+  const now = Date.now();
+
+  // Always log every tick (even low-conf / null), so analysis later can see
+  // where the signal failed, not just where it succeeded.
   logEvent('breath_rate', {
-    rate: +pick.rate.toFixed(1),
-    confidence: +pick.confidence.toFixed(2),
-    source: pick.source,
+    rate: pick && pick.rate != null ? +pick.rate.toFixed(1) : null,
+    confidence: pick ? +pick.confidence.toFixed(2) : 0,
+    source: pick ? pick.source : null,
     rsaRate: rsa ? +rsa.rate.toFixed(1) : null,
     rsaConf: rsa ? +rsa.confidence.toFixed(2) : null,
+    rsaAmp: rsa && rsa.amp != null ? +rsa.amp.toFixed(2) : null,
     amRate: am ? +am.rate.toFixed(1) : null,
     amConf: am ? +am.confidence.toFixed(2) : null,
+    amAmp: am && am.amp != null ? +am.amp.toFixed(2) : null,
   });
+
+  const row = $('breathRow');
+  if (pick && pick.confidence >= 0.15) {
+    breathRate = pick.rate;
+    breathConfidence = pick.confidence;
+    breathSource = pick.source;
+    breathLastConfidentTick = now;
+    // Rolling median of last N estimates — a single noisy window (cough, posture
+    // shift, partial cycle) shouldn't swing the displayed number.
+    breathRecentEstimates.push(pick.rate);
+    if (breathRecentEstimates.length > BREATH_DISPLAY_SMOOTH_N) breathRecentEstimates.shift();
+    const sorted = breathRecentEstimates.slice().sort((a,b)=>a-b);
+    const shown = sorted[Math.floor(sorted.length / 2)];
+    if (row) {
+      row.style.display = 'flex';
+      $('breathRate').textContent = shown.toFixed(1);
+      $('breathSrc').textContent = '(' + pick.source + (pick.confidence < 0.35 ? ' low' : '') + ')';
+      $('breathRate').style.opacity = pick.confidence < 0.35 ? '0.55' : '1';
+    }
+    breathHistory.push({ time: now, rate: pick.rate, confidence: pick.confidence, source: pick.source });
+  } else {
+    breathRate = null; breathConfidence = 0; breathSource = null;
+    if (row) { row.style.display = 'none'; }
+    breathRecentEstimates = [];
+  }
+  // Cap history so it doesn't grow unbounded across long sessions
+  if (breathHistory.length > 2000) breathHistory.splice(0, breathHistory.length - 2000);
 }
 
 let breathInterval = null;
 function startBreathMonitor() {
   if (breathInterval) return;
   breathInterval = setInterval(updateBreathRate, 3000);
+  startApneaDetector();
 }
 function stopBreathMonitor() {
   if (breathInterval) { clearInterval(breathInterval); breathInterval = null; }
   breathRate = null; breathConfidence = 0; breathSource = null;
   const row = $('breathRow'); if (row) row.style.display = 'none';
+  stopApneaDetector();
+}
+
+// =====================================================
+// DAYTIME APNEA (breath-hold) DETECTOR
+// =====================================================
+// Detects breath-holding / very shallow breathing via variance collapse in
+// the breath-band of the same RSA + AM signals the rate estimator uses, but
+// on a *shorter window* (12s instead of 30s) and at 1Hz update so we can
+// respond within seconds. "Apnea" here means daytime breath-hold — not sleep
+// apnea. Commonly called "email apnea" (Linda Stone) — unconscious breath-
+// holding during focused screen work. The CO2 buildup → sympathetic spiral
+// is one of the main ways sedentary stress sustains itself; breaking it with
+// a timely cue is the intervention's most immediately-felt value.
+//
+// Signal assembly: amplitude collapse in the breath-band is the primary tell.
+// When both RSA and AM streams are available, we require both to drop below
+// 40% of the user's own running-median baseline — single-signal drops are too
+// artifact-prone. HR drift (CO2 response pushing HR up 5-10s into a hold) is
+// supportive evidence, logged for analysis but not required for firing.
+const APNEA_WIN_SEC = 12;
+const APNEA_FS = 4;
+const APNEA_UPDATE_MS = 1000;
+const APNEA_COLLAPSE_RATIO = 0.4;  // current amp < this * baseline = collapse
+                                   // 0.5 was too loose — shallow-breathing
+                                   // valleys regularly touched it and got
+                                   // misclassified as holds. 0.4 keeps the
+                                   // discriminator strict.
+const APNEA_SOFT_CUE_SEC = 6;      // sustained seconds before soft cue.
+                                   // Short by design — at the tighter 0.4
+                                   // collapse ratio, 6s of ratio<0.4 is
+                                   // already a genuine hold, not a valley.
+const APNEA_FIRM_CUE_SEC = 14;     // sustained seconds before firm cue
+const APNEA_MIN_BASELINE_SAMPLES = 10; // need ~10s of confident data before firing
+const APNEA_TICK_LOG_MS = 5000;    // telemetry cadence (not every second)
+const APNEA_COOLDOWN_MS = 120000;  // 2 min between breath-hold cues
+const APNEA_BASELINE_MAX = 300;    // keep ~5 min of amp samples for baseline median
+
+// Shallow-breathing detection: amp persistently low — a "state", not an
+// event. Uses a rolling accumulator rather than continuous streak because
+// shallow breathing naturally oscillates across any threshold; a continuous
+// timer gets reset by every brief excursion. If ≥ SHALLOW_SUSTAIN_SEC of
+// the last SHALLOW_WINDOW_SEC were in the shallow band, fire. Overlaps
+// with apnea's range on the low end — both can accumulate, but apnea's
+// cooldown prevents double-firing. Legitimate quiet-breathing states
+// (jhana, bedtime, shamanic, breathing mode) are filtered by mode gate.
+const SHALLOW_HIGH_RATIO = 0.65;  // above this, breathing is fine
+const SHALLOW_WINDOW_SEC = 150;   // rolling analysis window
+const SHALLOW_SUSTAIN_SEC = 90;   // ≥ this many sec of the window in shallow → cue
+
+const apneaState = {
+  rsaAmpSamples: [],
+  amAmpSamples: [],
+  holdStart: 0,
+  softCueAt: 0,
+  firmCueAt: 0,
+  lastCueAt: 0,
+  prevHr: null,
+  prevHrTime: 0,
+  lastTickLogAt: 0,
+  shallowSamples: [],   // [{time, inBand}] — rolling log for accumulator
+  shallowCueAt: 0,
+};
+
+// Short-window amplitude (5th-to-95th pct of smoothed detrended signal).
+// Mirrors the amplitude calc inside estimateRateFromSignal but skips the
+// rate/peak-counting logic — we only care about oscillation presence.
+function computeApneaAmp(points, tNow) {
+  if (points.length < 5) return null;
+  const winMs = APNEA_WIN_SEC * 1000;
+  const t0 = tNow - winMs;
+  if (points[0].t > t0 + 3000 || points[points.length-1].t < tNow - 2000) return null;
+  const n = APNEA_WIN_SEC * APNEA_FS;
+  const x = new Float32Array(n);
+  let pi = 0;
+  for (let i = 0; i < n; i++) {
+    const ts = t0 + (i / APNEA_FS) * 1000;
+    while (pi < points.length - 1 && points[pi+1].t < ts) pi++;
+    const a = points[pi], b = points[Math.min(pi+1, points.length-1)];
+    if (b.t === a.t) { x[i] = a.v; continue; }
+    const u = Math.max(0, Math.min(1, (ts - a.t) / (b.t - a.t)));
+    x[i] = a.v * (1 - u) + b.v * u;
+  }
+  let mean = 0; for (let i=0;i<n;i++) mean += x[i]; mean /= n;
+  const y = new Float32Array(n);
+  for (let i=0;i<n;i++) {
+    let sum = 0, cnt = 0;
+    for (let k=-2;k<=2;k++) { const j=i+k; if (j>=0 && j<n) { sum+=x[j]-mean; cnt++; } }
+    y[i] = sum / cnt;
+  }
+  const sorted = Array.from(y).sort((a,b)=>a-b);
+  const lo = sorted[Math.floor(n*0.05)], hi = sorted[Math.floor(n*0.95)];
+  return hi - lo;
+}
+
+function apneaGetRsaAmp() {
+  const now = Date.now();
+  const rr = rrIntervals.filter(r => r.time > now - APNEA_WIN_SEC * 1000);
+  if (rr.length < 8) return null;
+  const points = rr.map(r => ({ t: r.time, v: 60000 / r.rr }));
+  return computeApneaAmp(points, now);
+}
+
+function apneaGetAmAmp() {
+  if (!ecgAnimating || ecgTotalWritten < ECG_SR * APNEA_WIN_SEC) return null;
+  const N = ecgBuffer.length;
+  const want = ECG_SR * APNEA_WIN_SEC;
+  const start = (ecgWriteIdx - want + N) % N;
+  let maxV = -Infinity, meanV = 0;
+  for (let i=0;i<want;i++) {
+    const v = ecgBuffer[(start + i) % N];
+    if (v > maxV) maxV = v;
+    meanV += v;
+  }
+  meanV /= want;
+  const thr = meanV + 0.4 * (maxV - meanV);
+  const refr = 32;
+  const rpeaks = [];
+  let lastPeakI = -refr;
+  for (let i=1;i<want-1;i++) {
+    const prev = ecgBuffer[(start + i - 1) % N];
+    const cur  = ecgBuffer[(start + i    ) % N];
+    const next = ecgBuffer[(start + i + 1) % N];
+    if (cur > thr && cur >= prev && cur > next) {
+      if (i - lastPeakI >= refr) {
+        rpeaks.push({ i, amp: cur });
+        lastPeakI = i;
+      } else if (cur > rpeaks[rpeaks.length-1].amp) {
+        rpeaks[rpeaks.length-1] = { i, amp: cur };
+        lastPeakI = i;
+      }
+    }
+  }
+  if (rpeaks.length < APNEA_WIN_SEC * 0.6) return null;
+  const tNow = Date.now();
+  const points = rpeaks.map(p => ({
+    t: tNow - ((want - 1 - p.i) / ECG_SR) * 1000,
+    v: p.amp,
+  }));
+  return computeApneaAmp(points, tNow);
+}
+
+// Use 75th percentile, not median. During natural breathing the amp swings
+// (deep breaths, shallow breaths, sighs); the median tracks the drift so a
+// hold won't cross the collapse threshold. The p75 represents "typical
+// full-breath amplitude", a stable reference that a collapse deviates from.
+function apneaBaselineMedian(samples) {
+  if (samples.length < APNEA_MIN_BASELINE_SAMPLES) return null;
+  const sorted = samples.slice().sort((a,b)=>a-b);
+  return sorted[Math.floor(sorted.length * 0.75)];
+}
+
+function apneaCurrentHr() {
+  if (rrIntervals.length < 3) return null;
+  const tail = rrIntervals.slice(-5);
+  const avg = tail.reduce((a,b)=>a+b.rr,0) / tail.length;
+  return 60000 / avg;
+}
+
+function fireApneaSoftCue() {
+  playAttentionChime('breathSoft');
+  const phrasings = ['Breathe.', 'Take a breath.', 'Gentle breath.'];
+  speak(phrasings[Math.floor(Math.random() * phrasings.length)]);
+  apneaCueHistory.push({ time: Date.now(), stage: 'soft' });
+  logEvent('apnea_cue', { stage: 'soft' });
+}
+
+function fireApneaFirmCue() {
+  playAttentionChime('breathFirm');
+  speak("Take a full breath — in through your nose, out through your mouth.");
+  apneaCueHistory.push({ time: Date.now(), stage: 'firm' });
+  logEvent('apnea_cue', { stage: 'firm' });
+}
+
+function fireShallowBreathCue() {
+  playAttentionChime('breathShallow');
+  const phrasings = ['Deepen your breath.', 'Fuller breath.', 'Breathe into your belly.'];
+  speak(phrasings[Math.floor(Math.random() * phrasings.length)]);
+  apneaCueHistory.push({ time: Date.now(), stage: 'shallow' });
+  logEvent('apnea_cue', { stage: 'shallow' });
+}
+
+function updateApneaDetector() {
+  if (!bleDevice) return;
+  const now = Date.now();
+
+  // Gating applies only to cue firing (chime + voice). Detection and baseline
+  // build continue regardless, so warmup-era or intervention-era breath holds
+  // still appear in the log even if we can't safely prompt for them.
+  const bleElapsedSec = bleFirstRrTime ? (now - bleFirstRrTime) / 1000 : 0;
+  const inWarmup = bleElapsedSec < 30;
+  const inMode = inBreathingMode || Breaks.inMode || shamanicMode || jhanaMode || bedtimeMode || meetingPaused;
+  const hasActiveCue = !!activeCue;
+  const inCooldown = now - apneaState.lastCueAt < APNEA_COOLDOWN_MS;
+  // Note: hrSpikeSuppress is NOT a cue gate here. It's a post-break/post-intervention
+  // stress-detection cooldown — exactly the window in which apnea cues matter most.
+  const cueGated = inWarmup || inMode || hasActiveCue || inCooldown || !playing;
+
+  const rsaAmp = apneaGetRsaAmp();
+  const amAmp = apneaGetAmAmp();
+  const hr = apneaCurrentHr();
+
+  // Baseline maintenance: add samples only when breath confidence was just
+  // high AND we're not currently mid-hold. breathConfidence is updated every
+  // 3s by updateBreathRate from the same RSA/AM streams.
+  if (breathConfidence >= 0.4 && apneaState.holdStart === 0 && !inMode) {
+    if (rsaAmp != null) {
+      apneaState.rsaAmpSamples.push(rsaAmp);
+      if (apneaState.rsaAmpSamples.length > APNEA_BASELINE_MAX) apneaState.rsaAmpSamples.shift();
+    }
+    if (amAmp != null) {
+      apneaState.amAmpSamples.push(amAmp);
+      if (apneaState.amAmpSamples.length > APNEA_BASELINE_MAX) apneaState.amAmpSamples.shift();
+    }
+  }
+
+  const rsaBase = apneaBaselineMedian(apneaState.rsaAmpSamples);
+  const amBase  = apneaBaselineMedian(apneaState.amAmpSamples);
+  const rsaRatio = (rsaBase != null && rsaAmp != null) ? rsaAmp / rsaBase : null;
+  const amRatio  = (amBase  != null && amAmp  != null) ? amAmp  / amBase  : null;
+
+  // HR drift (supportive, not required). Positive drift + amp collapse is
+  // the CO2 response signature. Compare to HR from ~8s ago.
+  let hrDrift = null;
+  if (hr != null) {
+    if (apneaState.prevHr == null) {
+      apneaState.prevHr = hr; apneaState.prevHrTime = now;
+    } else if (now - apneaState.prevHrTime >= 8000) {
+      hrDrift = hr - apneaState.prevHr;
+      apneaState.prevHr = hr;
+      apneaState.prevHrTime = now;
+    }
+  }
+
+  // Require ALL available streams to show collapse. With one stream (RSA only,
+  // no H10 ECG), it decides alone — but amplitude median over 40+ samples is
+  // already a high bar. With both streams, both must collapse — rules out
+  // single-signal artifact.
+  let available = 0, collapsed = 0;
+  if (rsaRatio != null) { available++; if (rsaRatio < APNEA_COLLAPSE_RATIO) collapsed++; }
+  if (amRatio  != null) { available++; if (amRatio  < APNEA_COLLAPSE_RATIO) collapsed++; }
+  const amplitudeCollapsed = available > 0 && collapsed === available;
+
+  if (amplitudeCollapsed) {
+    if (apneaState.holdStart === 0) {
+      apneaState.holdStart = now;
+      apneaState.softCueAt = 0;
+      apneaState.firmCueAt = 0;
+      logEvent('apnea_suspected', {
+        rsaRatio: rsaRatio != null ? +rsaRatio.toFixed(2) : null,
+        amRatio: amRatio != null ? +amRatio.toFixed(2) : null,
+        hrDrift: hrDrift != null ? +hrDrift.toFixed(1) : null,
+        cueGated,
+      });
+    }
+    const heldSec = (now - apneaState.holdStart) / 1000;
+    if (!cueGated) {
+      if (heldSec >= APNEA_SOFT_CUE_SEC && apneaState.softCueAt === 0) {
+        fireApneaSoftCue();
+        apneaState.softCueAt = now;
+        apneaState.lastCueAt = now;
+      } else if (heldSec >= APNEA_FIRM_CUE_SEC && apneaState.firmCueAt === 0 && apneaState.softCueAt > 0) {
+        fireApneaFirmCue();
+        apneaState.firmCueAt = now;
+        apneaState.lastCueAt = now;
+      }
+    }
+  } else if (apneaState.holdStart !== 0) {
+    const heldSec = (now - apneaState.holdStart) / 1000;
+    logEvent('apnea_resolved', {
+      heldSec: +heldSec.toFixed(1),
+      softCueFired: apneaState.softCueAt > 0,
+      firmCueFired: apneaState.firmCueAt > 0,
+    });
+    apneaState.holdStart = 0;
+    apneaState.softCueAt = 0;
+    apneaState.firmCueAt = 0;
+  }
+
+  // Shallow-breathing detection — rolling accumulator over SHALLOW_WINDOW_SEC.
+  // A tick counts as "shallow" if every available stream is < SHALLOW_HIGH_RATIO
+  // (includes the apnea range, so deep dips still count toward shallow time).
+  let shallowTickCount = 0;
+  if (available > 0) {
+    if (rsaRatio != null && rsaRatio < SHALLOW_HIGH_RATIO) shallowTickCount++;
+    if (amRatio  != null && amRatio  < SHALLOW_HIGH_RATIO) shallowTickCount++;
+  }
+  const inShallowBand = available > 0 && shallowTickCount === available;
+
+  // Push this tick onto the rolling log (only when we have a meaningful
+  // signal — no entries for warmup ticks without baseline).
+  if (available > 0) {
+    apneaState.shallowSamples.push({ time: now, inBand: inShallowBand });
+    const cutoff = now - SHALLOW_WINDOW_SEC * 1000;
+    while (apneaState.shallowSamples.length && apneaState.shallowSamples[0].time < cutoff) {
+      apneaState.shallowSamples.shift();
+    }
+  }
+
+  // Count seconds in shallow across the window (each tick is APNEA_UPDATE_MS).
+  let shallowAccumSec = 0;
+  for (const s of apneaState.shallowSamples) {
+    if (s.inBand) shallowAccumSec += APNEA_UPDATE_MS / 1000;
+  }
+  const windowCoverageSec = apneaState.shallowSamples.length * (APNEA_UPDATE_MS / 1000);
+
+  // Fire when the accumulated shallow time exceeds the threshold AND we've
+  // had enough window coverage to make the measurement meaningful. Re-arm
+  // after the cooldown by clearing the cueAt stamp once shallow drops off.
+  if (!cueGated && windowCoverageSec >= SHALLOW_SUSTAIN_SEC &&
+      shallowAccumSec >= SHALLOW_SUSTAIN_SEC && apneaState.shallowCueAt === 0) {
+    fireShallowBreathCue();
+    apneaState.shallowCueAt = now;
+    apneaState.lastCueAt = now;
+    logEvent('shallow_cue_fired', {
+      shallowAccumSec: +shallowAccumSec.toFixed(0),
+      windowCoverageSec: +windowCoverageSec.toFixed(0),
+    });
+  }
+  // Re-arm: once shallow time in the window drops below ~50% of threshold,
+  // clear the cueAt so the next sustained shallow episode can fire again.
+  if (apneaState.shallowCueAt !== 0 && shallowAccumSec < SHALLOW_SUSTAIN_SEC * 0.5) {
+    apneaState.shallowCueAt = 0;
+  }
+
+  // Periodic telemetry — independent of detection firing. Without this, "nothing
+  // happened" bug reports have no way to distinguish baseline-not-built-up vs
+  // gated vs thresholds-too-strict vs signal-not-collapsing.
+  if (now - apneaState.lastTickLogAt >= APNEA_TICK_LOG_MS) {
+    apneaState.lastTickLogAt = now;
+    logEvent('apnea_tick', {
+      cueGated,
+      gateReason: cueGated ? [
+        inWarmup && 'warmup',
+        inMode && 'mode',
+        hasActiveCue && 'cue',
+        inCooldown && 'cooldown',
+        !playing && 'notPlaying',
+      ].filter(Boolean).join(',') : null,
+      rsaN: apneaState.rsaAmpSamples.length,
+      amN: apneaState.amAmpSamples.length,
+      rsaAmp: rsaAmp != null ? +rsaAmp.toFixed(2) : null,
+      amAmp: amAmp != null ? +amAmp.toFixed(2) : null,
+      rsaBase: rsaBase != null ? +rsaBase.toFixed(2) : null,
+      amBase: amBase != null ? +amBase.toFixed(2) : null,
+      rsaRatio: rsaRatio != null ? +rsaRatio.toFixed(2) : null,
+      amRatio: amRatio != null ? +amRatio.toFixed(2) : null,
+      hr: hr != null ? +hr.toFixed(1) : null,
+      hrDrift: hrDrift != null ? +hrDrift.toFixed(1) : null,
+      collapsed: amplitudeCollapsed,
+      heldSec: apneaState.holdStart > 0 ? +((now - apneaState.holdStart) / 1000).toFixed(1) : 0,
+      inShallowBand,
+      shallowAccumSec: +shallowAccumSec.toFixed(0),
+      shallowWindowCoverage: +windowCoverageSec.toFixed(0),
+      breathConf: +breathConfidence.toFixed(2),
+    });
+  }
+}
+
+let apneaInterval = null;
+function startApneaDetector() {
+  if (apneaInterval) return;
+  apneaInterval = setInterval(updateApneaDetector, APNEA_UPDATE_MS);
+}
+function stopApneaDetector() {
+  if (apneaInterval) { clearInterval(apneaInterval); apneaInterval = null; }
+  apneaState.rsaAmpSamples = [];
+  apneaState.amAmpSamples = [];
+  apneaState.holdStart = 0;
+  apneaState.softCueAt = 0;
+  apneaState.firmCueAt = 0;
+  apneaState.lastCueAt = 0;
+  apneaState.prevHr = null;
+  apneaState.prevHrTime = 0;
+  apneaState.shallowSamples = [];
+  apneaState.shallowCueAt = 0;
 }
 
 function handleHRM(ev){
@@ -11637,6 +12489,15 @@ function buildCurrentSession() {
     fatigueSeries: fatigueHistory.filter((_, i) => i % 5 === 0).map(f => [
       f.time - sStart, +f.score.toFixed(1), f.state || null,
     ]),
+    // Breath rate: [offset, rate, confidence]. Only in-session samples.
+    breathSeries: breathHistory.filter(b => b.time >= sStart).map(b => [
+      b.time - sStart, +b.rate.toFixed(1), +b.confidence.toFixed(2),
+    ]),
+    avgBreathRate: (() => {
+      const confs = breathHistory.filter(b => b.time >= sStart && b.confidence >= 0.3);
+      if (!confs.length) return null;
+      return +(confs.reduce((s, b) => s + b.rate, 0) / confs.length).toFixed(1);
+    })(),
     breakPeriodsList: breakPeriods.filter(b => b.start).map(b => ({
       start: b.start - sStart,
       end: (b.end || now) - sStart,
@@ -11776,6 +12637,10 @@ async function finalizeSession() {
   if (session.avgRmssd != null) {
     lt.rmssdSum = (lt.rmssdSum || 0) + session.avgRmssd;
     lt.rmssdCount = (lt.rmssdCount || 0) + 1;
+  }
+  if (session.avgBreathRate != null) {
+    lt.breathSum = (lt.breathSum || 0) + session.avgBreathRate;
+    lt.breathCount = (lt.breathCount || 0) + 1;
   }
   lt.breaks = (lt.breaks || 0) + (session.breaks || 0);
   lt.breakMinutes = (lt.breakMinutes || 0) + (session.breakMinutes || 0);
@@ -12035,6 +12900,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-1423<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-2223<!--/VERSION--></div>
 </body>
 </html>
