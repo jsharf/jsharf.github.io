@@ -779,6 +779,9 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <div class="toggle-row">
 <input type="checkbox" id="breathCue"><label for="breathCue">Breath guide (6/min)</label>
 </div>
+<div class="toggle-row">
+<input type="checkbox" id="muteVoice"><label for="muteVoice" title="Disable all voice cues. Music and breath guide still work.">Music only (no voice)</label>
+</div>
 </div>
 </div>
 
@@ -1820,6 +1823,8 @@ const tts = {
   pendingSpeak: false,// true while the setTimeout-delayed speak is in flight
   keepAliveTimer: null, // pauses/resumes every 10s during a speaking utterance (Chrome 15s cutoff)
   lastEndedAt: 0,     // when the last utterance ended — used to detect a cold engine
+  lastSpokeAt: 0,     // when say() last accepted a non-structured cue — drives the 60s rate cap
+  MIN_SPEAK_GAP_MS: 60000,
   _id: 0,
 
   say(text, opts) {
@@ -1830,7 +1835,33 @@ const tts = {
     opts = opts || {};
     const interrupt = opts.queue !== true;
     const snippet = String(text).slice(0, 80);
-    console.log(`[tts] say${opts.lang ? ' ['+opts.lang+']' : ''}${opts.queue ? ' [queued]' : ''}: ${snippet}${String(text).length > 80 ? '…' : ''}`);
+    const stamp = new Date().toISOString().slice(11, 23);
+    // Music-only mode: drop everything before any logging so the user gets silence.
+    if (typeof voiceMuted !== 'undefined' && voiceMuted && !opts.urgent) {
+      console.log(`[tts ${stamp}] muted (voice-off): ${snippet}`);
+      return;
+    }
+    // Hard global rate cap — outside structured exercises (breathing intervention,
+    // active break) and queued breathing cues, enforce a 60s minimum gap between
+    // TTS calls. Backstop in case individual cue gates leak. Field-confirmed
+    // 2026-04-24 (Brandon): 97 cues over 27min, peaks of 13/min — the dense
+    // robot voice was itself a stressor.
+    const inStructured = (typeof inBreathingMode !== 'undefined' && inBreathingMode) ||
+                         (typeof Breaks !== 'undefined' && Breaks.inMode);
+    const allowQueued = opts.queue === true; // structured cues queue; one-shot interjections don't
+    if (!inStructured && !opts.urgent && !allowQueued) {
+      if (Date.now() - this.lastSpokeAt < this.MIN_SPEAK_GAP_MS) {
+        console.log(`[tts ${stamp}] rate-cap suppressed: ${snippet}`);
+        try {
+          if (typeof logEvent === 'function' && typeof sessionLog !== 'undefined' && sessionLog && sessionLog.started) {
+            logEvent('tts_suppressed', { text: String(text), reason: 'rate-cap' });
+          }
+        } catch(_) {}
+        return;
+      }
+      this.lastSpokeAt = Date.now();
+    }
+    console.log(`[tts ${stamp}] say${opts.lang ? ' ['+opts.lang+']' : ''}${opts.queue ? ' [queued]' : ''}: ${snippet}${String(text).length > 80 ? '…' : ''}`);
     try {
       if (typeof logEvent === 'function' && typeof sessionLog !== 'undefined' && sessionLog && sessionLog.started) {
         logEvent('tts_cue', { text: String(text), lang: opts.lang || null, interrupt });
@@ -2095,6 +2126,17 @@ function initCalendar() {
     localStorage.setItem('attune_cal_autopause', $('calAutoPause').checked ? '1' : '0');
     // If user turns it off mid-meeting, resume immediately
     if (!$('calAutoPause').checked && meetingPaused) endMeetingPause();
+  });
+  // Music-only mode — persist across sessions, restore on load.
+  const savedMuteVoice = localStorage.getItem('attune_mute_voice');
+  if (savedMuteVoice === '1') {
+    $('muteVoice').checked = true;
+    voiceMuted = true;
+  }
+  $('muteVoice').addEventListener('change', () => {
+    voiceMuted = $('muteVoice').checked;
+    localStorage.setItem('attune_mute_voice', voiceMuted ? '1' : '0');
+    if (voiceMuted) try { tts.cancel(); } catch(_){}
   });
   $('calSettingsBtn').addEventListener('click', () => {
     const s = $('calSettings');
@@ -3249,6 +3291,7 @@ let currentSwing = 0.4;
 let songHasVinyl = false;
 let adaptiveMode = true;
 let silenceMode = false;
+let voiceMuted = false;       // Music-only mode — TTS suppressed except opts.urgent (calibration done, etc.)
 let entrainmentMode = false;
 let entrainmentCarrier = null; // {src, gain} — lives for the duration of entrainmentMode
 
@@ -8109,10 +8152,11 @@ function drawViz(ts){
   }
 
   // ========== ROW 4: Breath Rate (with confidence band) ==========
-  if(breathHistory.length>1){
+  {
     const r=rows[3];
     const visible=breathHistory.filter(d=>d.time>=tStart);
-    if(visible.length>1){
+    const hasBreath = visible.length > 1;
+    if(hasBreath){
       const vals=visible.map(d=>d.rate);
       const mn=Math.max(0, Math.min(...vals)-3), mx=Math.max(...vals)+3;
       const range=Math.max(mx-mn,6);
@@ -8132,56 +8176,87 @@ function drawViz(ts){
         }
       }
 
-      // Confidence band: fill between (rate - spread) and (rate + spread),
-      // spread = (1 - confidence) * 4 bpm. High-conf ticks appear as near-zero
-      // width; low-conf ticks render as wide bands showing uncertainty.
+      // Segment the line at time gaps > 10s — confidence drops during breath
+      // holds or post-intervention warmup leave gaps that otherwise get
+      // connected by a misleading straight line.
+      const GAP_MS = 10000;
+      const segments = [];
+      let seg = [];
+      for (let i = 0; i < visible.length; i++) {
+        if (i > 0 && visible[i].time - visible[i-1].time > GAP_MS) {
+          if (seg.length) segments.push(seg);
+          seg = [];
+        }
+        seg.push(visible[i]);
+      }
+      if (seg.length) segments.push(seg);
+
+      // Confidence band per segment.
       c.fillStyle='rgba(180,138,248,0.18)';
-      c.beginPath();
-      for(let i=0;i<visible.length;i++){
-        const d=visible[i];
-        const spread=(1-Math.max(0.05,Math.min(1,d.confidence)))*4;
-        const yHi=by(d.rate+spread);
-        const x=tx(d.time);
-        i===0?c.moveTo(x,yHi):c.lineTo(x,yHi);
-      }
-      for(let i=visible.length-1;i>=0;i--){
-        const d=visible[i];
-        const spread=(1-Math.max(0.05,Math.min(1,d.confidence)))*4;
-        const yLo=by(d.rate-spread);
-        const x=tx(d.time);
-        c.lineTo(x,yLo);
-      }
-      c.closePath();c.fill();
-
-      // Center line
-      c.strokeStyle='rgba(180,138,248,0.85)';c.lineWidth=2;c.beginPath();
-      for(let i=0;i<visible.length;i++){
-        const x=tx(visible[i].time),y=by(visible[i].rate);
-        i===0?c.moveTo(x,y):c.lineTo(x,y);
-      }
-      c.stroke();
-
-      // Apnea cue markers — vertical tick + small dot at top of row. Stage
-      // controls color (soft=amber, firm=red). Only those in window.
-      for (const cue of apneaCueHistory) {
-        if (cue.time < tStart || cue.time > now) continue;
-        const x = tx(cue.time);
-        const color = cue.stage === 'firm' ? 'rgba(248,120,120,0.9)'
-                    : cue.stage === 'shallow' ? 'rgba(180,200,248,0.9)'
-                    : 'rgba(248,200,120,0.9)';
-        c.strokeStyle = color; c.lineWidth = 1; c.setLineDash([2,2]);
-        c.beginPath(); c.moveTo(x, r.top); c.lineTo(x, r.top + r.h); c.stroke();
-        c.setLineDash([]);
-        c.fillStyle = color;
-        c.beginPath(); c.arc(x, r.top + 3, 2.5, 0, Math.PI * 2); c.fill();
+      for (const s of segments) {
+        if (s.length < 2) continue;
+        c.beginPath();
+        for(let i=0;i<s.length;i++){
+          const d=s[i];
+          const spread=(1-Math.max(0.05,Math.min(1,d.confidence)))*4;
+          const yHi=by(d.rate+spread);
+          const x=tx(d.time);
+          i===0?c.moveTo(x,yHi):c.lineTo(x,yHi);
+        }
+        for(let i=s.length-1;i>=0;i--){
+          const d=s[i];
+          const spread=(1-Math.max(0.05,Math.min(1,d.confidence)))*4;
+          const yLo=by(d.rate-spread);
+          const x=tx(d.time);
+          c.lineTo(x,yLo);
+        }
+        c.closePath();c.fill();
       }
 
+      // Center line per segment
+      c.strokeStyle='rgba(180,138,248,0.85)';c.lineWidth=2;
+      for (const s of segments) {
+        if (s.length < 2) continue;
+        c.beginPath();
+        for(let i=0;i<s.length;i++){
+          const x=tx(s[i].time),y=by(s[i].rate);
+          i===0?c.moveTo(x,y):c.lineTo(x,y);
+        }
+        c.stroke();
+      }
+    } else {
+      drawEmptyRow(rows[3],'Breath (/min)','rgba(180,138,248,1)');
+    }
+
+    // Cue markers — always drawn (even over empty row) so holds that suppress
+    // breath data still show a visible cue.
+    for (const cue of apneaCueHistory) {
+      if (cue.time < tStart || cue.time > now) continue;
+      const x = tx(cue.time);
+      const color = cue.stage === 'firm' ? 'rgba(248,120,120,0.9)'
+                  : cue.stage === 'shallow' ? 'rgba(180,200,248,0.9)'
+                  : 'rgba(248,200,120,0.9)';
+      c.strokeStyle = color; c.lineWidth = 1; c.setLineDash([2,2]);
+      c.beginPath(); c.moveTo(x, r.top); c.lineTo(x, r.top + r.h); c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = color;
+      c.beginPath(); c.arc(x, r.top + 3, 2.5, 0, Math.PI * 2); c.fill();
+    }
+    for (const cue of microCueHistory) {
+      if (cue.time < tStart || cue.time > now) continue;
+      const x = tx(cue.time);
+      c.strokeStyle = 'rgba(110,220,200,0.85)'; c.lineWidth = 1; c.setLineDash([1,3]);
+      c.beginPath(); c.moveTo(x, r.top); c.lineTo(x, r.top + r.h); c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = 'rgba(110,220,200,0.9)';
+      c.beginPath(); c.arc(x, r.top + 3, 2.5, 0, Math.PI * 2); c.fill();
+    }
+
+    if (hasBreath) {
       drawTimeTicks(r);
       c.fillStyle='rgba(180,138,248,0.7)';c.font='10px sans-serif';
       c.fillText('Breath (/min)',pad.left+2,r.top+11);
     }
-  } else {
-    drawEmptyRow(rows[3],'Breath (/min)','rgba(180,138,248,1)');
   }
 
   // Store chart data for tooltip hit-testing
@@ -8665,9 +8740,12 @@ function drawVizExpanded() {
     drawExpandedEmpty(rows[2], 'Fatigue Score', 'rgba(248,180,138,1)');
   }
 
-  // Breath rate (with confidence band)
-  if (breathVisible && breathVisible.length > 1) {
-    const r = rows[3];
+  // Breath rate (with confidence band). Cue markers render whether or not we
+  // have breath rate data — they're important even during holds when confidence
+  // drops below the display threshold.
+  const r = rows[3];
+  const hasBreath = breathVisible && breathVisible.length > 1;
+  if (hasBreath) {
     const vals = breathVisible.map(d => d.rate);
     const mn = Math.max(0, Math.min(...vals) - 3), mx = Math.max(...vals) + 3;
     const range = Math.max(mx - mn, 6);
@@ -8675,54 +8753,93 @@ function drawVizExpanded() {
     drawBreaks(r);
     const breathStep = Math.max(2, Math.round((mx - mn) / 4 / 2) * 2);
     drawYTicks(r, mn, mx, by, 'rgba(180,138,248,', breathStep);
-    // Confidence band
+    // Break the line into segments on gaps > 10s (e.g. confidence drops during
+    // breath holds or post-intervention warmup). Otherwise the draw spans the
+    // gap and implies continuous data where there is none.
+    const GAP_MS = 10000;
+    const segments = [];
+    let seg = [];
+    for (let i = 0; i < breathVisible.length; i++) {
+      if (i > 0 && breathVisible[i].time - breathVisible[i - 1].time > GAP_MS) {
+        if (seg.length) segments.push(seg);
+        seg = [];
+      }
+      seg.push(breathVisible[i]);
+    }
+    if (seg.length) segments.push(seg);
+    // Confidence band per segment
     c.fillStyle = 'rgba(180,138,248,0.18)';
-    c.beginPath();
-    for (let i = 0; i < breathVisible.length; i++) {
-      const d = breathVisible[i];
-      const spread = (1 - Math.max(0.05, Math.min(1, d.confidence))) * 4;
-      const x = tx(d.time), yHi = by(d.rate + spread);
-      i === 0 ? c.moveTo(x, yHi) : c.lineTo(x, yHi);
+    for (const s of segments) {
+      if (s.length < 2) continue;
+      c.beginPath();
+      for (let i = 0; i < s.length; i++) {
+        const d = s[i];
+        const spread = (1 - Math.max(0.05, Math.min(1, d.confidence))) * 4;
+        const x = tx(d.time), yHi = by(d.rate + spread);
+        i === 0 ? c.moveTo(x, yHi) : c.lineTo(x, yHi);
+      }
+      for (let i = s.length - 1; i >= 0; i--) {
+        const d = s[i];
+        const spread = (1 - Math.max(0.05, Math.min(1, d.confidence))) * 4;
+        const x = tx(d.time), yLo = by(d.rate - spread);
+        c.lineTo(x, yLo);
+      }
+      c.closePath(); c.fill();
     }
-    for (let i = breathVisible.length - 1; i >= 0; i--) {
-      const d = breathVisible[i];
-      const spread = (1 - Math.max(0.05, Math.min(1, d.confidence))) * 4;
-      const x = tx(d.time), yLo = by(d.rate - spread);
-      c.lineTo(x, yLo);
+    // Center line per segment
+    c.strokeStyle = 'rgba(180,138,248,0.85)'; c.lineWidth = 2;
+    for (const s of segments) {
+      if (s.length < 2) continue;
+      c.beginPath();
+      for (let i = 0; i < s.length; i++) {
+        const x = tx(s[i].time), y = by(s[i].rate);
+        i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+      }
+      c.stroke();
     }
-    c.closePath(); c.fill();
-    // Center line
-    c.strokeStyle = 'rgba(180,138,248,0.85)'; c.lineWidth = 2; c.beginPath();
-    for (let i = 0; i < breathVisible.length; i++) {
-      const x = tx(breathVisible[i].time), y = by(breathVisible[i].rate);
-      i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
-    }
-    c.stroke();
-    // Apnea cue markers — soft=amber, firm=red. Live: from apneaCueHistory
-    // (absolute timestamps). Historical: pull from saved events (offset times).
-    let cueMarkers;
+  } else {
+    drawExpandedEmpty(rows[3], 'Breath (/min)', 'rgba(180,138,248,1)');
+  }
+  // Cue markers — apnea_cue (soft=amber, firm=red, shallow=blue) +
+  // micro_cue_fire (teal, stress nudge). Always drawn, even over the empty
+  // placeholder. Live: from in-memory arrays. Historical: from saved events.
+  {
+    let apneaCues, microCues;
     if (hist) {
-      cueMarkers = (hist.events || [])
-        .filter(e => e.type === 'apnea_cue')
+      apneaCues = (hist.events || []).filter(e => e.type === 'apnea_cue')
         .map(e => ({ time: e.t, stage: e.stage }));
+      microCues = (hist.events || []).filter(e => e.type === 'micro_cue_fire')
+        .map(e => ({ time: e.t, type: e.cueType || e.type }));
     } else {
-      cueMarkers = apneaCueHistory.map(x => ({ time: x.time, stage: x.stage }));
+      apneaCues = apneaCueHistory.map(x => ({ time: x.time, stage: x.stage }));
+      microCues = microCueHistory.map(x => ({ time: x.time, type: x.type }));
     }
-    for (const cue of cueMarkers) {
+    for (const cue of apneaCues) {
       if (cue.time < tStart || cue.time > now) continue;
       const x = tx(cue.time);
-      const color = cue.stage === 'firm' ? 'rgba(248,120,120,0.9)' : 'rgba(248,200,120,0.9)';
+      const color = cue.stage === 'firm' ? 'rgba(248,120,120,0.9)'
+                  : cue.stage === 'shallow' ? 'rgba(180,200,248,0.9)'
+                  : 'rgba(248,200,120,0.9)';
       c.strokeStyle = color; c.lineWidth = 1; c.setLineDash([2, 2]);
       c.beginPath(); c.moveTo(x, r.top); c.lineTo(x, r.top + r.h); c.stroke();
       c.setLineDash([]);
       c.fillStyle = color;
       c.beginPath(); c.arc(x, r.top + 3, 2.5, 0, Math.PI * 2); c.fill();
     }
+    for (const cue of microCues) {
+      if (cue.time < tStart || cue.time > now) continue;
+      const x = tx(cue.time);
+      c.strokeStyle = 'rgba(110,220,200,0.85)'; c.lineWidth = 1; c.setLineDash([1, 3]);
+      c.beginPath(); c.moveTo(x, r.top); c.lineTo(x, r.top + r.h); c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = 'rgba(110,220,200,0.9)';
+      c.beginPath(); c.arc(x, r.top + 3, 2.5, 0, Math.PI * 2); c.fill();
+    }
+  }
+  if (hasBreath) {
     drawTicks(r);
     c.fillStyle = 'rgba(180,138,248,0.7)'; c.font = '12px sans-serif';
     c.fillText('Breath (/min)', pad.left + 4, r.top + 14);
-  } else {
-    drawExpandedEmpty(rows[3], 'Breath (/min)', 'rgba(180,138,248,1)');
   }
 
   // --- Stats strip in header (avg / min / max) --------------------------
@@ -8957,11 +9074,15 @@ function checkForStableBaselineWindow(currentRmssd, currentHr) {
     // relaxed state) and should anchor the floor. Threshold is 0.75 so a
     // stress-suppressed window that's half the calibration doesn't get adopted.
     const refFloor = Math.max(longTermBaseline || 0, rmssdBaseline || 0);
+    const calStored = (currentProfile && currentProfile.calibrationHistory && currentProfile.calibrationHistory.length)
+      ? currentProfile.calibrationHistory[currentProfile.calibrationHistory.length - 1].baseline
+      : null;
     if (refFloor && rAvg < refFloor * 0.75) {
       logEvent('today_baseline_reject_low', {
         candidate: +rAvg.toFixed(1),
         longTerm: longTermBaseline ? +longTermBaseline.toFixed(1) : null,
-        calibration: rmssdBaseline ? +rmssdBaseline.toFixed(1) : null,
+        rmssdBaseline: rmssdBaseline ? +rmssdBaseline.toFixed(1) : null,
+        calibration: calStored ? +calStored.toFixed(1) : null,
       });
       // Slide window forward by shedding oldest sample so we re-evaluate next tick
       baselineWindowRmssdSamples.shift();
@@ -9214,7 +9335,7 @@ $('bleBtn').addEventListener('click',async()=>{
     // if a session is already running — otherwise a mid-session reconnect
     // loses the first part of the HRV chart.
     rrIntervals=[];baselinesamples=0;bleFirstRrTime=0;rrRejectStreak=0;
-    if (!(sessionLog && sessionLog.started)) { rmssdHistory=[]; rmssdTimes=[]; breathHistory=[]; apneaCueHistory=[]; }
+    if (!(sessionLog && sessionLog.started)) { rmssdHistory=[]; rmssdTimes=[]; breathHistory=[]; apneaCueHistory=[]; microCueHistory=[]; }
     // Restore saved profile baseline instead of wiping it
     if(currentProfile && currentProfile.rmssdBaseline){
       rmssdBaseline = currentProfile.rmssdBaseline;
@@ -9320,6 +9441,15 @@ function startSessionLog() {
   sessionBreathingInterventions = 0;
   lastCueAt = 0;
   activeCue = null;
+  // Reset stress accumulators — pre-session warmup shouldn't trigger an immediate
+  // intervention at session_start. Field-confirmed 2026-04-24 (Brandon's session
+  // logged stressCount=44 at 1.5m, just under the threshold of 45 → auto_calm
+  // fired in the first 90s without any sustained in-session stress).
+  stressCount = 0;
+  recoveryCount = 0;
+  sessionStressTicks = 0;
+  chronicStressBackoffLogged = false;
+  Breaks.lastDismissedAt = 0;
 }
 
 function logIntervention() {
@@ -9394,6 +9524,8 @@ function formatDuration(sec) {
 
 // ---- STRESS INTERVENTION SYSTEM ----
 let stressCount = 0;           // consecutive stress readings
+let sessionStressTicks = 0;    // cumulative ticks (~seconds) spent in stress this session — drives chronic-stress backoff
+let chronicStressBackoffLogged = false; // log once per session when chronic-stress mode kicks in
 let inBreathingMode = false;   // currently in guided breathing
 let breathingInterval = null;
 let breathPhase = 0;           // 0=inhale, 1=hold, 2=exhale
@@ -9433,6 +9565,8 @@ const Breaks = {
   suggestionShown: false,
   suggestionUrgent: false,
   reminderTimer: null,
+  lastDismissedAt: 0,       // post-dismiss cooldown so suggest() doesn't immediately re-fire
+  DISMISS_COOLDOWN_MS: 5 * 60 * 1000,
   liveInterval: null,
   startHr: null,
   startRmssdVal: null,
@@ -9450,6 +9584,9 @@ const Breaks = {
   // ------------------------------------------------------------
   suggest(urgent) {
     if(Breaks.inMode || inBreathingMode || shamanicMode || jhanaMode || bedtimeMode) return;
+    // Post-dismiss cooldown — if user just said "not now", don't re-pester for a few minutes
+    // unless we've crossed into urgent territory (which is its own escalation).
+    if (!urgent && Breaks.lastDismissedAt && Date.now() - Breaks.lastDismissedAt < Breaks.DISMISS_COOLDOWN_MS) return;
     logEvent('break_suggested', { urgent, fatigueScore: +Breaks.fatigueScore.toFixed(1) });
     Breaks.suggestionShown = true;
     Breaks.suggestionUrgent = urgent;
@@ -9473,12 +9610,14 @@ const Breaks = {
     flashTitle(urgent ? '⚠ Break — Attune' : '· Break check — Attune');
     speak(msg + '. Check the screen to choose from a few break options.');
 
-    // Auto-dismiss after 2 minutes and do breathing intervention instead
+    // Auto-dismiss after 2 minutes if user does nothing — just close the overlay.
+    // Previously this forced a breathing intervention, which is the opposite of what
+    // someone who's been ignoring the suggestion wants. (See Brandon, 2026-04-24.)
     if (Breaks.reminderTimer) clearTimeout(Breaks.reminderTimer);
     Breaks.reminderTimer = setTimeout(() => {
       Breaks.reminderTimer = null;
       if (!Breaks.suggestionShown) return;
-      Breaks.skipToBreathing();
+      Breaks.dismissSuggestion();
     }, 120000);
 
     // Show overlay
@@ -9564,37 +9703,34 @@ const Breaks = {
     typeRow.appendChild(untrackedLabel);
     typeRow.appendChild(untrackedRow);
 
-    const soldierBtn = document.createElement('button');
-    soldierBtn.className = 'ble-btn';
-    soldierBtn.style.cssText = 'font-size:13px;padding:8px 18px;color:#f88a8a;border-color:rgba(248,138,138,.2);margin-top:6px';
-    soldierBtn.textContent = 'Skip break — do breathing instead';
-    soldierBtn.onclick = () => Breaks.skipToBreathing();
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'ble-btn';
+    dismissBtn.style.cssText = 'font-size:13px;padding:8px 18px;color:#aaaacc;border-color:rgba(170,170,204,.2);margin-top:6px';
+    dismissBtn.textContent = 'Not now';
+    dismissBtn.onclick = () => Breaks.dismissSuggestion();
 
     btnRow.addEventListener('click', e => e.stopPropagation());
     btnRow.appendChild(takeBtn);
     btnRow.appendChild(orLabel);
     btnRow.appendChild(typeRow);
-    btnRow.appendChild(soldierBtn);
+    btnRow.appendChild(dismissBtn);
     $('calSkip').appendChild(btnRow);
   },
 
   // ------------------------------------------------------------
-  // skipToBreathing() — Skip break suggestion, do a breathing intervention
-  // instead. Called by the skip button or auto-dismiss after 2 minutes.
+  // dismissSuggestion() — close the break suggestion overlay without doing
+  // anything else. Sets a cooldown so suggest() won't re-pester immediately.
   // ------------------------------------------------------------
-  skipToBreathing() {
+  dismissSuggestion() {
     Breaks.suggestionShown = false;
     Breaks.suggestionUrgent = false;
+    Breaks.lastDismissedAt = Date.now();
     flashTitle(null);
     if (Breaks.reminderTimer) { clearTimeout(Breaks.reminderTimer); Breaks.reminderTimer = null; }
     $('calOverlay').classList.remove('active');
     $('calSkip').classList.remove('as-container');
     $('calSkip').innerHTML = '';
-    logEvent('break_skipped_to_breathing', { fatigueScore: +Breaks.fatigueScore.toFixed(1) });
-
-    // Do a breathing intervention instead
-    speak("Skipping break. Let's do some breathing.");
-    setTimeout(() => enterBreathingMode(), 1500);
+    logEvent('break_dismissed', { fatigueScore: +Breaks.fatigueScore.toFixed(1) });
   },
 
   // ------------------------------------------------------------
@@ -10865,7 +11001,10 @@ function exitBreathingMode() {
     if (avg > 10) {
       const refFloor = Math.max(longTermBaseline || 0, rmssdBaseline || 0);
       if (refFloor && avg < refFloor * 0.75) {
-        logEvent('today_baseline_reject_low', { source: 'post-intervention', candidate: +avg.toFixed(1), longTerm: longTermBaseline ? +longTermBaseline.toFixed(1) : null, calibration: rmssdBaseline ? +rmssdBaseline.toFixed(1) : null });
+        const calStored = (currentProfile && currentProfile.calibrationHistory && currentProfile.calibrationHistory.length)
+          ? currentProfile.calibrationHistory[currentProfile.calibrationHistory.length - 1].baseline
+          : null;
+        logEvent('today_baseline_reject_low', { source: 'post-intervention', candidate: +avg.toFixed(1), longTerm: longTermBaseline ? +longTermBaseline.toFixed(1) : null, rmssdBaseline: rmssdBaseline ? +rmssdBaseline.toFixed(1) : null, calibration: calStored ? +calStored.toFixed(1) : null });
       } else {
         todayBaseline = { rmssd: +avg.toFixed(1), source: 'post-intervention' };
         logEvent('today_baseline_update', { source: 'post-intervention', rmssd: +avg.toFixed(1) });
@@ -10959,6 +11098,7 @@ let breathConfidence = 0;    // 0..1
 let breathSource = null;     // 'rsa' | 'am' | null
 let breathHistory = [];      // {time, rate, confidence, source} samples (for viz + aggregates)
 let apneaCueHistory = [];    // {time, stage} markers for breath-hold cue annotations
+let microCueHistory = [];    // {time, type} markers for stress/nudge TTS cues on breath row
 let breathRecentEstimates = []; // rolling window of last few estimates for display smoothing
 let breathLastConfidentTick = 0; // wall-clock of last ≥0.15-confidence tick
 const BREATH_WIN_SEC = 30;
@@ -11199,6 +11339,14 @@ const APNEA_COLLAPSE_RATIO = 0.45; // current amp < this * baseline = collapse.
                                    // 0.5 over-fired on shallow-breathing
                                    // valleys; 0.4 under-fired on softer real
                                    // collapses. 0.45 splits the band.
+const APNEA_DEEP_COLLAPSE_RATIO = 0.30; // single-channel bypass for the AND
+                                        // rule when both RSA+AM are available
+                                        // (e.g. Polar H10). A channel going
+                                        // this low is strong enough on its
+                                        // own; don't let a borderline second
+                                        // channel veto it. Orthogonal to the
+                                        // SOFT_CUE_SEC threshold — sustained
+                                        // duration is still required to fire.
 const APNEA_SOFT_CUE_SEC = 6;      // sustained seconds before soft cue.
 const APNEA_FIRM_CUE_SEC = 14;     // sustained seconds before firm cue
 const APNEA_MIN_BASELINE_SAMPLES = 10; // need ~10s of confident data before firing
@@ -11402,14 +11550,42 @@ function updateApneaDetector() {
     }
   }
 
-  // Require ALL available streams to show collapse. With one stream (RSA only,
-  // no H10 ECG), it decides alone — but amplitude median over 40+ samples is
-  // already a high bar. With both streams, both must collapse — rules out
-  // single-signal artifact.
-  let available = 0, collapsed = 0;
-  if (rsaRatio != null) { available++; if (rsaRatio < APNEA_COLLAPSE_RATIO) collapsed++; }
-  if (amRatio  != null) { available++; if (amRatio  < APNEA_COLLAPSE_RATIO) collapsed++; }
-  const amplitudeCollapsed = available > 0 && collapsed === available;
+  // When both RSA and AM are available (H10), normally require both to show
+  // collapse — rules out single-signal artifact. BUT: a deep single-channel
+  // collapse (ratio < DEEP threshold) is strong evidence on its own and
+  // shouldn't be vetoed just because the other channel is borderline. This
+  // restores H9Z-like sensitivity while keeping the noise floor high.
+  let available = 0, collapsed = 0, anyDeep = false;
+  if (rsaRatio != null) {
+    available++;
+    if (rsaRatio < APNEA_COLLAPSE_RATIO) collapsed++;
+    if (rsaRatio < APNEA_DEEP_COLLAPSE_RATIO) anyDeep = true;
+  }
+  if (amRatio != null) {
+    available++;
+    if (amRatio < APNEA_COLLAPSE_RATIO) collapsed++;
+    if (amRatio < APNEA_DEEP_COLLAPSE_RATIO) anyDeep = true;
+  }
+  const amplitudeCollapsed = available > 0 && (collapsed === available || anyDeep);
+
+  // Breath-rate sanity guard: if the last 60s of confident breath estimates
+  // sit in a normal/slow band (4-16/min) and are stable, suppress cue firing
+  // — the user is breathing fine, not holding. The amplitude detector can
+  // still flag suspicions and build baseline, but we don't pester. Field-
+  // confirmed 2026-04-24 (Brandon): 11 apnea cues fired over 27min while
+  // median breath rate was 8.3/min — clearly artifact, not real holds.
+  let breathLooksFine = false;
+  {
+    const cutoff = now - 60000;
+    const recent = breathHistory.filter(b => b.time >= cutoff && b.confidence >= 0.4);
+    if (recent.length >= 4) {
+      const rates = recent.map(b => b.rate);
+      const mean = rates.reduce((a,b)=>a+b,0) / rates.length;
+      const variance = rates.reduce((a,r)=>a+(r-mean)*(r-mean),0) / rates.length;
+      const sd = Math.sqrt(variance);
+      if (mean >= 4 && mean <= 16 && sd <= 3) breathLooksFine = true;
+    }
+  }
 
   if (amplitudeCollapsed) {
     if (apneaState.holdStart === 0) {
@@ -11421,10 +11597,11 @@ function updateApneaDetector() {
         amRatio: amRatio != null ? +amRatio.toFixed(2) : null,
         hrDrift: hrDrift != null ? +hrDrift.toFixed(1) : null,
         cueGated,
+        breathLooksFine,
       });
     }
     const heldSec = (now - apneaState.holdStart) / 1000;
-    if (!cueGated) {
+    if (!cueGated && !breathLooksFine) {
       if (heldSec >= APNEA_SOFT_CUE_SEC && apneaState.softCueAt === 0) {
         fireApneaSoftCue();
         apneaState.softCueAt = now;
@@ -11794,6 +11971,7 @@ function handleHRM(ev){
             const baseline = fireTail.length ? fireTail.reduce((a,b)=>a+b,0) / fireTail.length : null;
             activeCue = { type, firedAt: now, rmssdAtFire: baseline };
             lastCueAt = now;
+            microCueHistory.push({ time: now, type });
             logEvent('micro_cue_fire', {
               type,
               rmssd: baseline != null ? +baseline.toFixed(1) : null,
@@ -11834,6 +12012,7 @@ function handleHRM(ev){
       const recoveryDayDefer = (longTermBaseline && sessionElapsedSec < 240 && longTermBaseline > rmssd * 1.8 && !wasHealthyThisSession);
       if(ratio<0.7 && !spikeActive){
         stressCount++;
+        sessionStressTicks++;
         recoveryCount=0;
         // Phase 1: Auto-switch to calm preset
         if(stressCount>=CALM_THRESHOLD && !inAutoCalmMode && !inBreathingMode && !Breaks.inMode && !meetingPaused && playing && !shamanicMode && !jhanaMode && !bedtimeMode && sessionWarmupOver && !recoveryDayDefer){
@@ -11871,6 +12050,7 @@ function handleHRM(ev){
             const nudgeTail = rmssdHistory.slice(-5);
             const nudgeBase = nudgeTail.length ? nudgeTail.reduce((a,b)=>a+b,0) / nudgeTail.length : null;
             activeCue = { type: 'nudge', firedAt: Date.now(), rmssdAtFire: nudgeBase };
+            microCueHistory.push({ time: Date.now(), type: 'nudge' });
             logEvent('micro_cue_fire', { type: 'nudge', rmssd: nudgeBase != null ? +nudgeBase.toFixed(1) : null });
           }
         }
@@ -11881,7 +12061,29 @@ function handleHRM(ev){
         // on a brand-new user whose personal patterns we haven't learned yet.
         const firstEverSession = currentProfile && (currentProfile.lifetime?.sessions || 0) === 0;
         const firstSessionGate = firstEverSession ? (rmssd < ABSOLUTE_STRESS_RMSSD) : true;
-        if(stressCount>=STRESS_THRESHOLD && bleDevice && playing && !inBreathingMode && !Breaks.inMode && !meetingPaused && !shamanicMode && !jhanaMode && !bedtimeMode && firstSessionGate && sessionWarmupOver && !recoveryDayDefer){
+        // Throttle: geometric backoff on stress threshold. Each additional
+        // intervention requires proportionally more sustained stress to
+        // trigger. Rationale (from session 2026-04-24T16-19-21 analysis):
+        // all 3 interventions genuinely helped (RMSSD rebound), so a flat
+        // spacing cap would have suppressed useful help. But subjectively
+        // the frequency felt bad, so make each successive one a higher bar.
+        //   1st: 45s stress     2nd: 90s     3rd: 135s     4th: 180s
+        const effStressThreshold = STRESS_THRESHOLD * (1 + sessionBreathingInterventions);
+        // Chronic-stress backoff: if the user has spent >5 min cumulative in stress
+        // this session AND we've already tried at least one breathing intervention,
+        // stop firing more. Continued robot-yelling at someone whose ANS is stuck
+        // low is counterproductive (Brandon, 2026-04-24: 8 interventions over 27min,
+        // none lifted baseline). The music's calm preset is still in effect — let
+        // it do the work without further interruption.
+        const chronicStress = sessionStressTicks > 300 && sessionBreathingInterventions >= 1;
+        if (chronicStress && !chronicStressBackoffLogged) {
+          logEvent('chronic_stress_backoff', {
+            sessionStressTicks, sessionBreathingInterventions,
+            rmssd: +rmssd.toFixed(1), ratio: +ratio.toFixed(2),
+          });
+          chronicStressBackoffLogged = true;
+        }
+        if(stressCount>=effStressThreshold && !chronicStress && bleDevice && playing && !inBreathingMode && !Breaks.inMode && !meetingPaused && !shamanicMode && !jhanaMode && !bedtimeMode && firstSessionGate && sessionWarmupOver && !recoveryDayDefer){
           enterBreathingMode();
           sessionBreathingInterventions++;
           Breaks.fatigueScore = Math.min(100, Breaks.fatigueScore + 15);
@@ -12896,6 +13098,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-23-2229<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-26-1125<!--/VERSION--></div>
 </body>
 </html>
