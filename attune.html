@@ -677,6 +677,9 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 </div>
 
 <button class="main-btn" id="playBtn"><span id="playLabel">START</span><div class="pulse-ring"></div></button>
+<div class="toggle-row" style="justify-content:center;margin:-6px 0 10px">
+<input type="checkbox" id="muteVoice"><label for="muteVoice" title="Music only. No voice, no chimes, no breathing interventions, no break suggestions. Just adaptive music and HRV recording.">Music only</label>
+</div>
 <div id="breakWrap" style="text-align:center;margin:4px 0 10px;display:none;position:relative">
 <button class="song-rate-btn dislike" id="dislikeBtn" title="Dislike this song">&#x1F44E;</button>
 <button class="ble-btn" id="prevSongBtn" style="font-size:17px;padding:12px 16px;margin-right:4px" title="Go back to the previous song">⏮</button>
@@ -778,9 +781,6 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 </div>
 <div class="toggle-row">
 <input type="checkbox" id="breathCue"><label for="breathCue">Breath guide (6/min)</label>
-</div>
-<div class="toggle-row">
-<input type="checkbox" id="muteVoice"><label for="muteVoice" title="Music only. No voice, no chimes, no breathing interventions, no break suggestions. Just adaptive music and HRV recording.">Music only</label>
 </div>
 </div>
 </div>
@@ -13121,6 +13121,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-27-0851<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-27-0856<!--/VERSION--></div>
 </body>
 </html>
