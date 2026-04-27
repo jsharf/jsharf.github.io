@@ -9567,6 +9567,8 @@ const Breaks = {
   reminderTimer: null,
   lastDismissedAt: 0,       // post-dismiss cooldown so suggest() doesn't immediately re-fire
   DISMISS_COOLDOWN_MS: 5 * 60 * 1000,
+  URGENT_DISMISS_COOLDOWN_MS: 2 * 60 * 1000,
+  DISMISS_FATIGUE_DROP: 25,  // pts dropped from fatigueScore on dismiss — pushes user out of urgent territory so the cooldown holds
   liveInterval: null,
   startHr: null,
   startRmssdVal: null,
@@ -9584,9 +9586,14 @@ const Breaks = {
   // ------------------------------------------------------------
   suggest(urgent) {
     if(Breaks.inMode || inBreathingMode || shamanicMode || jhanaMode || bedtimeMode) return;
-    // Post-dismiss cooldown — if user just said "not now", don't re-pester for a few minutes
-    // unless we've crossed into urgent territory (which is its own escalation).
-    if (!urgent && Breaks.lastDismissedAt && Date.now() - Breaks.lastDismissedAt < Breaks.DISMISS_COOLDOWN_MS) return;
+    // Post-dismiss cooldown — if user just said "not now", don't re-pester. Urgent
+    // gets a shorter cooldown than gentle but still a cooldown — without one,
+    // dismissing at fatigue≥85 instantly re-fires the same overlay (infinite loop).
+    if (Breaks.lastDismissedAt) {
+      const elapsed = Date.now() - Breaks.lastDismissedAt;
+      const cooldown = urgent ? Breaks.URGENT_DISMISS_COOLDOWN_MS : Breaks.DISMISS_COOLDOWN_MS;
+      if (elapsed < cooldown) return;
+    }
     logEvent('break_suggested', { urgent, fatigueScore: +Breaks.fatigueScore.toFixed(1) });
     Breaks.suggestionShown = true;
     Breaks.suggestionUrgent = urgent;
@@ -9730,7 +9737,16 @@ const Breaks = {
     $('calOverlay').classList.remove('active');
     $('calSkip').classList.remove('as-container');
     $('calSkip').innerHTML = '';
-    logEvent('break_dismissed', { fatigueScore: +Breaks.fatigueScore.toFixed(1) });
+    const fatigueBefore = Breaks.fatigueScore;
+    // Drop fatigue on dismiss — without this, an urgent-threshold (≥85) dismiss
+    // would immediately re-fire on the next tick because suggestionShown=false
+    // but fatigueScore is still ≥85. Cooldown alone doesn't help because urgent
+    // checks bypass even short cooldowns when truly chronic.
+    Breaks.fatigueScore = Math.max(0, Breaks.fatigueScore - Breaks.DISMISS_FATIGUE_DROP);
+    logEvent('break_dismissed', {
+      fatigueBefore: +fatigueBefore.toFixed(1),
+      fatigueAfter: +Breaks.fatigueScore.toFixed(1),
+    });
   },
 
   // ------------------------------------------------------------
@@ -13098,6 +13114,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-26-1125<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-27-0840<!--/VERSION--></div>
 </body>
 </html>
