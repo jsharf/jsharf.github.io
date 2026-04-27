@@ -79,6 +79,16 @@ input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 2px 12px rgba(138,180
 .toggle-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .toggle-row input[type=checkbox]{accent-color:#8ab4f8;width:18px;height:18px}
 .toggle-row label{font-size:16px;color:#9999bb;cursor:pointer}
+.ios-switch{appearance:none;-webkit-appearance:none;position:relative;width:44px;height:26px;border-radius:13px;background:rgba(60,60,90,.5);border:1px solid rgba(100,100,150,.3);cursor:pointer;transition:background .25s,border-color .25s;flex-shrink:0;margin:0}
+.ios-switch::before{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#ddd;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .25s,background .25s}
+.ios-switch:checked{background:rgba(138,180,248,.55);border-color:rgba(138,180,248,.5)}
+.ios-switch:checked::before{transform:translateX(18px);background:#8ab4f8}
+.ios-switch:hover{border-color:rgba(138,180,248,.45)}
+.toggle-row input.ios-switch{width:44px;height:26px}
+[data-theme="light"] .ios-switch{background:rgba(0,0,0,.12);border-color:rgba(0,0,0,.08)}
+[data-theme="light"] .ios-switch::before{background:#fff}
+[data-theme="light"] .ios-switch:checked{background:rgba(var(--accent-rgb),.45);border-color:rgba(var(--accent-rgb),.5)}
+[data-theme="light"] .ios-switch:checked::before{background:var(--accent)}
 .hrv-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .ble-btn{font-size:16px;padding:10px 20px;border-radius:12px;border:1px solid rgba(60,60,90,.3);background:rgba(20,20,40,.4);color:#8888bb;cursor:pointer;transition:all .25s;backdrop-filter:blur(8px)}
 .ble-btn:hover{border-color:#4a4a6a;color:#aaaadd;background:rgba(30,30,50,.5);box-shadow:0 2px 12px rgba(0,0,0,.15)}
@@ -678,7 +688,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 
 <button class="main-btn" id="playBtn"><span id="playLabel">START</span><div class="pulse-ring"></div></button>
 <div class="toggle-row" style="justify-content:center;margin:-6px 0 10px">
-<input type="checkbox" id="muteVoice"><label for="muteVoice" title="Music only. No voice, no chimes, no breathing interventions, no break suggestions. Just adaptive music and HRV recording.">Music only</label>
+<input type="checkbox" id="muteVoice" class="ios-switch"><label for="muteVoice" title="Music only. No voice, no chimes, no breathing interventions, no break suggestions. Just adaptive music and HRV recording.">Music only</label>
 </div>
 <div id="breakWrap" style="text-align:center;margin:4px 0 10px;display:none;position:relative">
 <button class="song-rate-btn dislike" id="dislikeBtn" title="Dislike this song">&#x1F44E;</button>
@@ -13121,6 +13131,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-27-0856<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-27-0902<!--/VERSION--></div>
 </body>
 </html>
