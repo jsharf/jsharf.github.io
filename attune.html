@@ -780,7 +780,7 @@ h1{font-weight:300;letter-spacing:.18em;margin-bottom:20px}
 <input type="checkbox" id="breathCue"><label for="breathCue">Breath guide (6/min)</label>
 </div>
 <div class="toggle-row">
-<input type="checkbox" id="muteVoice"><label for="muteVoice" title="Disable all voice cues. Music and breath guide still work.">Music only (no voice)</label>
+<input type="checkbox" id="muteVoice"><label for="muteVoice" title="Music only. No voice, no chimes, no breathing interventions, no break suggestions. Just adaptive music and HRV recording.">Music only</label>
 </div>
 </div>
 </div>
@@ -9586,6 +9586,7 @@ const Breaks = {
   // ------------------------------------------------------------
   suggest(urgent) {
     if(Breaks.inMode || inBreathingMode || shamanicMode || jhanaMode || bedtimeMode) return;
+    if (voiceMuted) return; // Music-only mode: no break suggestions
     // Post-dismiss cooldown — if user just said "not now", don't re-pester. Urgent
     // gets a shorter cooldown than gentle but still a cooldown — without one,
     // dismissing at fatigue≥85 instantly re-fires the same overlay (infinite loop).
@@ -10881,6 +10882,7 @@ function flashTitle(alert) {
 
 function enterBreathingMode() {
   if (inBreathingMode || !ac || Breaks.inMode) return;
+  if (voiceMuted) return; // Music-only mode: no interventions of any kind
   inBreathingMode = true;
   playAttentionChime();
   flashTitle('⚠ Breathe — Attune');
@@ -11492,6 +11494,7 @@ function apneaCurrentHr() {
 }
 
 function fireApneaSoftCue() {
+  if (voiceMuted) return;
   playAttentionChime('breathSoft');
   const phrasings = ['Breathe.', 'Take a breath.', 'Gentle breath.'];
   speak(phrasings[Math.floor(Math.random() * phrasings.length)]);
@@ -11500,6 +11503,7 @@ function fireApneaSoftCue() {
 }
 
 function fireApneaFirmCue() {
+  if (voiceMuted) return;
   playAttentionChime('breathFirm');
   speak("Take a full breath — in through your nose, out through your mouth.");
   apneaCueHistory.push({ time: Date.now(), stage: 'firm' });
@@ -11507,6 +11511,7 @@ function fireApneaFirmCue() {
 }
 
 function fireShallowBreathCue() {
+  if (voiceMuted) return;
   playAttentionChime('breathShallow');
   const phrasings = ['Deepen your breath.', 'Fuller breath.', 'Breathe into your belly.'];
   speak(phrasings[Math.floor(Math.random() * phrasings.length)]);
@@ -11967,7 +11972,7 @@ function handleHRM(ev){
           if(!Breaks.suggestionShown || !Breaks.suggestionUrgent) Breaks.suggest(true);
         } else if(Breaks.fatigueScore >= Breaks.SUGGEST_THRESHOLD && !Breaks.suggestionShown) {
           Breaks.suggest(false);
-        } else if (!activeCue) {
+        } else if (!activeCue && !voiceMuted) {
           // Mid-range fatigue: maybe fire a low-friction voice cue (sigh / hum).
           const now = Date.now();
           const elapsedSession = sessionLog.started ? now - sessionLog.started : 0;
@@ -12030,7 +12035,9 @@ function handleHRM(ev){
         stressCount++;
         sessionStressTicks++;
         recoveryCount=0;
-        // Phase 1: Auto-switch to calm preset
+        // Phase 1: Auto-switch to calm preset. Stays active in music-only mode —
+        // it's a silent music shift responding to HRV, not a verbal intervention,
+        // and counts as "dynamic music" rather than something talking back.
         if(stressCount>=CALM_THRESHOLD && !inAutoCalmMode && !inBreathingMode && !Breaks.inMode && !meetingPaused && playing && !shamanicMode && !jhanaMode && !bedtimeMode && sessionWarmupOver && !recoveryDayDefer){
           inAutoCalmMode = true;
           logEvent('auto_calm_start', { rmssd: rmssd, ratio: +ratio.toFixed(2), stressCount, previousPreset: preBreathingPreset });
@@ -13114,6 +13121,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-27-0840<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-27-0851<!--/VERSION--></div>
 </body>
 </html>
