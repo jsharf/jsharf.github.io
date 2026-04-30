@@ -7903,11 +7903,14 @@ function vizBaselineColor(alpha){
 }
 function drawViz(ts){
   const now0 = ts || performance.now();
-  requestAnimationFrame(drawViz);
-  // HRV chart data updates ~1/s (one per heartbeat). Rendering at 60fps is 60x
-  // overkill. Throttle to ~3fps. Also: only resize the canvas when dimensions
-  // actually changed — canvas.width reallocates the backing store.
-  if (now0 - _drawVizLast < 330) return;
+  // RAF kept the renderer hot at 60Hz even when we were just early-returning
+  // — measurable battery drain when the tab sat open between sessions. Switch
+  // to setTimeout: browsers throttle it aggressively when the tab is hidden,
+  // and we never wake more often than we actually paint. Slow to 2s when
+  // truly idle (not playing AND no BLE data in the last 10s).
+  const idle = !playing && (Date.now() - lastBleDataTs > 10000);
+  setTimeout(drawViz, idle ? 2000 : 333);
+  if (now0 - _drawVizLast < 320) return;
   _drawVizLast = now0;
   const cv=$('hrvViz'),c=cv.getContext('2d'),dpr=window.devicePixelRatio||1;
   const cw=cv.clientWidth, ch=cv.clientHeight;
@@ -8961,6 +8964,7 @@ let bleFirstRrTime = 0;
 let rrRejectStreak = 0;
 const HRV_WARMUP_MS = 15000;
 let hrHistory=[];       // {time, hr} — heart rate over time
+let lastBleDataTs=0;    // when we last received HR/RR — gates viz idle backoff
 let fatigueHistory=[];  // {time, score} — fatigue score over time
 let breakPeriods=[];    // {start, end} — for highlighting on timeline
 
@@ -11778,6 +11782,7 @@ function handleHRM(ev){
     }
   }}
   $('hrVal').textContent=hr;
+  lastBleDataTs=Date.now();
   hrHistory.push({time:Date.now(),hr});
   // 7200 samples ≈ 2 hours at 1 sample/sec. The old cap of 600 (~10 min) was
   // truncating most of a session's HR data from the export — a long session
@@ -13131,6 +13136,6 @@ if(navigator.mediaDevices){
 updateUI();
 drawViz(); // start chart loop immediately
 </script>
-<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-27-0902<!--/VERSION--></div>
+<div id="versionTag" title="Build version" style="position:fixed;bottom:4px;right:6px;font-size:9px;color:rgba(160,160,200,.28);font-family:ui-monospace,Menlo,Monaco,monospace;z-index:1;letter-spacing:.05em;transition:color .3s" onmouseover="this.style.color='rgba(200,200,230,.65)'" onmouseout="this.style.color='rgba(160,160,200,.28)'"><!--VERSION-->v-2026-04-30-1508<!--/VERSION--></div>
 </body>
 </html>
