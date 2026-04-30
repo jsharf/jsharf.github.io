@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>11 U.S.C. § 507 Priority Checker</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #5a5a5a;
+    --rule: #d8d4cc;
+    --paper: #faf8f4;
+    --accent: #8a3a2e;
+    --ok-bg: #eaf3e9;
+    --ok-fg: #2a5e2a;
+    --no-bg: #f5e8e6;
+    --no-fg: #7a2a22;
+    --warn-bg: #fbf3df;
+    --warn-fg: #6a5520;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    line-height: 1.5;
+    padding: 2rem 1rem 4rem;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; letter-spacing: .01em; }
+  .sub { color: var(--muted); font-size: .95rem; font-style: italic; }
+  .disclaim {
+    background: #fff8e1;
+    border-left: 3px solid #b08a1e;
+    padding: .6rem .9rem;
+    margin: 1rem 0 1.5rem;
+    font-size: .85rem;
+    color: #4a3a10;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  fieldset {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1rem 1.2rem 1.2rem;
+    margin: 0 0 1.25rem;
+    background: #fff;
+  }
+  legend {
+    padding: 0 .5rem;
+    font-weight: 600;
+    font-size: .95rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  label { display: block; font-size: .9rem; margin: .65rem 0 .2rem; font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 500; }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .row > div { flex: 1 1 200px; }
+  input[type="date"], input[type="number"], input[type="text"], select {
+    width: 100%;
+    padding: .45rem .55rem;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    font-size: .95rem;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    background: #fff;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .help { font-size: .8rem; color: var(--muted); margin-top: .2rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  button {
+    background: var(--ink);
+    color: var(--paper);
+    border: 0;
+    padding: .7rem 1.4rem;
+    font-size: 1rem;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer;
+    border-radius: 3px;
+    letter-spacing: .03em;
+  }
+  button:hover { background: var(--accent); }
+  .conditional { display: none; }
+  .conditional.show { display: block; }
+  .check-row { font-family: ui-sans-serif, system-ui, sans-serif; font-size: .9rem; margin: .4rem 0; }
+  .check-row input { margin-right: .4rem; }
+  #result {
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.4rem;
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    display: none;
+  }
+  #result.show { display: block; }
+  #result.priority { background: var(--ok-bg); border-color: #b9d3b6; }
+  #result.no-priority { background: var(--no-bg); border-color: #d9b6b1; }
+  #result.partial { background: var(--warn-bg); border-color: #d9c890; }
+  .verdict { font-size: 1.15rem; font-weight: 700; margin: 0 0 .5rem; font-family: ui-sans-serif, system-ui, sans-serif; }
+  .priority .verdict { color: var(--ok-fg); }
+  .no-priority .verdict { color: var(--no-fg); }
+  .partial .verdict { color: var(--warn-fg); }
+  .reasoning { font-family: ui-sans-serif, system-ui, sans-serif; font-size: .9rem; }
+  .reasoning ul { padding-left: 1.2rem; margin: .4rem 0; }
+  .citation { color: var(--muted); font-size: .85rem; margin-top: .75rem; font-style: italic; }
+  footer { text-align: center; margin-top: 2.5rem; font-size: .8rem; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; }
+  .notes {
+    background: #f6f1e8;
+    border-left: 3px solid #b08a1e;
+    padding: .55rem .8rem;
+    margin: .9rem 0 0;
+    font-size: .82rem;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    color: #3a3220;
+    border-radius: 0 3px 3px 0;
+    line-height: 1.45;
+  }
+  .notes h4 { margin: 0 0 .25rem; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: #6a5520; font-weight: 600; }
+  .notes ul { margin: .25rem 0; padding-left: 1.1rem; }
+  .notes li { margin: .15rem 0; }
+  .notes em.case { font-style: italic; }
+  .notes a { color: var(--accent); text-decoration: underline; text-decoration-color: rgba(138,58,46,.4); }
+  .notes a:hover { text-decoration-color: var(--accent); }
+  .caveats {
+    margin-top: .9rem;
+    padding-top: .7rem;
+    border-top: 1px dashed rgba(0,0,0,.2);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: .85rem;
+  }
+  .caveats h4 { margin: 0 0 .35rem; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); font-weight: 600; }
+  .caveats ul { margin: 0; padding-left: 1.2rem; }
+  .caveats li { margin: .25rem 0; }
+  .caveats em.case { font-style: italic; }
+  .caveats a { color: var(--accent); }
+  .refs {
+    margin-top: 2rem;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: .82rem;
+    color: #3a3a3a;
+  }
+  .refs h3 { font-family: ui-serif, Georgia, serif; color: var(--ink); font-size: 1.05rem; margin: 0 0 .6rem; }
+  .refs ul { padding-left: 1.2rem; margin: .25rem 0; }
+  .refs li { margin: .25rem 0; }
+  .refs em { font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>11 U.S.C. § 507 — Priority Checker</h1>
+  <div class="sub">Determine whether a claim or expense has priority status under the Bankruptcy Code.</div>
+</header>
+
+<div class="disclaim">
+  <strong>Not legal advice. We are not lawyers.</strong> This is a good-faith attempt to implement the text of 11 U.S.C. § 507 as a rules engine, with disambiguating questions and case-law caveats surfaced where leading decisions control the outcome. It does <em>not</em> exhaustively model every circuit split, it doesn't apply equitable doctrines beyond the explicit § 507(a)(8) tolling, and it treats user check-boxes as ground truth rather than evaluating the underlying facts. Dollar caps reflect the April 1, 2025 adjustments. Verify everything against the current statute, current case law in your jurisdiction, and any subsequent triennial adjustments before relying on any output.
+</div>
+
+<form id="form">
+
+<fieldset>
+  <legend>Case Information</legend>
+  <div class="row">
+    <div>
+      <label for="petitionDate">Date petition filed</label>
+      <input type="date" id="petitionDate" required />
+    </div>
+    <div>
+      <label for="cessationDate">Date business operations ceased <span style="font-weight:400;color:var(--muted)">(if before petition)</span></label>
+      <input type="date" id="cessationDate" />
+      <div class="help">Leave blank if business did not cease before filing.</div>
+    </div>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Claim Type</legend>
+  <label for="claimType">What kind of claim is this?</label>
+  <select id="claimType" required>
+    <option value="">— Select —</option>
+    <option value="dso">Domestic support obligation (alimony, child support, etc.)</option>
+    <option value="admin">Administrative expense of the estate (post-petition)</option>
+    <option value="gap">Gap claim (involuntary case, between petition and order for relief)</option>
+    <option value="wages">Employee wages, salary, commissions, vacation/severance/sick leave</option>
+    <option value="benefits">Contributions to an employee benefit plan</option>
+    <option value="grain">Grain producer or U.S. fisherman claim against storage/processing facility</option>
+    <option value="deposit">Consumer deposit for undelivered goods or services</option>
+    <option value="tax">Governmental tax claim (income, property, employment, excise, customs)</option>
+    <option value="fdic">FDIC / federal depository regulator capital-maintenance commitment</option>
+    <option value="dui">Death or personal injury from intoxicated operation of vehicle/vessel</option>
+    <option value="other">None of the above (general unsecured)</option>
+  </select>
+</fieldset>
+
+<!-- Conditional sections per claim type -->
+
+<fieldset id="sec-dso" class="conditional">
+  <legend>Domestic Support Details</legend>
+  <label class="check-row"><input type="radio" name="dsoHolder" value="direct" checked /> Owed to or recoverable by the spouse, former spouse, child, child's parent/guardian, or governmental unit on the child's behalf</label>
+  <label class="check-row"><input type="radio" name="dsoHolder" value="assigned" /> Assigned to a governmental unit (other than voluntary assignment for collection)</label>
+
+  <label style="margin-top:1rem">Function-not-form factors (check those that apply):</label>
+  <label class="check-row"><input type="checkbox" id="dsoTerminates" /> Obligation terminates on death or remarriage of the recipient</label>
+  <label class="check-row"><input type="checkbox" id="dsoPeriodic" /> Paid periodically (rather than as a single lump sum)</label>
+  <label class="check-row"><input type="checkbox" id="dsoEqualizes" /> Designed to equalize income disparity / address recipient's need for support</label>
+  <label class="check-row"><input type="checkbox" id="dsoCustodial" /> Recipient is a custodial parent of minor children</label>
+  <label class="check-row"><input type="checkbox" id="dsoPropertyDivision" /> Tied to division of marital property (e.g., to compensate for unequal asset split)</label>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    Courts apply a <strong>function-not-form</strong> test: a debt's label ("alimony," "support," "property settlement") is not controlling. They look at the parties' intent, the structure of the obligation, and whether it actually serves a support function. Periodic payments that terminate on death/remarriage and address need usually qualify; lump-sum equalization payments tied to property typically do not. Property settlements get no priority and are nondischargeable in chapter 7 only via § 523(a)(15).
+    <ul>
+      <li><em class="case">In re Sampson</em>, 997 F.2d 717 (10th Cir. 1993) — three-factor test (intent, function, surrounding circumstances).</li>
+      <li><em class="case">In re Brody</em>, 3 F.3d 35 (2d Cir. 1993) — periodic payments terminating on death = support.</li>
+      <li><em class="case">In re Werthen</em>, 329 F.3d 269 (1st Cir. 2003) — even a lump sum can be support if structured to address need.</li>
+    </ul>
+  </div>
+</fieldset>
+
+<fieldset id="sec-admin" class="conditional">
+  <legend>Administrative Expense Details</legend>
+  <label class="check-row"><input type="checkbox" id="adminPostPetition" checked /> Expense was incurred after the petition was filed (or is otherwise allowable under § 503(b))</label>
+  <label class="check-row"><input type="checkbox" id="adminPreserve" checked /> Actual and necessary cost of preserving the estate</label>
+
+  <label style="margin-top:1rem">Underlying transaction or service occurred:</label>
+  <label class="check-row"><input type="radio" name="adminTransaction" value="post" checked /> Entirely post-petition</label>
+  <label class="check-row"><input type="radio" name="adminTransaction" value="pre" /> Entirely pre-petition (delivered before filing)</label>
+  <label class="check-row"><input type="radio" name="adminTransaction" value="both" /> Straddles the petition date</label>
+
+  <label class="check-row"><input type="checkbox" id="adminBenefit" checked /> The estate received an actual benefit (not merely a potential one)</label>
+  <label class="check-row"><input type="checkbox" id="adminTort" /> Claim is a tort liability arising from the trustee/DIP's post-petition operations</label>
+  <label class="check-row"><input type="checkbox" id="adminSubstantial" /> Creditor "substantial contribution" claim in a chapter 9/11 case (§ 503(b)(3)(D))</label>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    "Actual and necessary" under § 503(b)(1)(A) is a heavily litigated standard. The leading rule (<em class="case">Jartran</em>) requires that (i) the consideration arose from a transaction with the debtor-in-possession (i.e., post-petition), and (ii) it directly benefited the estate. Pre-petition obligations don't qualify even if they're paid post-petition. The <em class="case">Reading</em> exception covers post-petition torts.
+    <ul>
+      <li><em class="case">In re Jartran, Inc.</em>, 732 F.2d 584 (7th Cir. 1984) — two-prong post-petition transaction test.</li>
+      <li><a href="https://supreme.justia.com/cases/federal/us/391/471/" target="_blank" rel="noopener"><em class="case">Reading Co. v. Brown</em>, 391 U.S. 471 (1968)</a> — post-petition tort claims get admin priority.</li>
+      <li><em class="case">In re DAK Industries</em>, 66 F.3d 1091 (9th Cir. 1995) — economic-realities test for whether contract is true-lease vs. sale.</li>
+    </ul>
+  </div>
+</fieldset>
+
+<fieldset id="sec-gap" class="conditional">
+  <legend>Gap Claim Details</legend>
+  <div class="row">
+    <div>
+      <label for="gapClaimDate">Date claim arose</label>
+      <input type="date" id="gapClaimDate" />
+    </div>
+    <div>
+      <label for="orderReliefDate">Date of order for relief</label>
+      <input type="date" id="orderReliefDate" />
+    </div>
+  </div>
+  <label class="check-row"><input type="checkbox" id="gapInvoluntary" /> Case is an involuntary case</label>
+  <label class="check-row"><input type="checkbox" id="gapOrdinary" /> Claim arose in the ordinary course of the debtor's business or financial affairs</label>
+
+  <label style="margin-top:1rem">"Ordinary course" two-prong test:</label>
+  <label class="check-row"><input type="checkbox" id="gapVertical" /> <strong>Vertical:</strong> consistent with the debtor's own pre-petition practices</label>
+  <label class="check-row"><input type="checkbox" id="gapHorizontal" /> <strong>Horizontal:</strong> consistent with industry-wide norms for similar businesses</label>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    "Ordinary course" requires <em>both</em> dimensions: a transaction matching the debtor's historical practice (vertical) <em>and</em> typical of the broader industry (horizontal). Routine vendor payments usually qualify; one-off financings, asset sales, or insider transfers usually don't.
+    <ul>
+      <li><em class="case">In re Roth American, Inc.</em>, 975 F.2d 949 (3d Cir. 1992) — articulates the horizontal/vertical framework.</li>
+      <li><em class="case">In re Dant & Russell, Inc.</em>, 853 F.2d 700 (9th Cir. 1988) — applies the test to lease assumption.</li>
+    </ul>
+  </div>
+</fieldset>
+
+<fieldset id="sec-wages" class="conditional">
+  <legend>Wage Claim Details</legend>
+  <div class="row">
+    <div>
+      <label for="wageEarnedDate">Date wages were earned (latest service date covered by claim)</label>
+      <input type="date" id="wageEarnedDate" />
+    </div>
+    <div>
+      <label for="wageAmount">Amount claimed by this individual ($)</label>
+      <input type="number" id="wageAmount" min="0" step="0.01" />
+    </div>
+  </div>
+  <div class="help">Cap is $17,150 per individual. Only wages earned within 180 days before the petition date OR before business operations ceased (whichever is earlier) qualify.</div>
+
+  <label style="margin-top:1rem">Nature of the claim:</label>
+  <label class="check-row"><input type="checkbox" id="wageSeverance" /> Claim includes severance pay</label>
+  <label class="check-row"><input type="checkbox" id="wageBonus" /> Claim includes a bonus earned over a longer period</label>
+  <label class="check-row"><input type="checkbox" id="wageMultiple" /> Same individual is asserting other § 507(a)(4) claims (e.g., as both employee and officer)</label>
+  <label class="check-row"><input type="checkbox" id="wageContractor" /> Claimant may have been an independent contractor rather than an employee</label>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    <ul>
+      <li><strong>"Earned" ≠ paid.</strong> Wages are earned when services are rendered. The 180-day window is measured against the rendering date, not the pay date.</li>
+      <li><strong>Severance:</strong> circuits split. Some allocate the entire severance amount to the date of termination (likely in-window if termination is recent); others pro-rate over the entire employment period (often pushing most of it out of the window). <em class="case">In re Roth American</em>, 975 F.2d 949 (3d Cir. 1992) — pro-rata allocation. Compare <em class="case">In re Public Ledger</em>, 161 F.2d 762 (3d Cir. 1947) — earned at termination.</li>
+      <li><strong>Bonuses</strong> are typically pro-rated over the period earned.</li>
+      <li><strong>$17,150 cap is per individual, not per claim.</strong> Aggregate the wage and benefit claims across all capacities.</li>
+      <li><strong>Independent contractors</strong> are not "employees" under § 507(a)(4); their claims are general unsecured. Apply the relevant circuit's economic-reality / common-law test.</li>
+    </ul>
+  </div>
+</fieldset>
+
+<fieldset id="sec-benefits" class="conditional">
+  <legend>Employee Benefit Plan Details</legend>
+  <div class="row">
+    <div>
+      <label for="benefitServiceDate">Date services rendered (latest)</label>
+      <input type="date" id="benefitServiceDate" />
+    </div>
+    <div>
+      <label for="benefitEmployees">Number of employees covered by the plan</label>
+      <input type="number" id="benefitEmployees" min="0" step="1" />
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label for="benefitAmount">Total claim amount ($)</label>
+      <input type="number" id="benefitAmount" min="0" step="0.01" />
+    </div>
+    <div>
+      <label for="benefitFourthPaid">Amount already paid to these employees as 4th-priority wages ($)</label>
+      <input type="number" id="benefitFourthPaid" min="0" step="0.01" value="0" />
+    </div>
+  </div>
+  <div class="help">Cap = ($17,150 × covered employees) − 4th-priority wage payments to those employees − any payments made by the estate on their behalf to other plans.</div>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    The Supreme Court in <a href="https://supreme.justia.com/cases/federal/us/486/825/" target="_blank" rel="noopener"><em class="case">Howard Delivery Service v. Zurich American Ins. Co.</em>, 547 U.S. 651 (2006)</a> read § 507(a)(5) narrowly: workers' compensation insurance premiums do <em>not</em> qualify as a "contribution to an employee benefit plan." The priority is meant for traditional fringe benefits (health, pension, vacation), not insurance the employer carries for its own protection. ERISA-plan claims are common; non-ERISA arrangements are scrutinized closely.
+  </div>
+</fieldset>
+
+<fieldset id="sec-grain" class="conditional">
+  <legend>Grain / Fisherman Details</legend>
+  <label class="check-row"><input type="radio" name="grainKind" value="grain" checked /> Grain producer with grain (or proceeds) held by a debtor operating a grain storage facility</label>
+  <label class="check-row"><input type="radio" name="grainKind" value="fish" /> U.S. fisherman with fish or fish produce held by a debtor operating a fish produce storage or processing facility</label>
+  <label for="grainAmount">Amount claimed by this individual ($)</label>
+  <input type="number" id="grainAmount" min="0" step="0.01" />
+  <div class="help">Cap is $8,450 per individual.</div>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    Defined terms: "grain storage facility" and "fish produce storage or processing facility" come from § 557(b). The producer/fisherman must have stored or delivered the goods to the debtor; pure cash claims for sale price typically don't qualify. This priority is rarely litigated but the statutory definitions are unforgiving.
+  </div>
+</fieldset>
+
+<fieldset id="sec-deposit" class="conditional">
+  <legend>Consumer Deposit Details</legend>
+  <label class="check-row"><input type="checkbox" id="depositConsumer" /> Deposit was made for purchase, lease, or rental of property — or purchase of services — for personal, family, or household use</label>
+  <label class="check-row"><input type="checkbox" id="depositUndelivered" /> Property/services were not delivered or provided</label>
+  <div class="row">
+    <div>
+      <label for="depositDate">Date deposit was made</label>
+      <input type="date" id="depositDate" />
+    </div>
+    <div>
+      <label for="depositAmount">Amount of deposit ($)</label>
+      <input type="number" id="depositAmount" min="0" step="0.01" />
+    </div>
+  </div>
+  <div class="help">Cap is $3,800 per individual. Deposit must have been made before the petition was filed.</div>
+
+  <label style="margin-top:1rem">Form of the deposit:</label>
+  <label class="check-row"><input type="radio" name="depositForm" value="cash" checked /> Cash, check, or wire (clearly a "deposit")</label>
+  <label class="check-row"><input type="radio" name="depositForm" value="credit" /> Paid by credit card</label>
+  <label class="check-row"><input type="radio" name="depositForm" value="giftcard" /> Held as a gift card or store credit</label>
+  <label class="check-row"><input type="radio" name="depositForm" value="layaway" /> Layaway / installment plan</label>
+  <label class="check-row"><input type="checkbox" id="depositIndividual" checked /> Claimant is an individual (not a business)</label>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    The priority is narrow — strictly construed in favor of the estate. Some courts treat gift-card balances and unfulfilled credit-card purchases as qualifying deposits; others don't. The "personal, family, or household" use test borrows from consumer-credit doctrine.
+    <ul>
+      <li><em class="case">In re WW Warehouse, Inc.</em>, 313 B.R. 588 (Bankr. D. Del. 2004) — gift cards as § 507(a)(7) deposits.</li>
+      <li>Compare with cases denying priority where the buyer charged the purchase but the issuer reversed the charge — the buyer is no longer "out" the funds.</li>
+    </ul>
+  </div>
+</fieldset>
+
+<fieldset id="sec-tax" class="conditional">
+  <legend>Tax Claim Details</legend>
+  <label for="taxKind">Type of tax</label>
+  <select id="taxKind">
+    <option value="">— Select —</option>
+    <option value="income">Income or gross receipts tax</option>
+    <option value="property">Property tax</option>
+    <option value="withholding">Tax required to be collected/withheld (trust-fund)</option>
+    <option value="employer">Employer's share of employment tax on wages</option>
+    <option value="excise">Excise tax</option>
+    <option value="customs">Customs duty</option>
+    <option value="penalty">Penalty related to a priority tax (compensation for actual pecuniary loss)</option>
+  </select>
+
+  <div id="tax-income-extra" class="conditional">
+    <div class="row">
+      <div>
+        <label for="taxReturnDue">Date the return was last due (incl. extensions)</label>
+        <input type="date" id="taxReturnDue" />
+      </div>
+      <div>
+        <label for="taxAssessedDate">Date tax was assessed (if applicable)</label>
+        <input type="date" id="taxAssessedDate" />
+      </div>
+    </div>
+    <div class="help">Income tax has priority if the return was due (with extensions) within 3 years before the petition, or assessed within 240 days before the petition, or assessable post-petition. The 3-year and 240-day windows are <em>tolled</em> by pending OICs and prior bankruptcy stays.</div>
+
+    <label class="check-row" style="margin-top:.6rem"><input type="radio" name="taxReturnFiled" value="filed" checked /> Return was filed</label>
+    <label class="check-row"><input type="radio" name="taxReturnFiled" value="late" /> Return was filed late (more than 2 years before petition)</label>
+    <label class="check-row"><input type="radio" name="taxReturnFiled" value="never" /> No return was ever filed (or substitute for return only)</label>
+
+    <label style="margin-top:.7rem">Hanging-paragraph tolling — pending Offer in Compromise:</label>
+    <div class="row">
+      <div>
+        <label for="oicStart">OIC pending from</label>
+        <input type="date" id="oicStart" />
+      </div>
+      <div>
+        <label for="oicEnd">OIC pending to</label>
+        <input type="date" id="oicEnd" />
+      </div>
+    </div>
+    <div class="help">Each window is extended by the duration of any OIC pending during the window plus 90 days.</div>
+
+    <label style="margin-top:.6rem">Tolling — prior bankruptcy with automatic stay:</label>
+    <div class="row">
+      <div>
+        <label for="priorBkStart">Prior case filed</label>
+        <input type="date" id="priorBkStart" />
+      </div>
+      <div>
+        <label for="priorBkEnd">Prior case stay lifted/closed</label>
+        <input type="date" id="priorBkEnd" />
+      </div>
+    </div>
+    <div class="help">Per <em class="case">Young v. United States</em>, 535 U.S. 43 (2002), and the § 507(a)(8) hanging paragraph, lookback periods are tolled during prior cases plus 90 days.</div>
+  </div>
+
+  <div id="tax-property-extra" class="conditional">
+    <label for="taxPropertyIncurred">Date the property tax was incurred</label>
+    <input type="date" id="taxPropertyIncurred" />
+    <div class="help">Property tax has priority if incurred before the petition and last payable without penalty within 1 year before the petition.</div>
+  </div>
+
+  <div id="tax-employer-extra" class="conditional">
+    <label for="taxEmployerWageDate">Date wages giving rise to the tax were paid (or earned)</label>
+    <input type="date" id="taxEmployerWageDate" />
+    <div class="help">Employer share has priority if the wages were earned within 3 years before the petition.</div>
+  </div>
+
+  <div id="tax-excise-extra" class="conditional">
+    <label for="taxExciseTransDate">Date of the transaction giving rise to the excise</label>
+    <input type="date" id="taxExciseTransDate" />
+    <div class="help">Excise has priority if the transaction occurred within 3 years before the petition (or the return, if required, was last due within that period).</div>
+  </div>
+
+  <div id="tax-customs-extra" class="conditional">
+    <label for="taxCustomsEntryDate">Date of merchandise entry</label>
+    <input type="date" id="taxCustomsEntryDate" />
+    <div class="help">Customs duty generally has priority if entered within 1 year before the petition (longer in certain circumstances).</div>
+  </div>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    <ul>
+      <li><strong>Tolling matters.</strong> The hanging paragraph at the end of § 507(a)(8) extends each lookback window by the duration of any pending OIC (+90 days) and any prior bankruptcy stay (+90 days). <a href="https://www.law.cornell.edu/supct/html/00-1567.ZS.html" target="_blank" rel="noopener"><em class="case">Young v. United States</em>, 535 U.S. 43 (2002)</a>.</li>
+      <li><strong>Trust-fund taxes</strong> (withheld income tax, employee FICA share) get priority regardless of age — but the determination of who is a "responsible person" is its own body of law. <a href="https://supreme.justia.com/cases/federal/us/436/238/" target="_blank" rel="noopener"><em class="case">Slodov v. United States</em>, 436 U.S. 238 (1978)</a>; <a href="https://supreme.justia.com/cases/federal/us/495/545/" target="_blank" rel="noopener"><em class="case">United States v. Energy Resources Co.</em>, 495 U.S. 545 (1990)</a> (tax payment designation in chapter 11 plan).</li>
+      <li><strong>Late or unfiled returns.</strong> A return filed more than 2 years before the petition is generally still priority, but if no return was ever filed (or only an IRS substitute), most circuits treat the tax as nondischargeable and not entitled to priority through the ordinary lookback. <em class="case">In re Hindenlang</em>, 164 F.3d 1029 (6th Cir. 1999); <em class="case">McCoy v. Mississippi State Tax Comm'n</em>, 666 F.3d 924 (5th Cir. 2012) (one-day-late rule).</li>
+      <li><strong>Penalties.</strong> A penalty in compensation for actual pecuniary loss gets the same priority as the underlying tax; punitive penalties don't. <a href="https://supreme.justia.com/cases/federal/us/489/235/" target="_blank" rel="noopener"><em class="case">United States v. Ron Pair Enterprises, Inc.</em>, 489 U.S. 235 (1989)</a>.</li>
+    </ul>
+  </div>
+</fieldset>
+
+<fieldset id="sec-fdic" class="conditional">
+  <legend>FDIC Commitment Details</legend>
+  <label class="check-row"><input type="checkbox" id="fdicCommit" /> Claim is based on a commitment to a federal depository institutions regulator (FDIC, RTC, OCC, OTS, Board of Governors, or successors) to maintain the capital of an insured depository institution</label>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    Originally enacted post-FIRREA (1989) to give the FDIC priority for net-worth maintenance commitments made by S&L holding companies. Rarely litigated outside the bank-holding-company context.
+  </div>
+</fieldset>
+
+<fieldset id="sec-dui" class="conditional">
+  <legend>DUI / Operation While Intoxicated Details</legend>
+  <label class="check-row"><input type="checkbox" id="duiDeath" /> Claim is for death or personal injury</label>
+  <label class="check-row"><input type="checkbox" id="duiVehicle" /> Resulted from operation of a motor vehicle or vessel</label>
+  <label class="check-row"><input type="checkbox" id="duiIntox" /> Operation was unlawful because the debtor was intoxicated from alcohol, a drug, or another substance</label>
+
+  <label for="duiState" style="margin-top:.6rem">State or jurisdiction of operation</label>
+  <input type="text" id="duiState" placeholder="e.g., California" />
+  <label class="check-row"><input type="checkbox" id="duiMotion" /> Vehicle/vessel was actually in motion (vs. parked with engine running)</label>
+  <label class="check-row"><input type="checkbox" id="duiConviction" /> A criminal conviction or civil judgment for unlawful intoxicated operation already exists</label>
+
+  <div class="notes">
+    <h4>How courts read this</h4>
+    "Unlawfully intoxicated" is determined by the law of the state where the operation occurred at the time it occurred — BAC thresholds, drugged-driving rules, and watercraft definitions all vary. "Operation" is contested: most courts hold that a stationary vehicle with the engine running can qualify; some require movement. A prior conviction is strong but not strictly required — the bankruptcy court can make its own determination.
+  </div>
+</fieldset>
+
+<button type="submit">Determine Priority</button>
+</form>
+
+<div id="result"></div>
+
+<section class="refs">
+  <h3>Cases referenced</h3>
+  <ul>
+    <li><a href="https://www.law.cornell.edu/supct/html/00-1567.ZS.html" target="_blank" rel="noopener"><em>Young v. United States</em>, 535 U.S. 43 (2002)</a> — equitable tolling of § 507(a)(8) lookback windows during prior bankruptcies.</li>
+    <li><a href="https://supreme.justia.com/cases/federal/us/391/471/" target="_blank" rel="noopener"><em>Reading Co. v. Brown</em>, 391 U.S. 471 (1968)</a> — post-petition tort liability gets administrative-expense priority.</li>
+    <li><a href="https://supreme.justia.com/cases/federal/us/489/235/" target="_blank" rel="noopener"><em>United States v. Ron Pair Enterprises, Inc.</em>, 489 U.S. 235 (1989)</a> — pecuniary-loss penalties get the underlying tax's priority.</li>
+    <li><a href="https://supreme.justia.com/cases/federal/us/436/238/" target="_blank" rel="noopener"><em>Slodov v. United States</em>, 436 U.S. 238 (1978)</a> — "responsible person" liability for trust-fund taxes.</li>
+    <li><a href="https://supreme.justia.com/cases/federal/us/495/545/" target="_blank" rel="noopener"><em>United States v. Energy Resources Co.</em>, 495 U.S. 545 (1990)</a> — designation of tax payments in chapter 11 plans.</li>
+    <li><a href="https://supreme.justia.com/cases/federal/us/547/651/" target="_blank" rel="noopener"><em>Howard Delivery Service v. Zurich American Ins. Co.</em>, 547 U.S. 651 (2006)</a> — § 507(a)(5) doesn't reach workers'-comp insurance premiums.</li>
+    <li><em>In re Jartran, Inc.</em>, 732 F.2d 584 (7th Cir. 1984) — two-prong post-petition transaction test for § 503(b) admin priority.</li>
+    <li><em>In re Sampson</em>, 997 F.2d 717 (10th Cir. 1993) — three-factor function-not-form test for support vs. property settlement.</li>
+    <li><em>In re Brody</em>, 3 F.3d 35 (2d Cir. 1993); <em>In re Werthen</em>, 329 F.3d 269 (1st Cir. 2003) — DSO characterization cases.</li>
+    <li><em>In re Roth American, Inc.</em>, 975 F.2d 949 (3d Cir. 1992) — vertical/horizontal "ordinary course" test; severance pro-rata allocation.</li>
+    <li><em>In re Public Ledger</em>, 161 F.2d 762 (3d Cir. 1947) — severance earned at termination.</li>
+    <li><em>In re Hindenlang</em>, 164 F.3d 1029 (6th Cir. 1999) — late/never-filed returns and § 523(a)(1)(B).</li>
+    <li><em>McCoy v. Mississippi State Tax Commission</em>, 666 F.3d 924 (5th Cir. 2012) — strict "one-day-late" rule for what counts as a "return."</li>
+    <li><em>In re WW Warehouse, Inc.</em>, 313 B.R. 588 (Bankr. D. Del. 2004) — gift-card balances as § 507(a)(7) deposits.</li>
+  </ul>
+</section>
+
+<footer>
+  <div>Statutory text: <a href="https://www.law.cornell.edu/uscode/text/11/507" target="_blank" rel="noopener">11 U.S.C. § 507</a> (Cornell LII).</div>
+</footer>
+
+</div>
+
+<script>
+const CAPS = {
+  wages: 17150,
+  benefitsPerEmployee: 17150,
+  grain: 8450,
+  deposit: 3800,
+};
+
+const form = document.getElementById('form');
+const claimType = document.getElementById('claimType');
+const result = document.getElementById('result');
+
+const sectionIds = ['dso','admin','gap','wages','benefits','grain','deposit','tax','fdic','dui'];
+
+claimType.addEventListener('change', () => {
+  sectionIds.forEach(id => {
+    document.getElementById('sec-' + id).classList.toggle('show', claimType.value === id);
+  });
+});
+
+const taxKind = document.getElementById('taxKind');
+const taxExtras = ['income','property','employer','excise','customs'];
+taxKind.addEventListener('change', () => {
+  taxExtras.forEach(k => {
+    document.getElementById('tax-' + k + '-extra').classList.toggle('show', taxKind.value === k);
+  });
+});
+
+function daysBetween(a, b) {
+  const ms = (b - a);
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+function parseDate(id) {
+  const v = document.getElementById(id).value;
+  return v ? new Date(v + 'T00:00:00') : null;
+}
+function fmt(n) { return '$' + n.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+function decide() {
+  const petition = parseDate('petitionDate');
+  const cessation = parseDate('cessationDate');
+  const t = claimType.value;
+
+  if (!petition) return { kind: 'no-priority', verdict: 'Petition date is required.', reasons: [] };
+  if (!t) return { kind: 'no-priority', verdict: 'Select a claim type.', reasons: [] };
+
+  // Wage cutoff: earlier of petition date or cessation date, looking back 180 days
+  const wageCutoffEnd = (cessation && cessation < petition) ? cessation : petition;
+  const wageWindowStart = new Date(wageCutoffEnd); wageWindowStart.setDate(wageWindowStart.getDate() - 180);
+
+  switch (t) {
+    case 'dso': {
+      const holder = document.querySelector('input[name="dsoHolder"]:checked').value;
+      const terminates = document.getElementById('dsoTerminates').checked;
+      const periodic = document.getElementById('dsoPeriodic').checked;
+      const equalizes = document.getElementById('dsoEqualizes').checked;
+      const custodial = document.getElementById('dsoCustodial').checked;
+      const propDiv = document.getElementById('dsoPropertyDivision').checked;
+
+      const supportSignals = [terminates, periodic, equalizes, custodial].filter(Boolean).length;
+      const caveats = [];
+
+      if (propDiv && supportSignals < 2) {
+        caveats.push({
+          html: 'Strong property-settlement signal with weak support indicators. A court applying the function-not-form test (<em class="case">In re Sampson</em>, 10th Cir. 1993; <em class="case">In re Brody</em>, 2d Cir. 1993) may treat this as a § 523(a)(15) property settlement — <strong>nondischargeable in chapter 7 but no § 507(a)(1) priority</strong>.'
+        });
+      } else if (propDiv) {
+        caveats.push({
+          html: 'Both property-settlement and support indicators present. This is a classic close case — courts will weigh intent, structure, and function. Expect the issue to be litigated.'
+        });
+      }
+      if (!terminates && !periodic && !equalizes && !custodial && !propDiv) {
+        caveats.push({
+          html: 'No function-not-form factors were checked. If the obligation is anything other than ongoing periodic support, verify it is not actually a property division. Label alone is not controlling.'
+        });
+      }
+      return {
+        kind: 'priority',
+        verdict: holder === 'direct' ? '1st priority — § 507(a)(1)(A)' : '1st priority — § 507(a)(1)(B)',
+        reasons: [
+          'Domestic support obligations are first in line.',
+          holder === 'direct'
+            ? 'Sub-priority (A): owed to or recoverable by spouse, former spouse, child, child\'s parent/guardian, or governmental unit on the child\'s behalf.'
+            : 'Sub-priority (B): assigned to a governmental unit (non-voluntary assignment for collection). Subordinate to (A).'
+        ],
+        caveats,
+        cite: '§ 507(a)(1); § 101(14A) (DSO definition)'
+      };
+    }
+
+    case 'admin': {
+      const ok1 = document.getElementById('adminPostPetition').checked;
+      const ok2 = document.getElementById('adminPreserve').checked;
+      const tx = document.querySelector('input[name="adminTransaction"]:checked').value;
+      const benefit = document.getElementById('adminBenefit').checked;
+      const tort = document.getElementById('adminTort').checked;
+      const sub = document.getElementById('adminSubstantial').checked;
+      const caveats = [];
+
+      if (tx === 'pre' && !tort && !sub) {
+        return {
+          kind: 'no-priority',
+          verdict: 'Likely no admin priority — pre-petition transaction.',
+          reasons: ['Under <em class="case">In re Jartran</em>, an administrative expense requires a transaction with the debtor-in-possession. Pre-petition obligations don\'t qualify even if paid post-petition.'],
+          cite: '§ 503(b); In re Jartran, 732 F.2d 584 (7th Cir. 1984)'
+        };
+      }
+      if (!ok1 || !ok2) {
+        return { kind: 'no-priority', verdict: 'Likely not an administrative expense.', reasons: ['Both elements (post-petition / actual & necessary to preserve the estate) must be met to qualify under § 503(b).'], cite: '§ 503(b)' };
+      }
+      if (tx === 'both') {
+        caveats.push({ html: 'Transaction straddles the petition date. Courts typically allow priority only for the post-petition portion (the value the estate actually received). Allocation can be contentious.' });
+      }
+      if (!benefit && !tort && !sub) {
+        caveats.push({ html: 'No benefit-to-estate, Reading-tort, or substantial-contribution basis identified. Under the Jartran two-prong test, the estate must have actually benefited.' });
+      }
+      if (tort) {
+        caveats.push({ html: '<em class="case">Reading Co. v. Brown</em>, 391 U.S. 471 (1968) — post-petition tort claims qualify as costs of operating the estate.' });
+      }
+      if (sub) {
+        caveats.push({ html: 'Substantial contribution claims are limited to chapter 9 and 11 cases (§ 503(b)(3)(D)). The contribution must provide a tangible benefit to the case as a whole, not just the creditor.' });
+      }
+      return {
+        kind: 'priority',
+        verdict: '2nd priority — § 507(a)(2)',
+        reasons: ['Administrative expense allowable under § 503(b).', 'Includes Federal Reserve Bank claims for authorized lending and 28 U.S.C. ch. 123 fees against the estate.'],
+        caveats,
+        cite: '§ 507(a)(2); § 503(b)'
+      };
+    }
+
+    case 'gap': {
+      const cd = parseDate('gapClaimDate');
+      const od = parseDate('orderReliefDate');
+      const inv = document.getElementById('gapInvoluntary').checked;
+      const ord = document.getElementById('gapOrdinary').checked;
+      const vert = document.getElementById('gapVertical').checked;
+      const horiz = document.getElementById('gapHorizontal').checked;
+      const caveats = [];
+
+      if (!inv) return { kind: 'no-priority', verdict: 'Not a § 502(f) gap claim.', reasons: ['Gap-period priority only exists in involuntary cases.'], cite: '§ 507(a)(3); § 502(f)' };
+      if (!ord) return { kind: 'no-priority', verdict: 'Not a § 502(f) gap claim.', reasons: ['Claim must arise in the ordinary course of the debtor\'s business or financial affairs.'], cite: '§ 502(f)' };
+      if (!vert || !horiz) {
+        caveats.push({ html: 'Both prongs of the ordinary-course test (vertical = debtor\'s historical practice; horizontal = industry norms) must be satisfied. <em class="case">In re Roth American</em>, 975 F.2d 949 (3d Cir. 1992).' });
+      }
+      if (cd && od && (cd >= petition && cd <= od)) {
+        return { kind: 'priority', verdict: '3rd priority — § 507(a)(3)', reasons: ['Claim arose in the gap between petition and order for relief in an involuntary case.'], caveats, cite: '§ 507(a)(3); § 502(f)' };
+      }
+      return { kind: 'partial', verdict: 'Possibly 3rd priority — verify dates.', reasons: ['Confirm the claim arose between the petition date and the order for relief.'], caveats, cite: '§ 507(a)(3); § 502(f)' };
+    }
+
+    case 'wages': {
+      const earned = parseDate('wageEarnedDate');
+      const amt = parseFloat(document.getElementById('wageAmount').value || '0');
+      const severance = document.getElementById('wageSeverance').checked;
+      const bonus = document.getElementById('wageBonus').checked;
+      const multi = document.getElementById('wageMultiple').checked;
+      const contractor = document.getElementById('wageContractor').checked;
+      const caveats = [];
+
+      if (!earned) return { kind: 'no-priority', verdict: 'Need date wages were earned.', reasons: [], cite: '§ 507(a)(4)' };
+
+      if (contractor) {
+        caveats.push({ html: 'Independent contractors are not "employees" under § 507(a)(4) and their claims are general unsecured. Apply the relevant circuit\'s economic-reality / common-law test before assuming employee status.' });
+      }
+
+      const inWindow = earned >= wageWindowStart && earned <= wageCutoffEnd;
+      const cutoffLabel = (cessation && cessation < petition) ? 'business cessation' : 'petition';
+      if (!inWindow) {
+        return {
+          kind: 'no-priority',
+          verdict: 'Not a 4th-priority wage claim.',
+          reasons: [
+            `Wages must be earned within 180 days before the ${cutoffLabel} date (${wageCutoffEnd.toISOString().slice(0,10)}).`,
+            `That window: ${wageWindowStart.toISOString().slice(0,10)} through ${wageCutoffEnd.toISOString().slice(0,10)}.`,
+            'Any portion outside that window is general unsecured.'
+          ],
+          caveats,
+          cite: '§ 507(a)(4)'
+        };
+      }
+      if (severance) {
+        caveats.push({ html: 'Severance allocation: circuits split. Some allocate the entire severance to the date of termination (likely all in-window); others pro-rate over the entire employment period (most may fall outside). Compare <em class="case">In re Roth American</em>, 975 F.2d 949 (3d Cir. 1992) (pro-rata) with <em class="case">In re Public Ledger</em>, 161 F.2d 762 (3d Cir. 1947) (at termination).' });
+      }
+      if (bonus) {
+        caveats.push({ html: 'Bonuses are typically pro-rated over the period in which they were earned. Only the portion attributable to the 180-day window gets priority.' });
+      }
+      if (multi) {
+        caveats.push({ html: 'The $17,150 cap is per individual, not per claim. Aggregate this claim with all other § 507(a)(4) and (a)(5) claims by the same person.' });
+      }
+
+      const priorityPortion = Math.min(amt, CAPS.wages);
+      const overflow = Math.max(0, amt - CAPS.wages);
+      const reasons = [
+        `Wages earned ${earned.toISOString().slice(0,10)} fall within the 180-day window before ${cutoffLabel} (${wageCutoffEnd.toISOString().slice(0,10)}).`,
+        `Priority cap: ${fmt(CAPS.wages)} per individual.`,
+        `Priority portion: ${fmt(priorityPortion)}.`
+      ];
+      if (overflow > 0) reasons.push(`Excess ${fmt(overflow)} is a general unsecured claim.`);
+      return {
+        kind: overflow > 0 ? 'partial' : 'priority',
+        verdict: overflow > 0
+          ? `Partial 4th priority — ${fmt(priorityPortion)} priority, ${fmt(overflow)} general unsecured`
+          : `4th priority — ${fmt(priorityPortion)}`,
+        reasons,
+        caveats,
+        cite: '§ 507(a)(4)'
+      };
+    }
+
+    case 'benefits': {
+      const svc = parseDate('benefitServiceDate');
+      const emps = parseInt(document.getElementById('benefitEmployees').value || '0', 10);
+      const amt = parseFloat(document.getElementById('benefitAmount').value || '0');
+      const paid4 = parseFloat(document.getElementById('benefitFourthPaid').value || '0');
+      if (!svc) return { kind: 'no-priority', verdict: 'Need date services were rendered.', reasons: [], cite: '§ 507(a)(5)' };
+
+      const inWindow = svc >= wageWindowStart && svc <= wageCutoffEnd;
+      const cutoffLabel = (cessation && cessation < petition) ? 'business cessation' : 'petition';
+      if (!inWindow) {
+        return {
+          kind: 'no-priority',
+          verdict: 'Not a 5th-priority benefit claim.',
+          reasons: [`Services must have been rendered within 180 days before ${cutoffLabel} (${wageCutoffEnd.toISOString().slice(0,10)}).`],
+          cite: '§ 507(a)(5)'
+        };
+      }
+      const planCap = Math.max(0, CAPS.benefitsPerEmployee * emps - paid4);
+      const priorityPortion = Math.min(amt, planCap);
+      const overflow = Math.max(0, amt - planCap);
+      const reasons = [
+        `Services rendered ${svc.toISOString().slice(0,10)} fall within the 180-day window.`,
+        `Cap = ${fmt(CAPS.benefitsPerEmployee)} × ${emps} employee(s) − ${fmt(paid4)} paid as 4th-priority wages = ${fmt(planCap)}.`,
+        `Priority portion: ${fmt(priorityPortion)}.`
+      ];
+      if (overflow > 0) reasons.push(`Excess ${fmt(overflow)} is general unsecured.`);
+      return {
+        kind: overflow > 0 ? 'partial' : 'priority',
+        verdict: overflow > 0
+          ? `Partial 5th priority — ${fmt(priorityPortion)} priority, ${fmt(overflow)} general unsecured`
+          : `5th priority — ${fmt(priorityPortion)}`,
+        reasons,
+        cite: '§ 507(a)(5)'
+      };
+    }
+
+    case 'grain': {
+      const amt = parseFloat(document.getElementById('grainAmount').value || '0');
+      const kind = document.querySelector('input[name="grainKind"]:checked').value;
+      const priorityPortion = Math.min(amt, CAPS.grain);
+      const overflow = Math.max(0, amt - CAPS.grain);
+      const label = kind === 'grain' ? 'grain producer' : 'U.S. fisherman';
+      const reasons = [
+        `Qualifying ${label} claim (per § 557(b) / § 507(a)(6)).`,
+        `Cap: ${fmt(CAPS.grain)} per individual.`,
+        `Priority portion: ${fmt(priorityPortion)}.`
+      ];
+      if (overflow > 0) reasons.push(`Excess ${fmt(overflow)} is general unsecured.`);
+      return {
+        kind: overflow > 0 ? 'partial' : 'priority',
+        verdict: overflow > 0
+          ? `Partial 6th priority — ${fmt(priorityPortion)} priority, ${fmt(overflow)} general unsecured`
+          : `6th priority — ${fmt(priorityPortion)}`,
+        reasons,
+        cite: '§ 507(a)(6)'
+      };
+    }
+
+    case 'deposit': {
+      const consumer = document.getElementById('depositConsumer').checked;
+      const undelivered = document.getElementById('depositUndelivered').checked;
+      const dd = parseDate('depositDate');
+      const amt = parseFloat(document.getElementById('depositAmount').value || '0');
+      const form = document.querySelector('input[name="depositForm"]:checked').value;
+      const isIndividual = document.getElementById('depositIndividual').checked;
+      const caveats = [];
+
+      if (!consumer || !undelivered) {
+        return { kind: 'no-priority', verdict: 'Not a 7th-priority consumer deposit.', reasons: ['Must be (i) for personal/family/household use and (ii) for property/services that were not delivered or provided.'], cite: '§ 507(a)(7)' };
+      }
+      if (!isIndividual) {
+        return { kind: 'no-priority', verdict: 'Claimant must be an individual.', reasons: ['Business claimants do not qualify under § 507(a)(7).'], cite: '§ 507(a)(7)' };
+      }
+      if (dd && dd >= petition) {
+        return { kind: 'no-priority', verdict: 'Not a 7th-priority deposit.', reasons: ['Deposit must have been made before the petition was filed.'], cite: '§ 507(a)(7)' };
+      }
+      if (form === 'credit') {
+        caveats.push({ html: 'Credit-card payments: courts split. If the issuer reversed the charge, the consumer is no longer "out" the funds and priority is doubtful. If the consumer paid the issuer, the equities favor priority.' });
+      }
+      if (form === 'giftcard') {
+        caveats.push({ html: 'Gift-card balances: some courts allow priority (<em class="case">In re WW Warehouse</em>, 313 B.R. 588 (Bankr. D. Del. 2004)), others deny it. Outcome depends on the specific factual record.' });
+      }
+      if (form === 'layaway') {
+        caveats.push({ html: 'Layaway/installment treatment turns on whether the buyer has made a true "deposit" or whether title/possession passed in stages. Fact-specific.' });
+      }
+      const priorityPortion = Math.min(amt, CAPS.deposit);
+      const overflow = Math.max(0, amt - CAPS.deposit);
+      const reasons = [`Cap: ${fmt(CAPS.deposit)} per individual.`, `Priority portion: ${fmt(priorityPortion)}.`];
+      if (overflow > 0) reasons.push(`Excess ${fmt(overflow)} is general unsecured.`);
+      return {
+        kind: overflow > 0 ? 'partial' : 'priority',
+        verdict: overflow > 0
+          ? `Partial 7th priority — ${fmt(priorityPortion)} priority, ${fmt(overflow)} general unsecured`
+          : `7th priority — ${fmt(priorityPortion)}`,
+        reasons,
+        caveats,
+        cite: '§ 507(a)(7)'
+      };
+    }
+
+    case 'tax': {
+      const k = taxKind.value;
+      if (!k) return { kind: 'no-priority', verdict: 'Select a tax type.', reasons: [], cite: '§ 507(a)(8)' };
+      switch (k) {
+        case 'income': {
+          const due = parseDate('taxReturnDue');
+          const assessed = parseDate('taxAssessedDate');
+          const filed = document.querySelector('input[name="taxReturnFiled"]:checked').value;
+          const oicStart = parseDate('oicStart');
+          const oicEnd = parseDate('oicEnd');
+          const bkStart = parseDate('priorBkStart');
+          const bkEnd = parseDate('priorBkEnd');
+
+          if (!due) return { kind: 'partial', verdict: 'Need return-due date to evaluate.', reasons: [], cite: '§ 507(a)(8)(A)' };
+
+          // Compute tolling days (days during the lookback window when an OIC or prior stay was active, plus 90 days each).
+          let tollDays = 0;
+          const tollReasons = [];
+          const addToll = (start, end, label, plus90) => {
+            if (start && end && end > start) {
+              const days = daysBetween(start, end);
+              tollDays += days + (plus90 ? 90 : 0);
+              tollReasons.push(`${label}: +${days} days${plus90 ? ' + 90 days' : ''}`);
+            }
+          };
+          addToll(oicStart, oicEnd, 'Pending OIC tolling', true);
+          addToll(bkStart, bkEnd, 'Prior bankruptcy tolling', true);
+
+          const threeYr = new Date(petition); threeYr.setFullYear(threeYr.getFullYear() - 3); threeYr.setDate(threeYr.getDate() - tollDays);
+          const days240 = new Date(petition); days240.setDate(days240.getDate() - 240 - tollDays);
+
+          const reasons = [];
+          if (tollDays > 0) {
+            reasons.push(`Tolling extends lookback windows by ${tollDays} days (${tollReasons.join('; ')}).`);
+          }
+
+          if (filed === 'never') {
+            return {
+              kind: 'no-priority',
+              verdict: 'No return filed — likely no priority.',
+              reasons: reasons.concat([
+                'Most circuits hold that a tax for which no return was ever filed (or only an IRS substitute under § 6020(b)) does not qualify for 8th priority and is nondischargeable.',
+                'See <em class="case">In re Hindenlang</em>, 164 F.3d 1029 (6th Cir. 1999).'
+              ]),
+              cite: '§ 507(a)(8)(A); § 523(a)(1)(B)'
+            };
+          }
+
+          let qualifies = false;
+          if (due >= threeYr && due <= petition) {
+            qualifies = true;
+            reasons.push(`Return last due ${due.toISOString().slice(0,10)} is within the (tolled) 3-year window starting ${threeYr.toISOString().slice(0,10)}.`);
+          } else {
+            reasons.push(`Return-due date ${due.toISOString().slice(0,10)} is outside the (tolled) 3-year window (cutoff ${threeYr.toISOString().slice(0,10)}).`);
+          }
+          if (assessed && assessed >= days240 && assessed <= petition) {
+            qualifies = true;
+            reasons.push(`Tax was assessed ${assessed.toISOString().slice(0,10)}, within the (tolled) 240-day window starting ${days240.toISOString().slice(0,10)}.`);
+          }
+
+          const caveats = [];
+          if (filed === 'late') {
+            caveats.push({ html: 'Late-filed return: in some circuits (notably the 1st, 5th, and 10th under <em class="case">McCoy</em>), a return filed even one day late is treated as not a "return" at all for § 523(a)(1)(B) purposes — collapsing priority and dischargeability into the no-return category. Verify the rule in your circuit.' });
+          }
+          if (tollDays === 0 && (oicStart || bkStart)) {
+            caveats.push({ html: 'You provided OIC or prior-bankruptcy dates but the inputs were incomplete. Tolling may apply — re-enter both start and end dates.' });
+          }
+
+          return qualifies
+            ? { kind: 'priority', verdict: '8th priority — § 507(a)(8)(A) (income tax)', reasons, caveats, cite: '§ 507(a)(8)(A)' }
+            : { kind: 'no-priority', verdict: 'Income tax does not appear to qualify for 8th priority.', reasons, caveats, cite: '§ 507(a)(8)(A)' };
+        }
+        case 'property': {
+          const inc = parseDate('taxPropertyIncurred');
+          if (!inc) return { kind: 'partial', verdict: 'Need date property tax was incurred.', reasons: [], cite: '§ 507(a)(8)(B)' };
+          const oneYear = new Date(petition); oneYear.setFullYear(oneYear.getFullYear() - 1);
+          if (inc < petition && inc >= oneYear) {
+            return { kind: 'priority', verdict: '8th priority — § 507(a)(8)(B) (property tax)', reasons: [`Incurred ${inc.toISOString().slice(0,10)}, within 1 year before petition (${oneYear.toISOString().slice(0,10)}).`], cite: '§ 507(a)(8)(B)' };
+          }
+          return { kind: 'no-priority', verdict: 'Property tax does not qualify for 8th priority.', reasons: ['Must be incurred pre-petition and last payable without penalty within 1 year before petition.'], cite: '§ 507(a)(8)(B)' };
+        }
+        case 'withholding': {
+          return { kind: 'priority', verdict: '8th priority — § 507(a)(8)(C) (trust-fund tax)', reasons: ['Taxes the debtor was required to collect or withhold (e.g., income tax withholding, employee FICA share) get priority regardless of when they arose.'], cite: '§ 507(a)(8)(C)' };
+        }
+        case 'employer': {
+          const wd = parseDate('taxEmployerWageDate');
+          if (!wd) return { kind: 'partial', verdict: 'Need date wages were earned.', reasons: [], cite: '§ 507(a)(8)(D)' };
+          const threeYr = new Date(petition); threeYr.setFullYear(threeYr.getFullYear() - 3);
+          if (wd >= threeYr && wd <= petition) {
+            return { kind: 'priority', verdict: '8th priority — § 507(a)(8)(D) (employer share)', reasons: [`Wages earned ${wd.toISOString().slice(0,10)}, within 3 years before petition.`], cite: '§ 507(a)(8)(D)' };
+          }
+          return { kind: 'no-priority', verdict: 'Employer-share tax does not qualify.', reasons: ['Wages must have been earned within 3 years before the petition.'], cite: '§ 507(a)(8)(D)' };
+        }
+        case 'excise': {
+          const td = parseDate('taxExciseTransDate');
+          if (!td) return { kind: 'partial', verdict: 'Need transaction date.', reasons: [], cite: '§ 507(a)(8)(E)' };
+          const threeYr = new Date(petition); threeYr.setFullYear(threeYr.getFullYear() - 3);
+          if (td >= threeYr && td <= petition) {
+            return { kind: 'priority', verdict: '8th priority — § 507(a)(8)(E) (excise)', reasons: [`Transaction ${td.toISOString().slice(0,10)} within 3-year lookback.`], cite: '§ 507(a)(8)(E)' };
+          }
+          return { kind: 'no-priority', verdict: 'Excise tax does not qualify.', reasons: ['Transaction must have occurred within 3 years before the petition (or return last due in that window).'], cite: '§ 507(a)(8)(E)' };
+        }
+        case 'customs': {
+          const ed = parseDate('taxCustomsEntryDate');
+          if (!ed) return { kind: 'partial', verdict: 'Need entry date.', reasons: [], cite: '§ 507(a)(8)(F)' };
+          const oneYr = new Date(petition); oneYr.setFullYear(oneYr.getFullYear() - 1);
+          if (ed >= oneYr && ed <= petition) {
+            return { kind: 'priority', verdict: '8th priority — § 507(a)(8)(F) (customs duty)', reasons: [`Merchandise entered ${ed.toISOString().slice(0,10)}, within 1 year before petition.`], cite: '§ 507(a)(8)(F)' };
+          }
+          return { kind: 'no-priority', verdict: 'Customs duty does not qualify.', reasons: ['Generally requires entry within 1 year before petition (longer in some cases).'], cite: '§ 507(a)(8)(F)' };
+        }
+        case 'penalty': {
+          return { kind: 'priority', verdict: '8th priority — § 507(a)(8)(G) (priority-tax penalty)', reasons: ['A penalty related to a claim of a kind in § 507(a)(8) and in compensation for actual pecuniary loss has 8th priority.'], cite: '§ 507(a)(8)(G)' };
+        }
+      }
+      return { kind: 'no-priority', verdict: 'Unhandled tax type.', reasons: [] };
+    }
+
+    case 'fdic': {
+      if (document.getElementById('fdicCommit').checked) {
+        return { kind: 'priority', verdict: '9th priority — § 507(a)(9)', reasons: ['Commitment to a federal depository institutions regulator to maintain capital of an insured depository institution.'], cite: '§ 507(a)(9)' };
+      }
+      return { kind: 'no-priority', verdict: 'Does not qualify for 9th priority.', reasons: ['Box must be checked — claim must be based on the qualifying capital-maintenance commitment.'], cite: '§ 507(a)(9)' };
+    }
+
+    case 'dui': {
+      const a = document.getElementById('duiDeath').checked;
+      const b = document.getElementById('duiVehicle').checked;
+      const c = document.getElementById('duiIntox').checked;
+      const motion = document.getElementById('duiMotion').checked;
+      const conviction = document.getElementById('duiConviction').checked;
+      const state = (document.getElementById('duiState').value || '').trim();
+      const caveats = [];
+      if (!motion) {
+        caveats.push({ html: '"Operation" is contested when the vehicle was stationary. Most courts hold that a parked vehicle with the engine running can still constitute operation, but a fully off vehicle (e.g., debtor passed out behind the wheel, key out of ignition) often does not.' });
+      }
+      if (!conviction) {
+        caveats.push({ html: 'No prior conviction: the bankruptcy court can independently determine unlawful intoxication, but the burden is on the claimant to establish it.' });
+      }
+      if (state) {
+        caveats.push({ html: `"Unlawfully intoxicated" is determined by the law of <strong>${state}</strong> at the time of operation — verify the BAC threshold and any drug-impairment definitions that apply.` });
+      } else {
+        caveats.push({ html: 'No state of operation provided. State law controls the definition of unlawful intoxication.' });
+      }
+      if (a && b && c) {
+        return { kind: 'priority', verdict: '10th priority — § 507(a)(10)', reasons: ['Death or personal injury resulting from operation of a motor vehicle or vessel while the debtor was unlawfully intoxicated.'], caveats, cite: '§ 507(a)(10)' };
+      }
+      return { kind: 'no-priority', verdict: 'Does not qualify for 10th priority.', reasons: ['All three elements (death/PI, vehicle/vessel, unlawful intoxication) are required.'], cite: '§ 507(a)(10)' };
+    }
+
+    case 'other':
+      return { kind: 'no-priority', verdict: 'No priority — general unsecured claim.', reasons: ['Claim does not fit any of the ten priority categories in § 507(a).'], cite: '§ 507(a)' };
+  }
+}
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const r = decide();
+  result.className = '';
+  result.classList.add('show', r.kind);
+  let html = `<p class="verdict">${r.verdict}</p>`;
+  if (r.reasons && r.reasons.length) {
+    html += '<div class="reasoning"><ul>';
+    for (const reason of r.reasons) html += `<li>${reason}</li>`;
+    html += '</ul></div>';
+  }
+  if (r.caveats && r.caveats.length) {
+    html += '<div class="caveats"><h4>Case-law caveats</h4><ul>';
+    for (const c of r.caveats) html += `<li>${c.html}</li>`;
+    html += '</ul></div>';
+  }
+  if (r.cite) html += `<div class="citation">Authority: ${r.cite}</div>`;
+  result.innerHTML = html;
+  result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+</script>
+
+</body>
+</html>
