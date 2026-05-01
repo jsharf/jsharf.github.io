@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>echess — Electromagnetic Chessboard — JS</title>
+  <meta name="description" content="Chessboard with magnetic pieces moved by a grid of PCB coils underneath. Now generating JLCPCB-ready Gerbers for the 5x5 coreless coil board.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/custom.css">
+  <link rel="icon" type="image/png" href="../images/favicon.png">
+  <style>
+    .dash-meta { color: #888; font-size: 0.85rem; }
+    .dash-row { padding: 0.6rem 0; border-bottom: 1px solid #eee; }
+    .dash-row h4 { margin: 0 0 0.2rem; }
+    .dash-row p  { margin: 0.2rem 0; color: #444; }
+    pre.status-text { white-space: pre-wrap; word-wrap: break-word;
+      background: #fafafa; border-left: 3px solid #ccc; padding: 0.6rem 0.9rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem;
+      line-height: 1.5; color: #333; border-radius: 0 3px 3px 0; }
+    pre.commits { background: #f5f5f5; border: 1px solid #e5e5e5;
+      padding: 0.6rem 0.9rem; font-size: 0.78rem; border-radius: 3px;
+      overflow-x: auto; }
+    .activity { display: inline-block; padding: 0.15rem 0.5rem;
+      background: #eee; border-radius: 3px; font-size: 0.75rem;
+      color: #555; margin-right: 0.4rem; }
+    .activity.git { background: #e8f0fe; color: #1a4480; }
+    .activity.mtime { background: #fdf6e3; color: #6a5520; }
+    .activity.deployed { background: #e8f5e9; color: #1b5e20; }
+    .comments { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; }
+    .comments h3 { font-size: 1.1rem; color: #555; }
+    details summary { cursor: pointer; color: #666; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="row" id="intro">
+    <div class="six columns" style="margin-top: 5%">
+      <a href="../index.html"><img src="../images/favicon_large.png" id="initials" /></a><!--
+      --><div id="title">
+        <h4 id="name">echess — Electromagnetic Chessboard</h4>
+        <a class="button button-primary" href="../index.html">Home</a> <a class="button" href="../project_dash.html">Dashboard</a>
+      </div>
+      <br>
+    </div>
+  </div>
+    <h2>echess — Electromagnetic Chessboard</h2>
+    <p><span class="activity git">2026-04-17 · git</span> · <a href="https://github.com/jsharf/echess">https://github.com/jsharf/echess</a></p>
+    <pre class="status-text">Electromagnetic chessboard: a board with magnetic pieces moved by a grid of PCB coils
+underneath.
+
+BACKGROUND
+The initial plan was to use off-the-shelf inductors under each square. That didn&#x27;t work —
+the ferrous cores attracted the magnets in the pieces directly, overwhelming the weak
+field of the energized coil. After Carl Bugeja&#x27;s PCB-coils video, the project pivoted to
+coreless planar coils etched directly into a 4-layer PCB. No ferrous core means no
+parasitic attraction.
+
+LAYOUT
+- pcb_coils/coil_gen.py — 4-layer square-spiral coil generator (.kicad_mod + preview PDF).
+- pcb_coils/test_coil_visual.py — occupancy-grid router for visual validation.
+- field.py — FEniCS magnetostatics simulation (WIP).
+- BOM.md — parts list for inductor and control boards.
+
+CURRENT BOARD
+12.7mm square coils, 7 turns/layer, 0.5mm trace, 0.1mm clearance. 5x5 variant uses
+10.16mm coils on the same 50.8mm board. JLCPCB Gerbers + drill files generated.</pre>
+    <h4 style="margin-top:1.5rem;">Recent commits</h4>
+    <pre class="commits">68bde2c Add top silkscreen: ECHESS wordmark, ruler, metadata, crosshairs
+9b40c42 Generate JLCPCB-ready Gerber + drill files
+562a26d Add 0.3mm edge frame for JLCPCB manufacturing
+5c6ad95 Fix DRC: board-level segments with nets, 0.16mm clearance rules
+50b84dc Add 5x5 board variant (10.16mm coils, same 50.8mm board)
+495ce04 Drop pinwheel rotation — all coils at 0° with separate headers
+ed6dc4b Swap 0/180 in pinwheel rotation pattern
+ced8a97 Fix 4x4 rotation to correct pinwheel pattern
+ac5e066 Fix 4x4 rotation: checkerboard 90/270 pattern per user spec
+7e4f08f 4x4 board with pinwheel rotation for header convergence</pre>
+    <!-- TODO: enable comments — copy _partials/giscus.example.html to _partials/giscus.html, fill in repo info, re-run /project-dashboard -->
+</div>
+</body>
+</html>

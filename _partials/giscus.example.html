@@ -1,0 +1,30 @@
+<!--
+  Giscus comment widget — drop your real config here as `giscus.html`
+  (sibling file in this directory) and re-run /project-dashboard.
+
+  How to get the values below:
+    1. Create a public GitHub repo with Discussions enabled (e.g. jsharf/projects-feedback).
+    2. Install https://github.com/apps/giscus on that repo.
+    3. Visit https://giscus.app, fill in the repo, choose:
+         - Page <-> Discussions Mapping: "pathname"
+         - Discussion Category: pick one (e.g. "Feedback")
+       and copy the generated <script> tag below, replacing the placeholders.
+-->
+<section class="comments">
+  <h3>Comments</h3>
+  <script src="https://giscus.app/client.js"
+          data-repo="OWNER/REPO"
+          data-repo-id="REPO_ID"
+          data-category="Feedback"
+          data-category-id="CATEGORY_ID"
+          data-mapping="pathname"
+          data-strict="0"
+          data-reactions-enabled="1"
+          data-emit-metadata="0"
+          data-input-position="top"
+          data-theme="light"
+          data-lang="en"
+          crossorigin="anonymous"
+          async>
+  </script>
+</section>
