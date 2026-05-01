@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Projects — JS</title>
-  <meta name="description" content="Projects by Jacob Sharf — active and archive, with search and tag filters.">
+  <meta name="description" content="Projects by Jacob Sharf — active and finished, with search and tag filters.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
@@ -46,7 +46,7 @@
     .chip.on {
       background: #1a4480; color: #fff; border-color: #1a4480;
     }
-    .chip-status.on.archive { background: #6b7280; border-color: #6b7280; }
+    .chip-status.on.finished { background: #6b7280; border-color: #6b7280; }
 
     .project-count { color: #888; font-size: 0.8rem; margin-left: auto; }
 
@@ -80,7 +80,7 @@
       letter-spacing: 0.02em;
     }
     .badge.active { background: #d1fae5; color: #065f46; }
-    .badge.archive { background: #f3f4f6; color: #374151; }
+    .badge.finished { background: #f3f4f6; color: #374151; }
     .badge.date {
       background: transparent;
       color: #888;
@@ -138,7 +138,7 @@
     <div class="chips" id="statusChips">
       <span class="chip chip-status on" data-status="all">All</span>
       <span class="chip chip-status" data-status="active">Active</span>
-      <span class="chip chip-status" data-status="archive">Archive</span>
+      <span class="chip chip-status" data-status="finished">Finished</span>
     </div>
     <span class="project-count" id="projectCount"></span>
   </div>
@@ -148,7 +148,7 @@
 
   <p class="skill-note">
     Active projects are auto-discovered from <code>~/projects</code> by the
-    <code>project-dashboard</code> skill. Curated archive entries are hand-edited
+    <code>project-dashboard</code> skill. Curated finished entries are hand-edited
     in <code>js/projects-data.js</code>.
   </p>
 </div>
@@ -165,7 +165,7 @@
 
   var state = {
     q: '',
-    status: 'all',           // 'all' | 'active' | 'archive'
+    status: 'all',           // 'all' | 'active' | 'finished'
     selectedTags: new Set()  // OR within tags
   };
 
@@ -244,7 +244,7 @@
 
     var statusBadge = p.status === 'active'
       ? '<span class="badge active">active</span>'
-      : '<span class="badge archive">archive</span>';
+      : '<span class="badge finished">finished</span>';
     var dateBadge = p.date ? '<span class="badge date">· ' + escapeHtml(p.date) + '</span>' : '';
 
     var tags = (p.tags || []).map(function (t) {
@@ -287,10 +287,10 @@
     state.status = chip.getAttribute('data-status');
     Array.prototype.forEach.call(statusChips.querySelectorAll('.chip-status'), function (c) {
       c.classList.remove('on');
-      if (c.getAttribute('data-status') === 'archive') c.classList.remove('archive');
+      if (c.getAttribute('data-status') === 'finished') c.classList.remove('finished');
     });
     chip.classList.add('on');
-    if (state.status === 'archive') chip.classList.add('archive');
+    if (state.status === 'finished') chip.classList.add('finished');
     renderList();
   });
 
