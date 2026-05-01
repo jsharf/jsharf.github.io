@@ -1,88 +1,97 @@
 ---
 name: project-dashboard
-description: Refresh the public project dashboard. Scans ~/projects for repos updated in the last 3 months, regenerates project_dash.html (the index) and projects/<slug>.html (per-project pages with Giscus comments). Trigger when the user says "refresh the dashboard", "update project dash", or invokes /project-dashboard.
+description: Refresh the public project dashboard. Scans ~/projects for repos updated in the last 3 months, regenerates the AUTO-GENERATED block in js/projects-data.js, and (re)writes per-project pages projects/<slug>.html with Giscus comments. Trigger when the user says "refresh the dashboard", "update project dash", or invokes /project-dashboard.
 ---
 
 # project-dashboard
 
-Refresh `project_dash.html` and per-project pages from `~/projects/`.
+Refresh the active-projects data feeding `projects.html`, plus per-project detail pages.
+
+## What this skill owns
+
+- The AUTO-GENERATED block inside `js/projects-data.js` (between the two marker comments).
+- Per-project HTML pages at `projects/<slug>.html` for currently-active slugs.
+
+## What this skill does NOT own
+
+- The CURATED entries in `js/projects-data.js` (everything outside the markers). Never touch them. Hand-edited by the user.
+- `projects.html` layout/JS. Never rewrite. The skill only feeds it data.
+- `index.html`, CSS, anything else.
+- Existing static subdirectories under `projects/` (e.g. `projects/haggadah/`, `projects/lasertag/`). They hold images for curated entries. Leave alone.
 
 ## Inputs
 
 - Source of truth: `~/projects/*` (every immediate subdirectory)
-- "Active" cutoff: any project whose most recent activity is within the last **3 months**
+- "Active" cutoff: any project whose most recent activity is within the last **90 days**
 - Skip list:
   - `jsharf.github.io` itself
   - Anything matching `*.zip`, `*.lock`, files (not dirs)
-  - **Any project containing a `.dashboard-skip` file at its root.** This is the per-project opt-out for things that shouldn't be on a public dashboard (private notes, personal finances, mental-health journals, draft work). Honor it strictly — never override.
-- Optional Giscus config: `_partials/giscus.html` in this repo. If present, embedded on each per-project page. If absent, per-project pages render without comments and include a TODO comment.
+  - **Any project containing a `.dashboard-skip` file at its root.** Per-project opt-out. Honor strictly — never override.
+- Optional Giscus config: `_partials/giscus.html`. If present, embedded on each per-project page. If absent, per-project pages render without comments and include a TODO comment.
 
 ## Activity detection
 
 For each immediate subdir of `~/projects/`:
 
-1. If it has git history (`git -C <dir> log -1 --format=%cI` succeeds), use the last commit date.
-2. Otherwise, fall back to the most recent file mtime, ignoring: `.git`, `node_modules`, `.venv`, `__pycache__`, `dist`, `build`, `.next`, `target`, `.DS_Store`.
-3. Compare against `now - 90 days`. Keep if newer.
-
-Use python for date math to keep it portable on macOS:
-
-```bash
-python3 -c "from datetime import datetime, timedelta, timezone; print((datetime.now(timezone.utc) - timedelta(days=90)).isoformat())"
-```
+1. Compute `git_last` = last commit ISO date (`git -C <dir> log -1 --format=%cI`), if any.
+2. Compute `mtime_last` = most recent file mtime, ignoring: `.git`, `node_modules`, `.venv`, `__pycache__`, `dist`, `build`, `.next`, `target`, `.DS_Store`.
+3. Activity = **max of the two**, with a label of `git` if `git_last` won, else `mtime`. Always compute both — a project with old commits but recent uncommitted work is still active.
+4. Compare against `now - 90 days`. Keep if newer.
 
 ## Per-project content gathering
 
 For each active project, collect:
 
-- **Slug**: directory name, lowercased, with `_` and spaces replaced by `-`
-- **Title**: prefer the first H1 of `README.md` if present; else humanize the dir name
-- **Last activity**: ISO date from step above + source label (`git` or `mtime`)
-- **Recent commits**: if git, `git -C <dir> log --format='%h %s' -10` (10 most recent subjects)
-- **Status text**: first match wins
-  - `STATUS.md` (rendered as the headline status)
-  - `NOTES.md` (collapsed under `<details>`)
-  - first ~25 lines of `README.md` (fallback summary)
-- **Repo link**: if `git remote get-url origin` returns a github.com url, link to it
+- **slug**: directory name, lowercased, with `_` and spaces replaced by `-`
+- **title**: prefer first H1 of `README.md`; else humanize the dir name
+- **date**: ISO date from activity step
+- **src**: `git` or `mtime`
+- **tags**: best-effort short lowercase tags. Pick from: `hardware`, `pcb`, `embedded`, `ml`, `ai`, `audio`, `web`, `app`, `software`, `productivity`, `language`, `photo`, `design`, `writing`, `law`, `ux`. Default to a couple of best-fit guesses based on README/blurb. Don't invent obscure tags — keep the taxonomy small so the filter remains useful.
+- **blurb**: 1–2 sentence summary suitable for the card. Prefer rewriting from README intro; keep ≤220 chars.
+- **page**: `"projects/<slug>.html"` (skill will create the file). Exception: if a polished page already exists at the site root (e.g. `/507-priorities.html`), set `page` to that direct URL and do NOT create a `projects/<slug>.html`.
+- **repo**: `git remote get-url origin` if it points to github.com (normalize `git@github.com:foo/bar.git` → `https://github.com/foo/bar`)
+- **photos**: `[]` (only curated entries get hand-picked photos)
+- **status**: always `"active"` for entries this skill generates
 
-Read at most ~3 KB from each markdown file. Do not embed images. Strip HTML and most markdown — render as plain text inside `<pre class="status-text">` blocks (preserves linebreaks; avoids needing a markdown library). Convert bare GitHub-style URLs to `<a>` links.
+Read at most ~3 KB from each markdown file. Don't embed images.
 
-## Outputs
+## Updating `js/projects-data.js`
 
-### `project_dash.html` (the index)
+The file contains:
 
-Sorted by `last_activity` descending. One row per project:
+```js
+  // ---- AUTO-GENERATED-START ----
+  // Regenerated by the project-dashboard skill. Do not hand-edit.
+  { slug: "...", ... },
+  ...
+  // ---- AUTO-GENERATED-END ----
+```
 
-- Title (links to `projects/<slug>.html`)
-- Last-activity date and source (e.g. `2026-04-30 · git`)
-- One-line status (first non-empty line of status text, truncated ~140 chars)
-- Link to GitHub repo if known
+Replace ONLY the lines between the two marker comments. Preserve everything else verbatim. If the markers are missing, abort with a message — don't try to "fix" the file.
 
-Match the existing site style: `css/normalize.css` + `css/skeleton.css` + `css/custom.css`. Same header pattern as `projects.html` (favicon + Home button). Add a one-paragraph blurb at top: "Auto-generated from local repo activity. Last refresh: <ISO date>." Add a small footer note: "Generated by the project-dashboard skill — re-run with /project-dashboard."
+Sort active entries by date descending.
 
-### `projects/<slug>.html` (per-project)
+JSON formatting: 2-space indent matching the surrounding style; trailing comma after the last marker entry omitted; no trailing comma between entries (use commas between, no comma after the last).
 
-Same site chrome. Body contains:
+## Per-project HTML generation
 
-- Project title (H2)
-- Activity line + GitHub link (if any)
-- Status block: STATUS.md content if present, else README excerpt
-- Recent commits as a `<pre>` of `<short-hash> <subject>` lines (only if git project; cap at 10)
+For each active entry whose `page` is `projects/<slug>.html` (i.e. not an external/already-deployed URL), write the file with:
+
+- Site chrome matching `projects.html` (favicon link, skeleton CSS, Home + Projects buttons in the header)
+- `<h2>` with the title
+- Activity line: ISO date + src badge + GitHub link if any
+- Status block: STATUS.md content if present, else README excerpt (first ~25 lines after H1, plain text in `<pre class="status-text">`)
+- Recent commits as a `<pre>` of `<short-hash> <subject>` (only if git project; cap at 10)
 - NOTES.md inside `<details><summary>Notes</summary>...</details>` if present
 - Giscus block: paste contents of `_partials/giscus.html` verbatim if it exists; otherwise an HTML comment `<!-- TODO: enable comments — see .claude/skills/project-dashboard/SKILL.md -->`
 
-Filename = `<slug>.html` placed at `projects/<slug>.html`. Existing subdirectories in `projects/` (haggadah, lasertag, etc.) coexist fine — they're directories, these are sibling html files.
+For entries with an external `page` URL (e.g. `/507-priorities.html`), do NOT generate a file.
 
-## Regeneration
+## Regeneration semantics
 
-Each run is destructive for files this skill produces:
-- Always overwrite `project_dash.html`
+- Always overwrite the AUTO-GENERATED block in `js/projects-data.js`
 - Always overwrite `projects/<slug>.html` for each currently-active slug
-- Do NOT delete pages for slugs that dropped off the active list — they linger but no longer link from the dashboard. (User can hand-delete if they want.)
-
-## Linking from the front page
-
-`index.html` should have a "Project Dashboard" button next to the existing "Projects" / "Resume" / "Github" / "LinkedIn" buttons. The first run of the skill adds it; subsequent runs leave it.
+- Do NOT delete pages for slugs that dropped off the active list — they linger but no longer link from `projects.html`. (User can hand-delete if they want.)
 
 ## Giscus setup (one-time, manual)
 
@@ -100,5 +109,6 @@ If `_partials/giscus.html` is missing, skip silently and put the TODO comment in
 
 After regenerating, print a short summary:
 - N active projects found
-- Names of newly-added slugs (vs previous run, if `project_dash.html` exists you can grep it)
+- Names of newly-added slugs (vs previous run, by diffing the AUTO block)
 - Whether Giscus is wired (yes/no)
+- Any projects skipped due to `.dashboard-skip`

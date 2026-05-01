@@ -1,145 +1,323 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <!-- Basic Page Needs
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <meta charset="utf-8">
-  <title>JS</title>
-  <meta name="description" content="">
-  <meta name="author" content="">
-
-  <!-- Mobile Specific Metas
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <title>Projects — JS</title>
+  <meta name="description" content="Projects by Jacob Sharf — active and archive, with search and tag filters.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- FONT
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
-
-  <!-- CSS
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <link rel="stylesheet" href="css/normalize.css">
   <link rel="stylesheet" href="css/skeleton.css">
   <link rel="stylesheet" href="css/custom.css">
-
-  <!-- Favicon
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <link rel="icon" type="image/png" href="images/favicon.png">
 
+  <style>
+    .projectpic { width: 200px; }
+
+    .controls {
+      margin: 1rem 0 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .controls input[type="search"] {
+      flex: 1 1 220px;
+      min-width: 200px;
+      padding: 0.45rem 0.7rem;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 0.9rem;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .chip {
+      display: inline-block;
+      padding: 0.25rem 0.65rem;
+      border: 1px solid #ccc;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      color: #555;
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chip:hover { border-color: #888; }
+    .chip.on {
+      background: #1a4480; color: #fff; border-color: #1a4480;
+    }
+    .chip-status.on.archive { background: #6b7280; border-color: #6b7280; }
+
+    .project-count { color: #888; font-size: 0.8rem; margin-left: auto; }
+
+    .project-card {
+      padding: 1rem 0;
+      border-top: 1px solid #eee;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 1.2rem;
+    }
+    .project-card.no-photos { grid-template-columns: 1fr; }
+    .project-card .photos img {
+      width: 200px;
+      max-width: 100%;
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+    .project-card h4 {
+      margin: 0;
+      display: inline;
+    }
+    .project-card .badges { margin-left: 0.4rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      vertical-align: middle;
+      margin-left: 0.2rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge.active { background: #d1fae5; color: #065f46; }
+    .badge.archive { background: #f3f4f6; color: #374151; }
+    .badge.date {
+      background: transparent;
+      color: #888;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+    .project-card .tags {
+      margin-top: 0.3rem;
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .project-card .tags .tag {
+      display: inline-block;
+      margin-right: 0.4rem;
+      cursor: pointer;
+    }
+    .project-card .tags .tag:hover { color: #1a4480; text-decoration: underline; }
+    .project-card .blurb {
+      margin: 0.5rem 0;
+      color: #333;
+    }
+    .project-card .links a { margin-right: 1rem; font-size: 0.85rem; }
+
+    .empty {
+      padding: 2rem 0;
+      color: #999;
+      text-align: center;
+      font-style: italic;
+    }
+    .skill-note { color: #aaa; font-size: 0.75rem; margin: 2rem 0 1rem; }
+
+    @media (max-width: 600px) {
+      .project-card, .project-card.no-photos {
+        grid-template-columns: 1fr;
+      }
+      .project-card .photos img { width: 100%; max-width: 320px; }
+    }
+  </style>
 </head>
-<body onload="">
+<body>
 <div class="container">
   <div class="row" id="intro">
     <div class="six columns" style="margin-top: 5%">
-      <a href="index.html"><img src="images/favicon_large.png" id="initials"
-                                                               /></a><!--
+      <a href="index.html"><img src="images/favicon_large.png" id="initials" /></a><!--
       --><div id="title">
-        <h4 id="name">Projects Page</h4>
+        <h4 id="name">Projects</h4>
         <a class="button button-primary" href="index.html">Home</a>
       </div>
       <br>
     </div>
   </div>
-    <!-- Multilingual Haggadah -->
-    <div class="row">
-      <h4>Multilingual Haggadah</h4>
-      <div class="six columns">
-        <img class="projectpic" src="projects/haggadah/haggadah_photo1.png" />
-        <img class="projectpic" src="projects/haggadah/haggadah_photo2.png" />
-        <img class="projectpic" src="projects/haggadah/haggadah_photo3.png" />
-      </div>
-      <div class="six columns">
-        <p>A Passover haggadah written in Hebrew, English, and Chinese. An
-        emphasis is placed on preserving tradition, while also giving the
-        reader historical perspective. Notes are added in the margins, to
-        expand upon the traditional seder and fill in additional context.
-        There's also an extensive appendix with lots of fun content. This is
-        the answer to "How do you raise a kid in a mixed Chinese-Jewish
-        household?" — 就这样.</p>
-        <p><a href="https://github.com/jsharf/multilingual_haggadah">Source
-        and PDF on GitHub</a> · CC&nbsp;BY-SA</p>
-      </div>
-    </div>
-    <!-- First project -->
-    <div class="row">
-      <h4>Lasertag PCB</h4>
-      <div class="six columns">
-        <img class="projectpic" src="projects/lasertag/during_soldering.jpg" />
-        <img class="projectpic" src="projects/lasertag/lasertagboard.jpg" />
-      </div>
-      <div class="six columns">
-        <p>I designed, built and coded a lasertag board.</p>
-      </div>
-    </div>
-    <!-- Second project -->
-    <div class="row">
-      <h4>Automated Planter</h4>
-      <div class="six columns">
-        <img class="projectpic" src="projects/automated_planter/pipes.jpg" />
-        <img class="projectpic"
-        src="projects/automated_planter/showing_plants_and_fan.jpg" />
-      </div>
-      <div class="six columns">
-        <p>Some friends and I built an automated planter. I wrote the environment
-        control firmware and researched circuits for pump and valve control.</p>
-      </div>
-    </div>
-    <!-- Third project -->
-    <div class="row">
-      <h4>Web-controlled RC Car</h4>
-      <div class="six columns">
-        <img class="projectpic" src="projects/web_controlled_car/solder_job.jpg" />
-      </div>
-      <div class="six columns">
-        <p>I made a web-controlled RC car. I soldered a microcontroller to the
-        car's remote to control steering and throttle in software. Then, I
-        connected the microcontroller via USB serial and websockets to an azure
-        backend, allowing the car to be controlled from anywhere. <a
-                                       href="projects/web_controlled_car/demo.mp4">
-          Demo video here.
-        </a></p>
-      </div>
-    </div>
-    <!-- Fourth project -->
-    <div class="row">
-      <h4>Wireless Retro Apple Mouse</h4>
-      <div class="six columns">
-        <img class="projectpic" src="projects/retro_wireless_mouse/before.jpg" />
-        <img class="projectpic" src="projects/retro_wireless_mouse/insides.jpg" />
-        <img class="projectpic" src="projects/retro_wireless_mouse/mouse_outside.jpg" />
-      </div>
-      <div class="six columns">
-        <p>I retrofitted an old retro apple mouse with the electronics of a
-        modern wireless mouse. This involved 3D-printing a custom housing for the
-        electronics.<a
-                                                             href="projects/retro_wireless_mouse/demo.mp4"> Demo
-        here.</a></p>
-      </div>
-    </div>
-    <!-- Fifth project -->
-    <div class="row">
-      <h4>Digital Nishika Remake</h4>
-      <div class="six columns">
-        <img class="projectpic" src="projects/perspective_camera/camera_rig.jpg" />
-      </div>
-      <div class="six columns">
-        <p>The <a
-          href="https://en.wikipedia.org/wiki/Nimslo#Nishika">Nishika</a> is an
-        old film camera from the 80's. The camera was unique in its ability to
-        capture the same image simultaneously from
-        several different lenses. This allowed the film, when developed, to give
-        you a "3D" perspective effect by quickly cycling left and right between the
-        images from the lenses. Me and a friend got together to build a
-        digital equivalent. We connected two cameras to a raspberry pi and fixed
-        them to a rigid acrylic harness. We wrote a simple python script to
-        combine images from the two cameras into a gif which cycles back and
-        forth rapidly, giving the same digital effect.</p>
-      </div>
-    </div>
-  </div>
 
-<!-- End Document
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="controls">
+    <input type="search" id="searchBox" placeholder="Search projects, tags, blurbs…" autocomplete="off" />
+    <div class="chips" id="statusChips">
+      <span class="chip chip-status on" data-status="all">All</span>
+      <span class="chip chip-status" data-status="active">Active</span>
+      <span class="chip chip-status" data-status="archive">Archive</span>
+    </div>
+    <span class="project-count" id="projectCount"></span>
+  </div>
+  <div class="chips" id="tagChips" style="margin-bottom: 0.5rem;"></div>
+
+  <div id="projectList"></div>
+
+  <p class="skill-note">
+    Active projects are auto-discovered from <code>~/projects</code> by the
+    <code>project-dashboard</code> skill. Curated archive entries are hand-edited
+    in <code>js/projects-data.js</code>.
+  </p>
+</div>
+
+<script src="js/projects-data.js"></script>
+<script>
+(function () {
+  var projects = window.PROJECTS || [];
+  var search = document.getElementById('searchBox');
+  var statusChips = document.getElementById('statusChips');
+  var tagChipsEl = document.getElementById('tagChips');
+  var listEl = document.getElementById('projectList');
+  var countEl = document.getElementById('projectCount');
+
+  var state = {
+    q: '',
+    status: 'all',           // 'all' | 'active' | 'archive'
+    selectedTags: new Set()  // OR within tags
+  };
+
+  function uniqueTags() {
+    var all = {};
+    projects.forEach(function (p) {
+      (p.tags || []).forEach(function (t) { all[t] = (all[t] || 0) + 1; });
+    });
+    return Object.keys(all).sort(function (a, b) {
+      return all[b] - all[a] || a.localeCompare(b);
+    });
+  }
+
+  function renderTagChips() {
+    var tags = uniqueTags();
+    tagChipsEl.innerHTML = tags.map(function (t) {
+      var on = state.selectedTags.has(t) ? ' on' : '';
+      return '<span class="chip chip-tag' + on + '" data-tag="' + escapeAttr(t) + '">' + escapeHtml(t) + '</span>';
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  function matches(p) {
+    if (state.status !== 'all' && p.status !== state.status) return false;
+    if (state.selectedTags.size > 0) {
+      var has = (p.tags || []).some(function (t) { return state.selectedTags.has(t); });
+      if (!has) return false;
+    }
+    if (state.q) {
+      var hay = [p.title, p.blurb, (p.tags || []).join(' '), p.slug, p.date]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (hay.indexOf(state.q) === -1) return false;
+    }
+    return true;
+  }
+
+  function sortKey(p) {
+    // active first (descending sort places larger keys on top)
+    if (p.status === 'active') return '1_' + (p.date || '0000');
+    return '0_' + (p.date || '0000');
+  }
+
+  function renderList() {
+    var visible = projects
+      .filter(matches)
+      .slice()
+      .sort(function (a, b) {
+        var ka = sortKey(a), kb = sortKey(b);
+        return ka < kb ? 1 : ka > kb ? -1 : 0;
+      });
+
+    if (!visible.length) {
+      listEl.innerHTML = '<p class="empty">No projects match.</p>';
+      countEl.textContent = '0 of ' + projects.length;
+      return;
+    }
+
+    listEl.innerHTML = visible.map(renderCard).join('');
+    countEl.textContent = visible.length + ' of ' + projects.length;
+  }
+
+  function renderCard(p) {
+    var photos = p.photos || [];
+    var hasPhotos = photos.length > 0;
+    var photoHtml = hasPhotos
+      ? '<div class="photos">' + photos.map(function (src) {
+          return '<img class="projectpic" src="' + escapeAttr(src) + '" alt="" loading="lazy" />';
+        }).join('') + '</div>'
+      : '';
+
+    var statusBadge = p.status === 'active'
+      ? '<span class="badge active">active</span>'
+      : '<span class="badge archive">archive</span>';
+    var dateBadge = p.date ? '<span class="badge date">· ' + escapeHtml(p.date) + '</span>' : '';
+
+    var tags = (p.tags || []).map(function (t) {
+      return '<span class="tag" data-tag="' + escapeAttr(t) + '">#' + escapeHtml(t) + '</span>';
+    }).join('');
+
+    var titleHtml = p.page
+      ? '<a href="' + escapeAttr(p.page) + '">' + escapeHtml(p.title) + '</a>'
+      : escapeHtml(p.title);
+
+    var links = [];
+    if (p.page)  links.push('<a href="' + escapeAttr(p.page) + '">Details</a>');
+    if (p.repo)  links.push('<a href="' + escapeAttr(p.repo) + '">Repo</a>');
+    (p.extras || []).forEach(function (x) {
+      links.push('<a href="' + escapeAttr(x.href) + '">' + escapeHtml(x.label) + '</a>');
+    });
+    var linksHtml = links.length ? '<div class="links">' + links.join('') + '</div>' : '';
+
+    return '<article class="project-card' + (hasPhotos ? '' : ' no-photos') + '" data-slug="' + escapeAttr(p.slug) + '">' +
+      photoHtml +
+      '<div class="body">' +
+        '<h4>' + titleHtml + '</h4>' +
+        '<span class="badges">' + statusBadge + dateBadge + '</span>' +
+        (tags ? '<div class="tags">' + tags + '</div>' : '') +
+        '<p class="blurb">' + escapeHtml(p.blurb || '') + '</p>' +
+        linksHtml +
+      '</div>' +
+    '</article>';
+  }
+
+  // Wiring
+  search.addEventListener('input', function (e) {
+    state.q = (e.target.value || '').toLowerCase().trim();
+    renderList();
+  });
+
+  statusChips.addEventListener('click', function (e) {
+    var chip = e.target.closest('.chip-status');
+    if (!chip) return;
+    state.status = chip.getAttribute('data-status');
+    Array.prototype.forEach.call(statusChips.querySelectorAll('.chip-status'), function (c) {
+      c.classList.remove('on');
+      if (c.getAttribute('data-status') === 'archive') c.classList.remove('archive');
+    });
+    chip.classList.add('on');
+    if (state.status === 'archive') chip.classList.add('archive');
+    renderList();
+  });
+
+  tagChipsEl.addEventListener('click', function (e) {
+    var chip = e.target.closest('.chip-tag');
+    if (!chip) return;
+    var t = chip.getAttribute('data-tag');
+    if (state.selectedTags.has(t)) state.selectedTags.delete(t);
+    else state.selectedTags.add(t);
+    chip.classList.toggle('on');
+    renderList();
+  });
+
+  // Click a tag inside a card to toggle it
+  listEl.addEventListener('click', function (e) {
+    var t = e.target.closest('.tags .tag');
+    if (!t) return;
+    var tag = t.getAttribute('data-tag');
+    if (state.selectedTags.has(tag)) state.selectedTags.delete(tag);
+    else state.selectedTags.add(tag);
+    renderTagChips();
+    renderList();
+  });
+
+  renderTagChips();
+  renderList();
+})();
+</script>
 </body>
 </html>
