@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Attune — JS</title>
-  <meta name="description" content="Attune — live focus coach with music + breath cues, TTS interventions, and a music-only mode. Includes BreathNudge as a subdir spinout.">
+  <meta name="description" content="Live focus coach: adaptive music + breath cues + TTS interventions, with a music-only mode. Recent UX pass — music-only gating, fatigue-loop fix, TTS rate cap. ">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
   <link rel="stylesheet" href="../css/normalize.css">
@@ -11,10 +11,6 @@
   <link rel="stylesheet" href="../css/custom.css">
   <link rel="icon" type="image/png" href="../images/favicon.png">
   <style>
-    .dash-meta { color: #888; font-size: 0.85rem; }
-    .dash-row { padding: 0.6rem 0; border-bottom: 1px solid #eee; }
-    .dash-row h4 { margin: 0 0 0.2rem; }
-    .dash-row p  { margin: 0.2rem 0; color: #444; }
     pre.status-text { white-space: pre-wrap; word-wrap: break-word;
       background: #fafafa; border-left: 3px solid #ccc; padding: 0.6rem 0.9rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem;
@@ -27,9 +23,16 @@
       color: #555; margin-right: 0.4rem; }
     .activity.git { background: #e8f0fe; color: #1a4480; }
     .activity.mtime { background: #fdf6e3; color: #6a5520; }
-    .activity.deployed { background: #e8f5e9; color: #1b5e20; }
-    .comments { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; }
-    .comments h3 { font-size: 1.1rem; color: #555; }
+    .photos-strip {
+      display: flex; flex-wrap: wrap; gap: 0.6rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .photos-strip img {
+      width: 280px; max-width: 100%;
+      border: 1px solid #eee; border-radius: 3px;
+      background: #fafafa;
+      object-fit: cover;
+    }
     details summary { cursor: pointer; color: #666; margin-top: 1rem; }
   </style>
 </head>
@@ -46,15 +49,11 @@
     </div>
   </div>
     <h2>Attune</h2>
-    <p><span class="activity git">2026-04-30 · git</span> · <a href="https://github.com/jsharf/attune">https://github.com/jsharf/attune</a></p>
-    <pre class="status-text">A live focus coach. Plays adaptive music with breath cues, watches for fatigue
-signals, and steps in with short TTS interventions when you start to drift —
-or holds back entirely in music-only mode. BreathNudge (a smaller breath-nudge
-spinout) lives as a subdir in this repo.
-
-Recent work has been a UX pass on the live-coach side: music-only gating across
-all interventions, a fix for the dismiss → fatigue-still-high → infinite-reprompt
-loop, a TTS rate cap, and killing skip-shunt.</pre>
+    <p><span class="activity mtime">2026-05-02 · mtime</span> · <a href="https://github.com/jsharf/attune">https://github.com/jsharf/attune</a></p>
+    <div class="photos-strip">
+      <img src="attune/website-desktop.png" alt="" loading="lazy" />
+    </div>
+    
     <h4 style="margin-top:1.5rem;">Recent commits</h4>
     <pre class="commits">0cb3f69 Fix README paths after move into musicflow subdir
 def9e0f Add BreathNudge spinout as subdir
@@ -66,6 +65,7 @@ a32596b Music-only mode: gate ALL interventions, not just TTS
 fd19855 Fix dismiss → fatigue-still-high → infinite re-prompt loop
 14e98b9 Brandon UX pass — kill skip-shunt, TTS rate cap, music-only mode
 6463739 Apnea collapse ratio 0.4 → 0.45</pre>
+    
     <!-- TODO: enable comments — copy _partials/giscus.example.html to _partials/giscus.html, fill in repo info, re-run /project-dashboard -->
 </div>
 </body>

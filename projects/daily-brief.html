@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Daily Brief — JS</title>
-  <meta name="description" content="Morning-paper printer. Pulls news, calendar, weather, Hacker News with LLM-curated pull-quotes; renders a two-column XeLaTeX broadsheet with QR codes; AirPrints">
+  <meta name="description" content="A morning-paper printer. Pulls weather, stocks, RSS headlines, Hacker News with LLM-curated comment pull-quotes, dedicated AI / Anthropic section, Reddit, today">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
   <link rel="stylesheet" href="../css/normalize.css">
@@ -11,10 +11,6 @@
   <link rel="stylesheet" href="../css/custom.css">
   <link rel="icon" type="image/png" href="../images/favicon.png">
   <style>
-    .dash-meta { color: #888; font-size: 0.85rem; }
-    .dash-row { padding: 0.6rem 0; border-bottom: 1px solid #eee; }
-    .dash-row h4 { margin: 0 0 0.2rem; }
-    .dash-row p  { margin: 0.2rem 0; color: #444; }
     pre.status-text { white-space: pre-wrap; word-wrap: break-word;
       background: #fafafa; border-left: 3px solid #ccc; padding: 0.6rem 0.9rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem;
@@ -27,9 +23,16 @@
       color: #555; margin-right: 0.4rem; }
     .activity.git { background: #e8f0fe; color: #1a4480; }
     .activity.mtime { background: #fdf6e3; color: #6a5520; }
-    .activity.deployed { background: #e8f5e9; color: #1b5e20; }
-    .comments { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; }
-    .comments h3 { font-size: 1.1rem; color: #555; }
+    .photos-strip {
+      display: flex; flex-wrap: wrap; gap: 0.6rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .photos-strip img {
+      width: 280px; max-width: 100%;
+      border: 1px solid #eee; border-radius: 3px;
+      background: #fafafa;
+      object-fit: cover;
+    }
     details summary { cursor: pointer; color: #666; margin-top: 1rem; }
   </style>
 </head>
@@ -46,7 +49,8 @@
     </div>
   </div>
     <h2>Daily Brief</h2>
-    <p><span class="activity mtime">2026-05-01 · mtime</span></p>
+    <p><span class="activity mtime">2026-05-02 · mtime</span></p>
+    
     <pre class="status-text">A morning-paper printer. Pulls weather, stocks, RSS headlines, Hacker News with
 LLM-curated comment pull-quotes, dedicated AI / Anthropic section, Reddit, today&#x27;s
 Google Calendar, and a Gmail digest; renders a two-column XeLaTeX newspaper with
@@ -55,17 +59,34 @@ inline QR codes for every source link; sends to your AirPrint laser at 8am.
 Designed to live next to the other exporters on the Synology NAS and use the
 same Container Manager API for deploys.
 
-OUTPUT
-- 2 sheets, double-sided (~3 pages of dense content + a clean back).
-- Two-column body, masthead with date and weather, full-width indices band.
-- Sections: Headlines · Hacker News · AI/Anthropic · Reddit · Markets · Calendar · Inbox · Weather.
-- Every linkable item has a small inline QR code so you can scan from paper straight to the source on your phone.
+## Output shape
 
-STACK
-- Python 3.11 orchestrator with a schedule-based cron loop and a tiny Flask API on :9210.
-- XeLaTeX for layout (TeX Gyre Pagella body, Heros sans, Cursor mono).
-- WeasyPrint dropped in favor of LaTeX — better typography, real optical column balancing, native QR.
-- CUPS inside the container so `lp` Just Works against the AirPrint queue.</pre>
+- 2 sheets, double-sided (≈3 pages of dense content + a clean back).
+- Two-column body, masthead with date and weather, full-width indices band.
+- Sections: Headlines · Hacker News · AI / Anthropic · Reddit · Markets ·
+  Calendar · Inbox · Weather.
+- Every linkable item has a small inline QR code so you can scan from paper
+  straight to the source on your phone.
+
+Sample preview is rendered with realistic mock data — see `outputs/`.
+
+## Stack
+
+- **Python 3.11** orchestrator with a `schedule`-based cron loop and a tiny
+  Flask API on `:9210` for ad-hoc triggers and OAuth.
+- **XeLaTeX** for layout (TeX Gyre Pagella body, Heros sans, Cursor mono).
+  Native multi-column, microtype, qrcode pkg, tcolorbox.
+- **WeasyPrint dropped** in favour of LaTeX — better typography, real
+  optical column balancing, native QR codes.
+- **CUPS** inside the container so `lp` Just Works against your AirPrint
+  printer (queue auto-registered from `$PRINTER_URI` at startup).
+
+## Files
+
+```
+daily-brief/</pre>
+    
+    
     <!-- TODO: enable comments — copy _partials/giscus.example.html to _partials/giscus.html, fill in repo info, re-run /project-dashboard -->
 </div>
 </body>

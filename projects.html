@@ -64,6 +64,11 @@
       display: block;
       margin-bottom: 0.4rem;
     }
+    .project-card .photos .more-photos {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 0.2rem;
+    }
     .project-card h4 {
       margin: 0;
       display: inline;
@@ -236,11 +241,19 @@
   function renderCard(p) {
     var photos = p.photos || [];
     var hasPhotos = photos.length > 0;
-    var photoHtml = hasPhotos
-      ? '<div class="photos">' + photos.map(function (src) {
+    // Card shows first photo only as a thumbnail. Rest live on the detail page.
+    var photoHtml = '';
+    if (hasPhotos) {
+      // Curated entries (multiple hand-picked photos) keep showing all photos
+      // in a stacked column to preserve the existing layout.
+      var imgs = (p.status === 'finished') ? photos : photos.slice(0, 1);
+      var more = photos.length > imgs.length
+        ? '<div class="more-photos">+' + (photos.length - imgs.length) + ' more</div>'
+        : '';
+      photoHtml = '<div class="photos">' + imgs.map(function (src) {
           return '<img class="projectpic" src="' + escapeAttr(src) + '" alt="" loading="lazy" />';
-        }).join('') + '</div>'
-      : '';
+        }).join('') + more + '</div>';
+    }
 
     var statusBadge = p.status === 'active'
       ? '<span class="badge active">active</span>'
