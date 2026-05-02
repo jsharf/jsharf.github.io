@@ -50,7 +50,7 @@ For each active project, collect:
 - **blurb**: 1–2 sentence summary suitable for the card. Prefer rewriting from README intro; keep ≤220 chars.
 - **page**: `"projects/<slug>.html"` (skill will create the file). Exception: if a polished page already exists at the site root (e.g. `/507-priorities.html`), set `page` to that direct URL and do NOT create a `projects/<slug>.html`.
 - **repo**: `git remote get-url origin` if it points to github.com (normalize `git@github.com:foo/bar.git` → `https://github.com/foo/bar`)
-- **photos**: `[]` (only curated entries get hand-picked photos)
+- **photos**: see "Photos / screenshots" below. Default `[]`.
 - **status**: always `"active"` for entries this skill generates
 
 Read at most ~3 KB from each markdown file. Don't embed images.
@@ -73,13 +73,42 @@ Sort active entries by date descending.
 
 JSON formatting: 2-space indent matching the surrounding style; trailing comma after the last marker entry omitted; no trailing comma between entries (use commas between, no comma after the last).
 
+## Photos / screenshots
+
+Each project can supply images for its card and detail page by dropping them in
+`~/projects/<name>/project_photos/`. The name is intentionally generic — UI
+screenshots for software, photos of hardware prototypes, board renders, app
+screens, anything visual.
+
+For each active project:
+
+1. Look for `~/projects/<name>/project_photos/*.{png,jpg,jpeg,webp,gif}`.
+2. Sort filenames lexicographically. The first one becomes the card image
+   (shown next to the blurb in `projects.html`); the rest appear on the
+   per-project page.
+3. Copy each into the site at `projects/<slug>/<original-filename>`. Create the
+   directory if it doesn't exist. **Skip the copy if the destination file
+   already exists with the same byte size** (cheap idempotency — avoids
+   re-copying every run).
+4. Populate `photos: ["projects/<slug>/<file1>", ...]` in the data entry.
+
+**Never** delete files from the destination dir — only add. If the user removes
+a photo from the source `project_photos/`, the data entry will stop referencing
+it but the stale file lingers in the site repo. That's fine; user can hand-clean.
+
+**Never** write into a curated slug's directory (haggadah, lasertag,
+automated-planter, web-controlled-car, retro-wireless-mouse, nishika). Those
+are user-managed. If an active slug somehow collides with a curated slug,
+abort with an error rather than overwriting.
+
 ## Per-project HTML generation
 
 For each active entry whose `page` is `projects/<slug>.html` (i.e. not an external/already-deployed URL), write the file with:
 
-- Site chrome matching `projects.html` (favicon link, skeleton CSS, Home + Projects buttons in the header)
+- Site chrome matching `projects.html` (favicon link, skeleton CSS, Home + Projects buttons in the header). Note: per-project pages live one level deep under `projects/<slug>.html`, so asset paths use `../` (e.g. `../css/skeleton.css`, `../images/favicon.png`, `../projects.html`). When referencing the page's own photo dir from a per-project page, use the relative path `<slug>/<file>` (since the page is at `projects/<slug>.html` and the dir is at `projects/<slug>/`).
 - `<h2>` with the title
 - Activity line: ISO date + src badge + GitHub link if any
+- Photo strip: if the entry has photos, render them as a row of `<img>` tags at ~280px wide, captioned with their filename only if it's something other than `screenshot*` or `photo*`. The first photo (also used as the card image in `projects.html`) appears first.
 - Status block: STATUS.md content if present, else README excerpt (first ~25 lines after H1, plain text in `<pre class="status-text">`)
 - Recent commits as a `<pre>` of `<short-hash> <subject>` (only if git project; cap at 10)
 - NOTES.md inside `<details><summary>Notes</summary>...</details>` if present
