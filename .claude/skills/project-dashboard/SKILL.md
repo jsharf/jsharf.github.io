@@ -48,7 +48,8 @@ For each active project, collect:
 - **src**: `git` or `mtime`
 - **tags**: best-effort short lowercase tags. Pick from: `hardware`, `pcb`, `embedded`, `ml`, `ai`, `audio`, `web`, `app`, `software`, `productivity`, `language`, `photo`, `design`, `writing`, `law`, `ux`. Default to a couple of best-fit guesses based on README/blurb. Don't invent obscure tags — keep the taxonomy small so the filter remains useful.
 - **blurb**: 1–2 sentence summary suitable for the card. Prefer rewriting from README intro; keep ≤220 chars.
-- **page**: `"projects/<slug>.html"` (skill will create the file). Exception: if a polished page already exists at the site root — check for `<slug>.html` at the repo root (e.g. `/507-priorities.html`, `/attune.html`) — set `page` to that direct URL (`/<slug>.html`) and do NOT create a `projects/<slug>.html`. If a stale stub already exists at `projects/<slug>.html` for such a slug, delete it.
+- **page**: always `"projects/<slug>.html"`. The skill always creates this detail page so the card title and Details link land somewhere with photos, commits, and the live-link CTA. Never set `page` to a site-root URL — that's what `live` is for.
+- **live**: if a polished/deployed page exists at the site root (look for `<slug>.html` at the repo root, e.g. `/507-priorities.html`, `/attune.html`), set `live: "/<slug>.html"`. Otherwise omit. The card renders this as a prominent "Live" link, and the per-project page renders an "Open the live app" CTA at the top.
 - **repo**: `git remote get-url origin` if it points to github.com (normalize `git@github.com:foo/bar.git` → `https://github.com/foo/bar`)
 - **photos**: see "Photos / screenshots" below. Default `[]`.
 - **status**: always `"active"` for entries this skill generates
@@ -103,18 +104,17 @@ abort with an error rather than overwriting.
 
 ## Per-project HTML generation
 
-For each active entry whose `page` is `projects/<slug>.html` (i.e. not an external/already-deployed URL), write the file with:
+For each active entry, write `projects/<slug>.html` with:
 
 - Site chrome matching `projects.html` (favicon link, skeleton CSS, Home + Projects buttons in the header). Note: per-project pages live one level deep under `projects/<slug>.html`, so asset paths use `../` (e.g. `../css/skeleton.css`, `../images/favicon.png`, `../projects.html`). When referencing the page's own photo dir from a per-project page, use the relative path `<slug>/<file>` (since the page is at `projects/<slug>.html` and the dir is at `projects/<slug>/`).
 - `<h2>` with the title
 - Activity line: ISO date + src badge + GitHub link if any
+- **Live CTA**: if `live` is set, render a prominent button-style link below the activity line: `<a class="live-cta" href="<live>">→ Open the live app</a>`. Use the `.live-cta` style block (see existing pages — dark blue button).
 - Photo strip: if the entry has photos, render them as a row of `<img>` tags at ~280px wide, captioned with their filename only if it's something other than `screenshot*` or `photo*`. The first photo (also used as the card image in `projects.html`) appears first.
-- Status block: STATUS.md content if present, else README excerpt (first ~25 lines after H1, plain text in `<pre class="status-text">`)
+- Status block: STATUS.md content if present, else README excerpt (first ~25 lines after H1, plain text in `<pre class="status-text">`). For projects with no source dir under `~/projects` (e.g. site-root-deployed pages tracked only via `live`), skip the status block.
 - Recent commits as a `<pre>` of `<short-hash> <subject>` (only if git project; cap at 10)
 - NOTES.md inside `<details><summary>Notes</summary>...</details>` if present
 - Giscus block: paste contents of `_partials/giscus.html` verbatim if it exists; otherwise an HTML comment `<!-- TODO: enable comments — see .claude/skills/project-dashboard/SKILL.md -->`
-
-For entries with an external `page` URL (e.g. `/507-priorities.html`), do NOT generate a file.
 
 ## Regeneration semantics
 

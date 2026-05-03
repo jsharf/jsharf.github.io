@@ -16,6 +16,7 @@
 //   blurb     1-2 sentence summary
 //   page      relative URL of detail page, or "" if none
 //   repo      external URL (GitHub etc.), or "" if none
+//   live      URL of the live/deployed thing itself (web app, demo), or "" if none
 //   photos    array of relative image paths, or []
 //   src       "git" | "mtime" | "deployed" — for active rows only
 
@@ -148,8 +149,9 @@ window.PROJECTS = [
     src: "mtime",
     tags: ["ml", "audio", "app"],
     blurb: "Live focus coach: adaptive music + breath cues + TTS interventions, with a music-only mode. Recent UX pass — music-only gating, fatigue-loop fix, TTS rate cap. Spinning off a separate app — see project page.",
-    page: "/attune.html",
+    page: "projects/attune.html",
     repo: "https://github.com/jsharf/attune",
+    live: "/attune.html",
     photos: ["projects/attune/website-desktop.png"]
   },
   {
@@ -171,9 +173,10 @@ window.PROJECTS = [
     date: "2026-04-30",
     src: "deployed",
     tags: ["web", "law"],
-    blurb: "Interactive priority checker for 11 U.S.C. § 507 bankruptcy claim ordering. Already live at /507-priorities.html.",
-    page: "/507-priorities.html",
+    blurb: "Interactive priority checker for 11 U.S.C. § 507 bankruptcy claim ordering.",
+    page: "projects/507-priorities.html",
     repo: "",
+    live: "/507-priorities.html",
     photos: []
   }
   // ---- AUTO-GENERATED-END ----

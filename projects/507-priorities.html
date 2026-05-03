@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>11 USC 507 Priority Checker — JS</title>
+  <meta name="description" content="Interactive priority checker for 11 U.S.C. § 507 bankruptcy claim ordering.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/custom.css">
+  <link rel="icon" type="image/png" href="../images/favicon.png">
+  <style>
+    .activity { display: inline-block; padding: 0.15rem 0.5rem;
+      background: #eee; border-radius: 3px; font-size: 0.75rem;
+      color: #555; margin-right: 0.4rem; }
+    .activity.deployed { background: #e8f0fe; color: #1a4480; }
+    .live-cta {
+      display: inline-block;
+      margin: 0.5rem 0 1rem;
+      padding: 0.5rem 1rem;
+      background: #1a4480;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    .live-cta:hover { background: #16386a; color: #fff; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="row" id="intro">
+    <div class="six columns" style="margin-top: 5%">
+      <a href="../index.html"><img src="../images/favicon_large.png" id="initials" /></a><!--
+      --><div id="title">
+        <h4 id="name">11 USC 507 Priority Checker</h4>
+        <a class="button button-primary" href="../index.html">Home</a> <a class="button" href="../projects.html">Projects</a>
+      </div>
+      <br>
+    </div>
+  </div>
+    <h2>11 USC 507 Priority Checker</h2>
+    <p><span class="activity deployed">2026-04-30 · deployed</span></p>
+    <a class="live-cta" href="/507-priorities.html">→ Open the live app</a>
+    <p>Interactive priority checker for 11 U.S.C. § 507 bankruptcy claim ordering. Walk through priority categories and see how claims sort against each other.</p>
+
+    <!-- TODO: enable comments — copy _partials/giscus.example.html to _partials/giscus.html, fill in repo info, re-run /project-dashboard -->
+</div>
+</body>
+</html>

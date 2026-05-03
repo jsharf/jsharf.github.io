@@ -108,6 +108,11 @@
       color: #333;
     }
     .project-card .links a { margin-right: 1rem; font-size: 0.85rem; }
+    .project-card .links a.live {
+      font-weight: 600;
+      color: #1a4480;
+    }
+    .project-card .links a.live::before { content: "→ "; }
 
     .empty {
       padding: 2rem 0;
@@ -269,6 +274,7 @@
       : escapeHtml(p.title);
 
     var links = [];
+    if (p.live)  links.push('<a class="live" href="' + escapeAttr(p.live) + '">Live</a>');
     if (p.page)  links.push('<a href="' + escapeAttr(p.page) + '">Details</a>');
     if (p.repo)  links.push('<a href="' + escapeAttr(p.repo) + '">Repo</a>');
     (p.extras || []).forEach(function (x) {
