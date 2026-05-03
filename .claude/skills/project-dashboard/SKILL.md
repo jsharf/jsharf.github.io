@@ -48,7 +48,7 @@ For each active project, collect:
 - **src**: `git` or `mtime`
 - **tags**: best-effort short lowercase tags. Pick from: `hardware`, `pcb`, `embedded`, `ml`, `ai`, `audio`, `web`, `app`, `software`, `productivity`, `language`, `photo`, `design`, `writing`, `law`, `ux`. Default to a couple of best-fit guesses based on README/blurb. Don't invent obscure tags — keep the taxonomy small so the filter remains useful.
 - **blurb**: 1–2 sentence summary suitable for the card. Prefer rewriting from README intro; keep ≤220 chars.
-- **page**: `"projects/<slug>.html"` (skill will create the file). Exception: if a polished page already exists at the site root (e.g. `/507-priorities.html`), set `page` to that direct URL and do NOT create a `projects/<slug>.html`.
+- **page**: `"projects/<slug>.html"` (skill will create the file). Exception: if a polished page already exists at the site root — check for `<slug>.html` at the repo root (e.g. `/507-priorities.html`, `/attune.html`) — set `page` to that direct URL (`/<slug>.html`) and do NOT create a `projects/<slug>.html`. If a stale stub already exists at `projects/<slug>.html` for such a slug, delete it.
 - **repo**: `git remote get-url origin` if it points to github.com (normalize `git@github.com:foo/bar.git` → `https://github.com/foo/bar`)
 - **photos**: see "Photos / screenshots" below. Default `[]`.
 - **status**: always `"active"` for entries this skill generates

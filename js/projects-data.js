@@ -148,7 +148,7 @@ window.PROJECTS = [
     src: "mtime",
     tags: ["ml", "audio", "app"],
     blurb: "Live focus coach: adaptive music + breath cues + TTS interventions, with a music-only mode. Recent UX pass — music-only gating, fatigue-loop fix, TTS rate cap. Spinning off a separate app — see project page.",
-    page: "projects/attune.html",
+    page: "/attune.html",
     repo: "https://github.com/jsharf/attune",
     photos: ["projects/attune/website-desktop.png"]
   },
